@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Staples - Time Cost{% endblock %}
+{% block head %}
+  <style>
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        text-align: left;
+    }
+    .form-container table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .form-container table, .form-container th, .form-container td {
+      border: 1px solid #ccc;
+    }
+    .form-container th, .form-container td {
+      padding: 10px;
+      text-align: left;
+    }
+    .form-container input[type="text"],
+    .form-container input[type="number"] {
+      width: 100%;
+      padding: 5px;
+      box-sizing: border-box;
+    }
+    .form-container button {
+       padding: 8px 15px;
+       margin-top: 10px;
+       cursor: pointer;
+       background-color: #333;
+       color: #fff;
+       border: none;
+       border-radius: 4px;
+    }
+    .form-container button:hover {
+       background-color: #555;
+    }
+    label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      display: block;
+    }
+  </style>
+  <script>
+    // After DOM is loaded, attach functionality to add/remove staple items and update totals.
+    document.addEventListener("DOMContentLoaded", function(){
+      let stapleTableBody = document.getElementById("stapleTableBody");
+      let hourlyRateInput = document.getElementById("stapleHourlyRate");
+
+      // Function to recalculate time cost for a row
+      function recalcRow(row) {
+          let costInput = row.querySelector(".stapleCost");
+          let timeSpan = row.querySelector(".stapleTime");
+          let cost = parseFloat(costInput.value) || 0;
+          let rate = parseFloat(hourlyRateInput.value) || 0;
+          let timeCost = (rate > 0) ? cost / rate : 0;
+          timeSpan.textContent = timeCost.toFixed(2);
+      }
+
+      // Attach listener to update row on cost change
+      function addCostListener(row) {
+          let costInput = row.querySelector(".stapleCost");
+          costInput.addEventListener("input", function(){
+              recalcRow(row);
+              recalcTotals();
+          });
+      }
+
+      // Remove a row and recalc totals
+      function removeRow(row) {
+          row.remove();
+          recalcTotals();
+      }
+
+      // Add a new staple row; defaults can be provided (if any)
+      function addStapleRow(itemName = "", costValue = ""){
+         let row = document.createElement("tr");
+         row.innerHTML = `
+            <td><input type="text" name="item_name[]" class="stapleName" value="${itemName}" required></td>
+            <td><input type="number" step="0.01" name="item_cost[]" class="stapleCost" value="${costValue}" required></td>
+            <td><span class="stapleTime">0.00</span></td>
+            <td><button type="button" class="removeStaple">Remove</button></td>
+         `;
+         // Attach a listener for the remove button
+         row.querySelector(".removeStaple").addEventListener("click", function(){
+             removeRow(row);
+         });
+         addCostListener(row);
+         recalcRow(row);
+         stapleTableBody.appendChild(row);
+         recalcTotals();
+      }
+
+      // Recalculate the totals at the bottom of the table
+      function recalcTotals(){
+          let totalCost = 0;
+          let totalTime = 0;
+          let rate = parseFloat(hourlyRateInput.value) || 0;
+          document.querySelectorAll("#stapleTableBody tr").forEach(function(row){
+             let cost = parseFloat(row.querySelector(".stapleCost").value) || 0;
+             totalCost += cost;
+             totalTime += (rate > 0 ? cost / rate : 0);
+          });
+          document.getElementById("totalCost").textContent = totalCost.toFixed(2);
+          document.getElementById("totalTime").textContent = totalTime.toFixed(2);
+      }
+
+      // Update all rows when the hourly rate changes
+      hourlyRateInput.addEventListener("input", function(){
+          document.querySelectorAll("#stapleTableBody tr").forEach(function(row){
+             recalcRow(row);
+          });
+          recalcTotals();
+      });
+
+      // Add a new row when the "Add Item" button is clicked
+      document.getElementById("addStapleBtn").addEventListener("click", function(){
+         addStapleRow();
+      });
+
+      // Optionally, add some example staple items
+      addStapleRow("Milk", "3.50");
+      addStapleRow("Bread", "2.50");
+      addStapleRow("Bananas", "1.20");
+    });
+  </script>
+{% endblock %}
+{% block content %}
+<div class="form-container">
+  <h1>Staples - Time Cost</h1>
+  <p>Enter your staple items below. For each item, specify the item name and its cost.
+     Using your hourly rate, the table calculates how many work hours it takes to earn each item.
+     You can add new items or remove existing ones, and totals are updated automatically.</p>
+
+  <div>
+    <label for="stapleHourlyRate">Your Hourly Rate ($):</label>
+    <input type="number" step="0.01" id="stapleHourlyRate" name="staple_hourly_rate" value="" placeholder="Enter your hourly rate" required>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Cost ($)</th>
+        <th>Time to Earn (hrs)</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="stapleTableBody">
+      <!-- Rows will be dynamically added here -->
+    </tbody>
+    <tfoot>
+      <tr>
+        <td><strong>Total</strong></td>
+        <td><strong id="totalCost">0.00</strong></td>
+        <td><strong id="totalTime">0.00</strong></td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+  <button type="button" id="addStapleBtn">Add Item</button>
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Budget Calculator{% endblock %}
+{% block head %}
+  <style>
+    /* Your existing styles... */
+    .progress-container {
+      width: 100%;
+      background-color: #eee;
+      border-radius: 5px;
+      margin-top: 10px;
+      height: 25px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background-color: #76c7c0;
+      text-align: center;
+      line-height: 25px;
+      color: #fff;
+    }
+    .goals-section {
+      margin-top: 40px;
+    }
+    .goals-section table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .goals-section table, .goals-section th, .goals-section td {
+      border: 1px solid #ccc;
+    }
+    .goals-section th, .goals-section td {
+      padding: 10px;
+      text-align: left;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+{% block content %}
+<div class="form-container">
+  <h1>Budget Calculator</h1>
+  <form method="POST">
+      <!-- Your existing budget form fields -->
+      <div>
+          <label for="income">Monthly Income ($):</label>
+          <input type="number" step="0.01" id="income" name="income" value="{{ income or '' }}" required>
+      </div>
+      <div>
+          <label for="expenses">Monthly Expenses ($):</label>
+          <input type="number" step="0.01" id="expenses" name="expenses" value="{{ expenses or '' }}" required>
+      </div>
+      <div>
+          <label for="weeklyHours">Weekly Hours:</label>
+          <input type="number" step="0.1" id="weeklyHours" name="weeklyHours" value="{{ weekly_hours or '' }}" required>
+      </div>
+      <!-- Optionally, include fields for a new savings goal (if desired) -->
+      <div>
+          <label for="savingsGoal">Long Term Savings Goal ($):</label>
+          <input type="number" step="0.01" id="savingsGoal" name="savingsGoal" value="{{ savings_goal or '' }}">
+      </div>
+      <div>
+          <label for="currentSavings">Amount Already Saved ($):</label>
+          <input type="number" step="0.01" id="currentSavings" name="currentSavings" value="{{ current_savings or '' }}">
+      </div>
+      <button type="submit">Calculate</button>
+  </form>
+
+  <!-- Budget Results Display -->
+  {% if income and expenses and weekly_hours %}
+    <h2>Budget Results</h2>
+    <p><strong>Monthly Discretionary Income:</strong> ${{ discretionary_income|round(2) }}</p>
+    <p><strong>Estimated Hourly Value (of discretionary income):</strong> ${{ hourly_value|round(2) }}/hr</p>
+  {% endif %}
+
+  <!-- Long Term Goals Section -->
+  <div class="goals-section">
+    <h2>Long Term Savings Goals</h2>
+    {% if goals %}
+      <table>
+        <thead>
+          <tr>
+            <th>Goal Name</th>
+            <th>Target Amount ($)</th>
+            <th>Current Savings ($)</th>
+            <th>Progress</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for goal in goals %}
+            {% set progress = (goal.current / goal.target * 100) if (goal.target > 0) else 0 %}
+            <tr>
+              <td>{{ goal.name }}</td>
+              <td>{{ goal.target|round(2) }}</td>
+              <td>{{ goal.current|round(2) }}</td>
+              <td>
+                <div class="progress-container">
+                  <div class="progress-bar" style="width: {{ progress }}%;">
+                    {{ progress|round(2) }}%
+                  </div>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No long term goals added yet!</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

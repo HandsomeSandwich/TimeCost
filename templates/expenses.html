@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Expenses{% endblock %}
+{% block head %}
+  <style>
+    .form-container {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: left;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      padding: 5px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 20px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    .removeRow {
+      background-color: #c00;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+    }
+    .removeButton {
+      background-color: #c00;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 5px 10px;
+    }
+  </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      let expenseTableBody = document.getElementById("expenseTableBody");
+      let hourlyWageInput = document.getElementById("userHourlyRate");
+
+      function recalcRow(row) {
+        let amountInput = row.querySelector(".expenseAmount");
+        let hourlyCostSpan = row.querySelector(".expenseHourly");
+        let hourlyWage = parseFloat(hourlyWageInput.value) || 0;
+        let amount = parseFloat(amountInput.value) || 0;
+        let hourlyCost = (hourlyWage > 0) ? (amount / hourlyWage) : 0;
+        hourlyCostSpan.textContent = hourlyCost.toFixed(2);
+      }
+
+      function addRowListeners(row) {
+        let amountInput = row.querySelector(".expenseAmount");
+        amountInput.addEventListener("input", function () {
+          recalcRow(row);
+          recalcTotals();
+        });
+      }
+
+      function recalcTotals() {
+        let totalAmount = 0;
+        let totalHourly = 0;
+        let hourlyWage = parseFloat(hourlyWageInput.value) || 0;
+        document.querySelectorAll("#expenseTableBody tr").forEach(function (row) {
+          let amount = parseFloat(row.querySelector(".expenseAmount").value) || 0;
+          totalAmount += amount;
+          if (hourlyWage > 0) {
+            totalHourly += (amount / hourlyWage);
+          }
+        });
+        document.getElementById("totalAmount").textContent = totalAmount.toFixed(2);
+        document.getElementById("totalHourly").textContent = totalHourly.toFixed(2);
+        // Update hidden input so the total expense is sent with the form.
+        document.getElementById("expensesTotalInput").value = totalAmount.toFixed(2);
+      }
+
+      function addExpenseRow(name = "", amount = "") {
+        let row = document.createElement("tr");
+        row.innerHTML = `
+          <td><input type="text" name="expense_name[]" value="${name}" required></td>
+          <td><input type="number" step="0.01" name="expense_amount[]" class="expenseAmount" value="${amount}" required></td>
+          <td><span class="expenseHourly">0.00</span></td>
+          <td><button type="button" class="removeRow">Remove</button></td>
+        `;
+        row.querySelector(".removeRow").addEventListener("click", function () {
+          // This remove only deletes the current row from the form.
+          row.remove();
+          recalcTotals();
+        });
+        addRowListeners(row);
+        expenseTableBody.appendChild(row);
+        recalcRow(row);
+        recalcTotals();
+      }
+
+      document.getElementById("addExpenseBtn").addEventListener("click", function () {
+        addExpenseRow();
+      });
+
+      hourlyWageInput.addEventListener("input", function () {
+        document.querySelectorAll("#expenseTableBody tr").forEach(function (row) {
+          recalcRow(row);
+        });
+        recalcTotals();
+      });
+
+      // Start with one empty expense row.
+      addExpenseRow();
+    });
+  </script>
+{% endblock %}
+{% block content %}
+<div class="form-container">
+  <h1>Expenses</h1>
+  <p>Add, remove, or modify expense items below. The hourly expense is computed by dividing the monetary cost by your hourly rate.</p>
+
+  <!-- The user's hourly rate is either pre-filled from Personal Information or can be entered manually -->
+  <form action="/expenses" method="post">
+    <div>
+      <label for="userHourlyRate">Your Hourly Rate ($):</label>
+      <input type="number" step="0.01" id="userHourlyRate" name="user_hourly_rate" value="{{ session.get('hourlyRate', '') }}" required>
+      <small>This can be auto-filled from Personal Information or manually adjusted.</small>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Expense Item</th>
+          <th>Expense ($)</th>
+          <th>Expense (Hours)</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="expenseTableBody">
+        <!-- Dynamically added expense rows will appear here -->
+      </tbody>
+      <tfoot>
+        <tr>
+          <td><strong>Total</strong></td>
+          <td><strong id="totalAmount">0.00</strong></td>
+          <td><strong id="totalHourly">0.00</strong></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+    <!-- Hidden input to send the total expense with the form -->
+    <input type="hidden" name="expensesTotal" id="expensesTotalInput" value="0.00">
+    <button type="button" id="addExpenseBtn">Add Expense</button>
+    <div>
+      <button type="submit">Save Expenses</button>
+    </div>
+  </form>
+
+  <!-- Display the list of saved expense items (if any) -->
+  {% set saved_expenses = session.get("expenses", {}) %}
+  {% if saved_expenses and saved_expenses.expense_items %}
+    <h2>Saved Expenses</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Expense Item</th>
+          <th>Expense ($)</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for expense in saved_expenses.expense_items %}
+          <tr>
+            <td>{{ expense[0] }}</td>
+            <td>{{ expense[1] }}</td>
+            <td>
+              <!-- Remove button: triggers a POST request to the remove_expense endpoint -->
+              <form action="{{ url_for('remove_expense', index=loop.index0) }}" method="post" style="display:inline;">
+                <button type="submit" class="removeButton">Remove</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Store Data using Shelve</title>
+</head>
+<body>
+  <h1>Store Data</h1>
+  <form method="POST">
+    <label for="key">Key:</label>
+    <input type="text" name="key" id="key" required>
+    <br>
+    <label for="value">Value:</label>
+    <input type="text" name="value" id="value" required>
+    <br>
+    <button type="submit">Store</button>
+  </form>
+  <p><a href="{{ url_for('retrieve') }}">View Stored Data</a></p>
+</body>
+</html>

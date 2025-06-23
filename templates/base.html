@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}TimeCost App{% endblock %}</title>
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <!-- Retro Font -->
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans&display=swap" rel="stylesheet">
+
+  <!-- Responsive Meta Tag -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+ <nav class="navbar">
+  <a href="/" class="{% if request.path == '/' %}active{% endif %}">Calculator</a>
+  <a href="/timebank" class="{% if request.path.startswith('/timebank') %}active{% endif %}">Time Bank</a>
+  <a href="/budget" class="{% if request.path.startswith('/budget') %}active{% endif %}">Budget</a>
+  <a href="/staples" class="{% if request.path.startswith('/staples') %}active{% endif %}">Staples</a>
+  <a href="/personal" class="{% if request.path.startswith('/personal') %}active{% endif %}">Personal Info</a>
+  <a href="/expenses" class="{% if request.path.startswith('/expenses') %}active{% endif %}">Expenses</a>
+  <a href="/goals" class="{% if request.path.startswith('/goals') %}active{% endif %}">Goals</a>
+
+ <button id="theme-toggle" aria-label="Toggle Dark Mode" style="margin-left: auto;">🌙</button>
+</nav>
+
+
+  <!-- Page Content -->
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2025 TimeCostApp</p>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+
+<script>
+  const toggle = document.getElementById('theme-toggle');
+  const body = document.body;
+
+  // Load user's theme preference
+  if (localStorage.getItem('theme') === 'dark') {
+    body.classList.add('dark-mode');
+    toggle.textContent = '☀️';
+  }
+
+  toggle.addEventListener('click', () => {
+    body.classList.toggle('dark-mode');
+    const isDark = body.classList.contains('dark-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    toggle.textContent = isDark ? '☀️' : '🌙';
+  });
+</script>
+
+</body>
+</html>

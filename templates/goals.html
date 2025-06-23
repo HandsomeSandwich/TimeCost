@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Long Term Savings Goals{% endblock %}
+{% block head %}
+  <style>
+    .form-container {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: left;
+    }
+    .goal-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .goal-table, .goal-table th, .goal-table td {
+      border: 1px solid #ccc;
+    }
+    .goal-table th, .goal-table td {
+      padding: 10px;
+      text-align: left;
+    }
+    .progress-container {
+      width: 100%;
+      background-color: #eee;
+      border-radius: 5px;
+      margin-top: 5px;
+      height: 25px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background-color: #76c7c0;
+      text-align: center;
+      line-height: 25px;
+      color: #fff;
+    }
+    .savingsForm input[type="number"] {
+      width: 80%;
+      padding: 5px;
+    }
+    .savingsForm button {
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+  </style>
+{% endblock %}
+{% block content %}
+<div class="form-container">
+  <h1>Long Term Savings Goals</h1>
+  
+  <h2>Add New Goal</h2>
+  <form action="/goals" method="post">
+    <div>
+      <label for="goal_name">Goal Name:</label>
+      <input type="text" id="goal_name" name="goal_name" required>
+    </div>
+    <div>
+      <label for="target_amount">Target Amount ($):</label>
+      <input type="number" step="0.01" id="target_amount" name="target_amount" required>
+    </div>
+    <div>
+      <label for="current_savings">Initial Savings ($):</label>
+      <input type="number" step="0.01" id="current_savings" name="current_savings" value="0" required>
+    </div>
+    <div>
+      <button type="submit" name="new_goal" value="1">Add Goal</button>
+    </div>
+  </form>
+  
+  {% if goals %}
+    <h2>Saved Goals</h2>
+    <table class="goal-table">
+      <thead>
+        <tr>
+          <th>Goal Name</th>
+          <th>Target Amount ($)</th>
+          <th>Current Savings ($)</th>
+          <th>Progress</th>
+          <th>Add Savings</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for goal in goals %}
+          {% set progress = (goal.current / goal.target * 100) if goal.target > 0 else 0 %}
+          <tr>
+            <td>{{ goal.name }}</td>
+            <td>{{ goal.target|round(2) }}</td>
+            <td>{{ goal.current|round(2) }}</td>
+            <td>
+              <div class="progress-container">
+                <div class="progress-bar" style="width: {{ progress }}%;">
+                  {{ progress|round(2) }}%
+                </div>
+              </div>
+            </td>
+            <td>
+              <form action="/goals" method="post" class="savingsForm">
+                <input type="hidden" name="goal_index" value="{{ loop.index0 }}">
+                <input type="number" step="0.01" name="savings_to_add" placeholder="Add $" required>
+                <button type="submit" name="update_goal" value="1">Add Savings</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+  
+  <!-- Optionally, you can include a bar graph using Chart.js if you want a more dynamic visualization. -->
+  
+</div>
+{% endblock %}
