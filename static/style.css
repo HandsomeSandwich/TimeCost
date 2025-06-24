@@ -9,7 +9,22 @@
   --text-dark: #2F3E46;
   --text-medium: #495057;
   --border-color: #CED4DA;
+  --input-bg: #FFFFFF;
+  --shadow: 0 2px 6px rgba(0,0,0,0.06);
   --font: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+}
+
+body.dark-mode {
+  --bg-color: #1E1E1E;
+  --card-bg: #2C2C2C;
+  --primary: #A3B18A;
+  --accent: #E07A5F;
+  --secondary-accent: #F2CC8F;
+  --text-dark: #F1F1F1;
+  --text-medium: #CCCCCC;
+  --border-color: #555;
+  --input-bg: #333;
+  --shadow: 0 2px 8px rgba(0,0,0,0.35);
 }
 
 body {
@@ -22,17 +37,19 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
-body.dark-mode {
-  --bg-color: #1E1E1E;
-  --card-bg: #2C2C2C;
-  --primary: #A3B18A;
-  --accent: #E07A5F;
-  --secondary-accent: #F2CC8F;
-  --text-dark: #F1F1F1;
-  --text-medium: #CCCCCC;
-  --border-color: #555;
+/* Keep content above fixed footer */
+main.container {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding-bottom: 5rem;
 }
 
+/* === Header / Footer === */
 header, footer {
   background-color: var(--text-dark);
   color: white;
@@ -45,15 +62,13 @@ header h1, footer p {
   font-weight: 400;
 }
 
-main.container {
-  padding: 2rem;
-  max-width: 800px;
-  margin: 0 auto;
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-  padding-bottom: 5rem; /* Space above footer */
+footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  padding: 0.75rem 0;
+  font-size: 0.9rem;
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* === Typography === */
@@ -67,13 +82,8 @@ p, label {
   color: var(--text-medium);
 }
 
-ul {
-  padding-left: 1.2rem;
-}
-
-ul li {
-  margin-bottom: 0.5rem;
-}
+ul { padding-left: 1.2rem; }
+ul li { margin-bottom: 0.5rem; }
 
 /* === Forms === */
 form {
@@ -88,13 +98,8 @@ input, select {
   border-radius: 6px;
   font-size: 1rem;
   font-family: var(--font);
-  background-color: white;
-}
-
-body.dark-mode input,
-body.dark-mode select {
-  background-color: #333;
-  color: white;
+  background-color: var(--input-bg);
+  color: var(--text-dark);
 }
 
 button {
@@ -109,68 +114,17 @@ button {
   transition: background 0.2s ease;
 }
 
-button:hover {
-  background-color: #bc5843;
-}
-
-/* === Dynamic Tables === */
-#expenseTable > div {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  margin-bottom: 1rem;
-}
-
-#expenseTable label {
-  margin-top: 0.4rem;
-}
-
-/* === Progress Bar === */
-progress {
-  width: 100%;
-  height: 1rem;
-  appearance: none;
-}
-
-progress::-webkit-progress-bar {
-  background-color: #E9ECEF;
-  border-radius: 10px;
-}
-
-progress::-webkit-progress-value {
-  background-color: var(--secondary-accent);
-  border-radius: 10px;
-}
-
-progress::-moz-progress-bar {
-  background-color: var(--secondary-accent);
-  border-radius: 10px;
-}
-
-/* === Cards === */
-.card {
-  background-color: white;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-}
-
-body.dark-mode .card {
-  background-color: #2C2C2C;
-  color: white;
-}
+button:hover { background-color: #bc5843; }
 
 /* === Navbar === */
 .navbar {
-  background-color: #2F3E46; /* Charcoal */
+  background-color: #2F3E46;
   display: flex;
   justify-content: center;
   gap: 1.5rem;
   padding: 1rem 0;
   margin-bottom: 2rem;
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: var(--font);
   font-weight: 600;
   font-size: 1rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
@@ -188,12 +142,12 @@ body.dark-mode .card {
 
 .navbar a:hover,
 .navbar a:focus {
-  background-color: #E07A5F; /* Burnt Sienna */
+  background-color: var(--accent);
   color: white;
 }
 
 .navbar a.active {
-  background-color: #A3B18A; /* Avocado */
+  background-color: var(--primary);
   color: #2F3E46;
 }
 
@@ -206,23 +160,37 @@ body.dark-mode .card {
   transition: transform 0.2s ease;
 }
 
-#theme-toggle:hover {
-  transform: scale(1.2);
-}
+#theme-toggle:hover { transform: scale(1.2); }
 
-/* === Footer === */
-footer {
-  position: fixed;
-  bottom: 0;
+/* === Progress Bar === */
+progress {
   width: 100%;
-  background-color: #2F3E46;
-  color: white;
-  text-align: center;
-  padding: 0.75rem 0;
-  font-size: 0.9rem;
-  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.1);
+  height: 1rem;
+  appearance: none;
 }
 
+progress::-webkit-progress-bar {
+  background-color: #E9ECEF;
+  border-radius: 10px;
+}
+
+progress::-webkit-progress-value,
+progress::-moz-progress-bar {
+  background-color: var(--secondary-accent);
+  border-radius: 10px;
+}
+
+/* === Cards === */
+.card {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+/* === Radio Group === */
 .radio-group {
   display: flex;
   gap: 20px;
@@ -236,26 +204,27 @@ footer {
   display: flex;
   align-items: center;
 }
-.radio-group input[type="radio"] {
-  margin-right: 6px;
-}
 
+.radio-group input[type="radio"] { margin-right: 6px; }
+
+/* === Chart Container (single definition) === */
 .chart-container {
   width: 100%;
-  max-width: 400px;
-  height: auto;
+  max-width: 420px;
+  margin: 2rem auto;
   aspect-ratio: 1 / 1;
 }
 
+/* === Savings Form === */
 .savingsForm {
   display: flex;
   gap: 5px;
   align-items: center;
 }
-.savingsForm input {
-  flex: 1;
-}
 
+.savingsForm input { flex: 1; }
+
+/* === Focus states === */
 a:focus,
 button:focus,
 input:focus,
@@ -263,16 +232,3 @@ select:focus {
   outline: 2px dashed var(--accent);
   outline-offset: 2px;
 }
-
-.chart-container {
-  margin: 2rem auto;
-  display: flex;
-  justify-content: center;
-}
-
-body.dark-mode select {
-  background-color: #444;
-  color: white;
-  border-color: #777;
-}
-

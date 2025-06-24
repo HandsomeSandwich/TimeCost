@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Expenses{% endblock %}
+
 {% block head %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .form-container {
       max-width: 800px;
@@ -45,32 +46,30 @@
       cursor: pointer;
       padding: 5px 10px;
     }
-
     .chart-container {
-    position: relative;
-    margin: 40px auto;
-    height: 400px;
-    width: 400px;
-}
+      position: relative;
+      margin: 40px auto;
+      height: 400px;
+      width: 400px;
+    }
   </style>
-
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      let expenseTableBody = document.getElementById("expenseTableBody");
-      let hourlyWageInput = document.getElementById("userHourlyRate");
+      const expenseTableBody = document.getElementById("expenseTableBody");
+      const hourlyWageInput = document.getElementById("userHourlyRate");
 
       function recalcRow(row) {
-        let amountInput = row.querySelector(".expenseAmount");
-        let hourlyCostSpan = row.querySelector(".expenseHourly");
-        let hourlyWage = parseFloat(hourlyWageInput.value) || 0;
-        let amount = parseFloat(amountInput.value) || 0;
-        let hourlyCost = (hourlyWage > 0) ? (amount / hourlyWage) : 0;
+        const amountInput = row.querySelector(".expenseAmount");
+        const hourlyCostSpan = row.querySelector(".expenseHourly");
+        const hourlyWage = parseFloat(hourlyWageInput.value) || 0;
+        const amount = parseFloat(amountInput.value) || 0;
+        const hourlyCost = (hourlyWage > 0) ? (amount / hourlyWage) : 0;
         hourlyCostSpan.textContent = hourlyCost.toFixed(2);
       }
 
       function addRowListeners(row) {
-        let amountInput = row.querySelector(".expenseAmount");
+        const amountInput = row.querySelector(".expenseAmount");
         amountInput.addEventListener("input", function () {
           recalcRow(row);
           recalcTotals();
@@ -80,47 +79,47 @@
       function recalcTotals() {
         let totalAmount = 0;
         let totalHourly = 0;
-        let hourlyWage = parseFloat(hourlyWageInput.value) || 0;
+        const hourlyWage = parseFloat(hourlyWageInput.value) || 0;
+
         document.querySelectorAll("#expenseTableBody tr").forEach(function (row) {
-          let amount = parseFloat(row.querySelector(".expenseAmount").value) || 0;
+          const amount = parseFloat(row.querySelector(".expenseAmount").value) || 0;
           totalAmount += amount;
-          if (hourlyWage > 0) {
-            totalHourly += (amount / hourlyWage);
-          }
+          if (hourlyWage > 0) totalHourly += (amount / hourlyWage);
         });
+
         document.getElementById("totalAmount").textContent = totalAmount.toFixed(2);
         document.getElementById("totalHourly").textContent = totalHourly.toFixed(2);
-        // Update hidden input so the total expense is sent with the form.
         document.getElementById("expensesTotalInput").value = totalAmount.toFixed(2);
       }
 
       function addExpenseRow(name = "", amount = "", category = "Other") {
-          let row = document.createElement("tr");
-          row.innerHTML = `
-            <td><input type="text" name="expense_name[]" value="${name}" required></td>
-            <td><input type="number" step="0.01" name="expense_amount[]" class="expenseAmount" value="${amount}" required></td>
-            <td>
-              <select name="expense_category[]" required>
-                <option value="Rent" ${category === "Rent" ? "selected" : ""}>Rent</option>
-                <option value="Utilities" ${category === "Utilities" ? "selected" : ""}>Utilities</option>
-                <option value="Savings" ${category === "Savings" ? "selected" : ""}>Savings</option>
-                <option value="Discretionary" ${category === "Discretionary" ? "selected" : ""}>Discretionary</option>
-                <option value="Other" ${category === "Other" ? "selected" : ""}>Other</option>
-              </select>
-            </td>
-            <td><span class="expenseHourly">0.00</span></td>
-            <td><button type="button" class="removeRow">Remove</button></td>
-          `;
-          row.querySelector(".removeRow").addEventListener("click", function () {
-            row.remove();
-            recalcTotals();
-          });
-          addRowListeners(row);
-          expenseTableBody.appendChild(row);
-          recalcRow(row);
-          recalcTotals();
-        }
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td><input type="text" name="expense_name[]" value="${name}" required></td>
+          <td><input type="number" step="0.01" name="expense_amount[]" class="expenseAmount" value="${amount}" required></td>
+          <td>
+            <select name="expense_category[]" required>
+              <option value="Rent" ${category === "Rent" ? "selected" : ""}>Rent</option>
+              <option value="Utilities" ${category === "Utilities" ? "selected" : ""}>Utilities</option>
+              <option value="Savings" ${category === "Savings" ? "selected" : ""}>Savings</option>
+              <option value="Discretionary" ${category === "Discretionary" ? "selected" : ""}>Discretionary</option>
+              <option value="Other" ${category === "Other" ? "selected" : ""}>Other</option>
+            </select>
+          </td>
+          <td><span class="expenseHourly">0.00</span></td>
+          <td><button type="button" class="removeRow">Remove</button></td>
+        `;
 
+        row.querySelector(".removeRow").addEventListener("click", function () {
+          row.remove();
+          recalcTotals();
+        });
+
+        addRowListeners(row);
+        expenseTableBody.appendChild(row);
+        recalcRow(row);
+        recalcTotals();
+      }
 
       document.getElementById("addExpenseBtn").addEventListener("click", function () {
         addExpenseRow();
@@ -133,91 +132,103 @@
         recalcTotals();
       });
 
-      // Start with one empty expense row.
-      addExpenseRow();
+      // ✅ Prefill editable rows from saved_expenses if present
+      const existing = [
+        {% for e in saved_expenses %}
+          { name: {{ e.name|tojson }}, amount: {{ e.amount|tojson }}, category: {{ e.category|tojson }} }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ];
+
+      if (existing.length) {
+        existing.forEach(e => addExpenseRow(e.name, e.amount, e.category));
+      } else {
+        addExpenseRow(); // start with one empty row
+      }
     });
   </script>
 {% endblock %}
+
 {% block content %}
 <div class="form-container">
   <h1>Expenses</h1>
   <p>Add, remove, or modify expense items below. The hourly expense is computed by dividing the monetary cost by your hourly rate.</p>
 
-  <!-- The user's hourly rate is either pre-filled from Personal Information or can be entered manually -->
-  <form action="/expenses" method="post">
+  <form action="{{ url_for('expenses') }}" method="post">
     <div>
       <label for="userHourlyRate">Your Hourly Rate ({{ currency }}):</label>
-      <input type="number" step="0.01" id="userHourlyRate" name="user_hourly_rate" value="{{ session.get('hourlyRate', '') }}" required>
+      <input type="number" step="0.01" id="userHourlyRate" name="user_hourly_rate"
+             value="{{ session.get('hourlyRate', '') }}" required>
       <small>This can be auto-filled from Personal Information or manually adjusted.</small>
     </div>
+
     <table>
       <thead>
         <tr>
-            <th>Expense Item</th>
-            <th>Expense ({{ currency }})</th>
-            <th>Category</th>
-            <th>Expense (Hours)</th>
-            <th>Action</th>
+          <th>Expense Item</th>
+          <th>Expense ({{ currency }})</th>
+          <th>Category</th>
+          <th>Expense (Hours)</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody id="expenseTableBody">
-        <!-- Dynamically added expense rows will appear here -->
+        <!-- Rows injected by JS -->
       </tbody>
       <tfoot>
         <tr>
-            <td><strong>Total</strong></td>
-            <td><strong id="totalAmount">0.00</strong></td>
-            <td></td>
-            <td><strong id="totalHourly">0.00</strong></td>
-            <td></td>
+          <td><strong>Total</strong></td>
+          <td><strong id="totalAmount">0.00</strong></td>
+          <td></td>
+          <td><strong id="totalHourly">0.00</strong></td>
+          <td></td>
         </tr>
       </tfoot>
     </table>
-    <!-- Hidden input to send the total expense with the form -->
+
     <input type="hidden" name="expensesTotal" id="expensesTotalInput" value="0.00">
     <button type="button" id="addExpenseBtn">Add Expense</button>
+
     <div>
       <button type="submit">Save Expenses</button>
     </div>
   </form>
 
-  <!-- Display the list of saved expense items (if any) -->
   {% if saved_expenses %}
-  <h2>Saved Expenses</h2>
-  <table>
-    <thead>
-      <tr>
+    <h2>Saved Expenses</h2>
+    <table>
+      <thead>
+        <tr>
           <th>Expense Item</th>
           <th>Amount ({{ currency }})</th>
           <th>Category</th>
           <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for expense in saved_expenses %}
-    <tr>
-      <td>{{ expense.name }}</td>
-      <td>{{ expense.amount }}</td>
-      <td>
-        <form action="{{ url_for('update_expense_category') }}" method="post" style="display:inline;">
-          <input type="hidden" name="expense_id" value="{{ expense.id }}">
-          <select name="new_category" onchange="this.form.submit()">
-            {% for cat in ['Rent', 'Utilities', 'Savings', 'Discretionary', 'Other'] %}
-              <option value="{{ cat }}" {% if expense.category == cat %}selected{% endif %}>{{ cat }}</option>
-            {% endfor %}
-          </select>
-        </form>
-      </td>
-      <td>
-        <form action="{{ url_for('remove_expense', index=expense.id) }}" method="post" style="display:inline;">
-          <button type="submit" class="removeButton">Remove</button>
-        </form>
-      </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-    {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+      {% for expense in saved_expenses %}
+        <tr>
+          <td>{{ expense.name }}</td>
+          <td>{{ expense.amount }}</td>
+          <td>
+            <form action="{{ url_for('update_expense_category') }}" method="post" style="display:inline;">
+              <input type="hidden" name="expense_id" value="{{ expense.id }}">
+              <select name="new_category" onchange="this.form.submit()">
+                {% for cat in ['Rent', 'Utilities', 'Savings', 'Discretionary', 'Other'] %}
+                  <option value="{{ cat }}" {% if expense.category == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+              </select>
+            </form>
+          </td>
+          <td>
+            <form action="{{ url_for('remove_expense', index=expense.id) }}" method="post" style="display:inline;">
+              <button type="submit" class="removeButton">Remove</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
 </div>
 
 {% if category_totals %}
@@ -227,30 +238,21 @@
 <script>
   const ctx = document.getElementById("categoryChart").getContext("2d");
   new Chart(ctx, {
-    type: 'pie',
+    type: "pie",
     data: {
       labels: [{% for row in category_totals %}"{{ row.category }}"{% if not loop.last %},{% endif %}{% endfor %}],
       datasets: [{
         data: [{% for row in category_totals %}{{ row.total }}{% if not loop.last %},{% endif %}{% endfor %}],
-        backgroundColor: ['#ff6384', '#36a2eb', '#ffcd56', '#4bc0c0']
+        backgroundColor: ["#ff6384", "#36a2eb", "#ffcd56", "#4bc0c0"]
       }]
     },
     options: {
       plugins: {
-        title: {
-          display: true,
-          text: "Expenses by Category"
-        },
-        legend: {
-          position: "bottom"
-        }
+        title: { display: true, text: "Expenses by Category" },
+        legend: { position: "bottom" }
       }
     }
   });
 </script>
 {% endif %}
-
-
 {% endblock %}
-
-

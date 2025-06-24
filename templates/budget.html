@@ -4,37 +4,48 @@
 {% block head %}
   {{ super() }}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .hint { font-size: 0.9rem; color: #666; margin-top: 6px; }
+    .progress-container { width: 100%; background-color: #eee; border-radius: 5px; height: 20px; overflow: hidden; }
+    .progress-bar { height: 100%; background-color: #76c7c0; text-align: center; line-height: 20px; color: #fff; font-size: 0.85rem; }
+  </style>
 {% endblock %}
 
 {% block content %}
 <div class="form-container">
   <h1>Budget Calculator</h1>
 
-  <form method="POST">
+  <form method="POST" action="{{ url_for('budget') }}">
     <div>
       <label for="income">Monthly Income ({{ currency }}):</label>
       <input type="number" step="0.01" id="income" name="income" value="{{ income or '' }}" required>
     </div>
+
     <div>
       <label for="expenses">Monthly Expenses ({{ currency }}):</label>
-      <input type="number" step="0.01" id="expenses" name="expenses" value="{{ expenses or '' }}" required>
+      <input type="number" step="0.01" id="expenses" name="expenses" value="{{ expenses or '' }}" readonly>
+      <div class="hint">This total is pulled from your Expenses page.</div>
     </div>
+
     <div>
       <label for="weeklyHours">Weekly Hours:</label>
       <input type="number" step="0.1" id="weeklyHours" name="weeklyHours" value="{{ weekly_hours or '' }}" required>
     </div>
+
     <div>
       <label for="savingsGoal">Long Term Savings Goal ({{ currency }}):</label>
       <input type="number" step="0.01" id="savingsGoal" name="savingsGoal" value="{{ savings_goal or '' }}">
     </div>
+
     <div>
       <label for="currentSavings">Amount Already Saved ({{ currency }}):</label>
       <input type="number" step="0.01" id="currentSavings" name="currentSavings" value="{{ current_savings or '' }}">
     </div>
+
     <button type="submit">Calculate</button>
   </form>
 
-  {% if income and expenses and weekly_hours %}
+  {% if hourly_value is not none %}
     <h2>Budget Results</h2>
     <p><strong>Monthly Discretionary Income:</strong> {{ currency }}{{ discretionary_income|round(2) }}</p>
     <p><strong>Estimated Hourly Value (of discretionary income):</strong> {{ currency }}{{ hourly_value|round(2) }}/hr</p>
@@ -58,30 +69,16 @@
               'rgba(255, 99, 132, 0.6)',
               'rgba(255, 206, 86, 0.6)'
             ],
-            borderColor: [
-              'rgba(75, 192, 192, 1)',
-              'rgba(255, 99, 132, 1)',
-              'rgba(255, 206, 86, 1)'
-            ],
             borderWidth: 1
           }]
         },
         options: {
           responsive: true,
           plugins: {
-            title: {
-              display: true,
-              text: 'Monthly Budget Overview'
-            },
-            legend: {
-              display: false
-            }
+            title: { display: true, text: 'Monthly Budget Overview' },
+            legend: { display: false }
           },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
+          scales: { y: { beginAtZero: true } }
         }
       });
     </script>
@@ -101,7 +98,8 @@
         </thead>
         <tbody>
           {% for goal in goals %}
-            {% set progress = (goal.current / goal.target * 100) if goal.target > 0 else 0 %}
+            {% set raw_progress = (goal.current / goal.target * 100) if goal.target > 0 else 0 %}
+            {% set progress = 100 if raw_progress > 100 else (0 if raw_progress < 0 else raw_progress) %}
             <tr>
               <td>{{ goal.name }}</td>
               <td>{{ goal.target|round(2) }}</td>

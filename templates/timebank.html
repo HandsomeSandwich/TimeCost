@@ -1,50 +1,22 @@
-
-{% set savings_value = savings_value|default(0)|float %}
-
 {% extends "base.html" %}
 {% block title %}Time Bank{% endblock %}
 
 {% block head %}
   <style>
-    .form-container {
-      max-width: 800px;
-      margin: 0 auto;
-      text-align: left;
-    }
-    .form-container form div {
-      margin-bottom: 15px;
-    }
-    .form-container form label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
+    .form-container { max-width: 800px; margin: 0 auto; text-align: left; }
+    .form-container form div { margin-bottom: 15px; }
+    .form-container form label { display: block; font-weight: bold; margin-bottom: 5px; }
     .form-container form input {
-      width: 100%;
-      padding: 10px;
-      font-size: 1rem;
-      box-sizing: border-box;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      width: 100%; padding: 10px; font-size: 1rem; box-sizing: border-box;
+      border: 1px solid #ccc; border-radius: 4px;
     }
     .form-container form button {
-      padding: 10px 20px;
-      font-size: 1rem;
-      border: none;
-      border-radius: 4px;
-      background-color: #333;
-      color: #fff;
-      cursor: pointer;
+      padding: 10px 20px; font-size: 1rem; border: none; border-radius: 4px;
+      background-color: #333; color: #fff; cursor: pointer;
     }
-    .form-container form button:hover {
-      background-color: #555;
-    }
-    .chart-container {
-      position: relative;
-      margin: 40px auto;
-      height: 400px;
-      width: 400px;
-    }
+    .form-container form button:hover { background-color: #555; }
+    .chart-container { position: relative; margin: 40px auto; height: 400px; width: 400px; }
+    .hint { font-size: 0.9rem; color: #666; margin-top: 6px; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
@@ -52,53 +24,49 @@
 {% block content %}
 <div class="form-container">
   <h1>Time Bank</h1>
-  <p>Enter your Monthly Income, Expense Total, and Hours Worked per Month.
-     Values will be pre-filled if available from your Personal Information page.
+  <p>
+    Enter your Monthly Income, Expense Total, and Hours Worked per Month.
+    Values will be pre-filled if available.
   </p>
 
-  <form method="POST">
+  <form method="POST" action="{{ url_for('timebank') }}">
     <div>
       <label for="income">Monthly Income ({{ currency }}):</label>
-      <input type="number" step="0.01" id="income" name="income" value="{{ income }}" required>
+      <input type="number" step="0.01" id="income" name="income" value="{{ income or '' }}" required>
     </div>
+
     <div>
       <label for="expenses">Expenses Total ({{ currency }}):</label>
-      <input type="number" step="0.01" id="expenses" name="expenses" value="{{ expenses }}" required>
+      <input type="number" step="0.01" id="expenses" name="expenses" value="{{ expenses or '' }}" required>
+      <div class="hint">Tip: Use your Expenses page total for consistency.</div>
     </div>
+
     <div>
       <label for="hoursWorked">Hours Worked per Month:</label>
-      <input type="number" step="0.1" id="hoursWorked" name="hoursWorked" value="{{ hoursWorked }}" required>
+      <input type="number" step="0.1" id="hoursWorked" name="hoursWorked" value="{{ hoursWorked or '' }}" required>
     </div>
+
     <button type="submit">Calculate Time Bank</button>
   </form>
 
-  {% if income and expenses and hoursWorked %}
-  {% set income_value = income|float %}
-  {% set expenses_value = expenses|float %}
-  {% set hours_value = hoursWorked|float %}
-  {% set savings_value = 0 %}
-  {% for row in category_totals %}
-    {% if row.category == 'Savings' %}
-      {% set savings_value = row.total %}
-    {% endif %}
-  {% endfor %}
+  {% set income_value = (income|default(0))|float %}
+  {% set expenses_value = (expenses|default(0))|float %}
+  {% set hours_value = (hoursWorked|default(0))|float %}
+  {% set savings_value_num = (savings_value|default(0))|float %}
 
   {% if income_value > 0 and hours_value > 0 %}
     {% set hourly_wage = income_value / hours_value %}
-    {% set savings_hours = savings_value / hourly_wage %}
-    {% set expense_hours = (expenses_value - savings_value) / hourly_wage %}
+    {% set savings_hours = (savings_value_num / hourly_wage) if hourly_wage > 0 else 0 %}
+    {% set expense_hours = ((expenses_value - savings_value_num) / hourly_wage) if hourly_wage > 0 else 0 %}
     {% set discretionary_hours = hours_value - expense_hours - savings_hours %}
-  {% else %}
-    {% set hourly_wage = 0 %}
-    {% set savings_hours = 0 %}
-    {% set expense_hours = 0 %}
-    {% set discretionary_hours = 0 %}
-  {% endif %}
 
+    {# Guard against negatives if savings > expenses, etc. #}
+    {% if expense_hours < 0 %}{% set expense_hours = 0 %}{% endif %}
+    {% if discretionary_hours < 0 %}{% set discretionary_hours = 0 %}{% endif %}
 
     <h2>Results</h2>
     <p><strong>Hourly Wage:</strong> {{ hourly_wage|round(2) }} {{ currency }}/hr</p>
-    <p><strong>Savings ({{ currency }}):</strong> {{ savings_value|round(2) }}</p>
+    <p><strong>Savings ({{ currency }}):</strong> {{ savings_value_num|round(2) }}</p>
     <p><strong>Savings Hours:</strong> {{ savings_hours|round(2) }} hours</p>
     <p><strong>Expense Hours Required:</strong> {{ expense_hours|round(2) }} hours</p>
     <p><strong>Discretionary Hours Left:</strong> {{ discretionary_hours|round(2) }} hours</p>
@@ -106,6 +74,7 @@
     <div class="chart-container">
       <canvas id="timeBankChart"></canvas>
     </div>
+
     <script>
       const ctx = document.getElementById('timeBankChart').getContext('2d');
       new Chart(ctx, {
@@ -113,17 +82,11 @@
         data: {
           labels: ['Expenses', 'Savings', 'Discretionary'],
           datasets: [{
-            data: [{{ expense_hours|round(2) }}, {{ savings_hours|round(2) }}, {{ discretionary_hours|round(2) }}],
+            data: {{ [expense_hours|round(2), savings_hours|round(2), discretionary_hours|round(2)] | tojson }},
             backgroundColor: [
-                'rgba(255, 99, 132, 0.7)',    // Expense Hours
-                'rgba(255, 206, 86, 0.7)',    // Savings
-                'rgba(75, 192, 192, 0.7)'     // Discretionary Hours
-            ],
-
-            borderColor: [
-                'rgba(255, 99, 132, 1)',
-                'rgba(255, 206, 86, 1)',
-                'rgba(54, 162, 235, 1)'
+              'rgba(255, 99, 132, 0.7)',
+              'rgba(255, 206, 86, 0.7)',
+              'rgba(75, 192, 192, 0.7)'
             ],
             borderWidth: 1
           }]
@@ -135,7 +98,7 @@
             legend: { position: 'bottom' },
             title: {
               display: true,
-              text: 'Time Bank Breakdown (Total Hours: {{ hours_value }} hrs)'
+              text: 'Time Bank Breakdown (Total Hours: {{ hours_value|round(2) }} hrs)'
             }
           }
         }
