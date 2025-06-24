@@ -127,7 +127,7 @@
   <!-- The user's hourly rate is either pre-filled from Personal Information or can be entered manually -->
   <form action="/expenses" method="post">
     <div>
-      <label for="userHourlyRate">Your Hourly Rate ($):</label>
+      <label for="userHourlyRate">Your Hourly Rate ({{ currency }}):</label>
       <input type="number" step="0.01" id="userHourlyRate" name="user_hourly_rate" value="{{ session.get('hourlyRate', '') }}" required>
       <small>This can be auto-filled from Personal Information or manually adjusted.</small>
     </div>
@@ -135,7 +135,7 @@
       <thead>
         <tr>
           <th>Expense Item</th>
-          <th>Expense ($)</th>
+          <th>Expense ({{ currency }})</th>
           <th>Expense (Hours)</th>
           <th>Action</th>
         </tr>
@@ -161,32 +161,30 @@
   </form>
 
   <!-- Display the list of saved expense items (if any) -->
-  {% set saved_expenses = session.get("expenses", {}) %}
-  {% if saved_expenses and saved_expenses.expense_items %}
-    <h2>Saved Expenses</h2>
-    <table>
-      <thead>
+  {% if saved_expenses %}
+  <h2>Saved Expenses</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Expense Item</th>
+        <th>Expense (Currency)</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for expense in saved_expenses %}
         <tr>
-          <th>Expense Item</th>
-          <th>Expense ($)</th>
-          <th>Action</th>
+          <td>{{ expense.name }}</td>
+          <td>{{ expense.amount }}</td>
+          <td>
+            <form action="{{ url_for('remove_expense', index=expense.id) }}" method="post" style="display:inline;">
+              <button type="submit" class="removeButton">Remove</button>
+            </form>
+          </td>
         </tr>
-      </thead>
-      <tbody>
-        {% for expense in saved_expenses.expense_items %}
-          <tr>
-            <td>{{ expense[0] }}</td>
-            <td>{{ expense[1] }}</td>
-            <td>
-              <!-- Remove button: triggers a POST request to the remove_expense endpoint -->
-              <form action="{{ url_for('remove_expense', index=loop.index0) }}" method="post" style="display:inline;">
-                <button type="submit" class="removeButton">Remove</button>
-              </form>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+    {% endif %}
 </div>
 {% endblock %}

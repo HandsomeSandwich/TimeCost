@@ -211,7 +211,6 @@ body.dark-mode .card {
   transform: scale(1.2);
 }
 
-
 /* === Footer === */
 footer {
   position: fixed;
@@ -224,3 +223,37 @@ footer {
   font-size: 0.9rem;
   box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.1);
 }
+
+.radio-group {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.radio-group label {
+  font-weight: normal;
+  display: flex;
+  align-items: center;
+}
+.radio-group input[type="radio"] {
+  margin-right: 6px;
+}
+
+.chart-container {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+
+.savingsForm {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.savingsForm input {
+  flex: 1;
+}
+

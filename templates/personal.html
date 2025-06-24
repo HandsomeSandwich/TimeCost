@@ -1,44 +1,122 @@
 {% extends "base.html" %}
 {% block title %}Personal Information{% endblock %}
+
 {% block head %}
   <style>
-    /* Your styling as before */
-    .form-container { max-width: 800px; margin: 0 auto; text-align: left; }
-    .form-container form div { margin-bottom: 15px; }
-    .form-container form label { display: block; font-weight: bold; margin-bottom: 5px; }
+    .form-container {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: left;
+    }
+
+    .form-container form div {
+      margin-bottom: 15px;
+    }
+
+    .form-container form label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
     .form-container form input,
-    .form-container form select { width: 100%; padding: 10px; font-size: 1rem;
-      box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-    .form-container form button { padding: 10px 20px; font-size: 1rem; border: none;
-      border-radius: 4px; background-color: #333; color: #fff; cursor: pointer; }
-    .form-container form button:hover { background-color: #555; }
+    .form-container form select {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .form-container form button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 4px;
+      background-color: #333;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .form-container form button:hover {
+      background-color: #555;
+    }
+
+    .radio-group label {
+      margin-right: 15px;
+      font-weight: normal;
+    }
+
+    .hint {
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 5px;
+    }
   </style>
 {% endblock %}
+
 {% block content %}
-<div class="form-container">
-  <h1>Personal Information</h1>
-  <p>Fill in your personal details. These will be used to pre-populate other pages.</p>
-  <form action="/personal" method="post">
-    <div>
-      <label for="username">Name:</label>
-      <input type="text" id="username" name="username" value="{{ username }}" required>
+    <div class="form-container">
+      <h1>Personal Information</h1>
+      <p>Fill in your personal details. These will be used to pre-populate other pages.</p>
+
+      <form action="/personal" method="post">
+        <div>
+          <label for="username">Name:</label>
+          <input type="text" id="username" name="username" value="{{ username }}" required>
+        </div>
+
+      <div>
+      <label for="currency">Preferred Currency:</label>
+      <select id="currency" name="currency">
+        <option value="$" {% if currency == "$" %}selected{% endif %}>USD ($)</option>
+        <option value="£" {% if currency == "£" %}selected{% endif %}>GBP (£)</option>
+        <option value="€" {% if currency == "€" %}selected{% endif %}>EUR (€)</option>
+        <option value="¥" {% if currency == "¥" %}selected{% endif %}>JPY (¥)</option>
+        <option value="₹" {% if currency == "₹" %}selected{% endif %}>INR (₹)</option>
+        <option value="₩" {% if currency == "₩" %}selected{% endif %}>KRW (₩)</option>
+        <option value="₽" {% if currency == "₽" %}selected{% endif %}>RUB (₽)</option>
+      </select>
     </div>
+
+
     <div>
-      <label for="annualRate">Annual Rate ($):</label>
-      <input type="number" step="0.01" id="annualRate" name="annualRate" value="{{ annualRate }}" placeholder="Annual Salary">
+      <label>Pay Frequency:</label>
+      <div class="radio-group">
+        <label><input type="radio" name="payFrequency" value="weekly" {% if payFrequency == "weekly" %}checked{% endif %}> Weekly</label>
+        <label><input type="radio" name="payFrequency" value="biweekly" {% if payFrequency == "biweekly" %}checked{% endif %}> Biweekly</label>
+        <label><input type="radio" name="payFrequency" value="monthly" {% if payFrequency == "monthly" %}checked{% endif %}> Monthly</label>
+      </div>
+      <p class="hint">This is your take-home pay schedule.</p>
     </div>
+
     <div>
-      <label for="hourlyRate">Hourly Rate ($):</label>
-      <input type="number" step="0.01" id="hourlyRate" name="hourlyRate" value="{{ hourlyRate }}" placeholder="Hourly Rate">
+      <label for="paycheckAmount">Take-home Paycheck Amount:</label>
+      <input type="number" step="0.01" id="paycheckAmount" name="paycheckAmount" value="{{ paycheckAmount or '' }}" placeholder="e.g. 1500">
+      <p class="hint">Used to estimate annual salary and hourly rate.</p>
     </div>
+
+    <div>
+      <label for="annualRate">Annual Salary (Optional):</label>
+      <input type="number" step="0.01" id="annualRate" name="annualRate" value="{{ annualRate }}">
+    </div>
+
+    <div>
+      <label for="hourlyRate">Hourly Rate (Optional):</label>
+      <input type="number" step="0.01" id="hourlyRate" name="hourlyRate" value="{{ hourlyRate }}">
+    </div>
+
     <div>
       <label for="workHours">Work Hours per Week:</label>
       <input type="number" step="0.1" id="workHours" name="workHours" value="{{ workHours or 40 }}" required>
     </div>
+
     <div>
-      <label for="monthlyExpenses">Monthly Expenses ($):</label>
+      <label for="monthlyExpenses">Monthly Expenses:</label>
       <input type="number" step="0.01" id="monthlyExpenses" name="monthlyExpenses" value="{{ expenses }}" placeholder="Total Monthly Expenses">
     </div>
+
     <button type="submit">Save Information</button>
   </form>
 </div>

@@ -1,75 +1,104 @@
 {% extends "base.html" %}
 
 {% block title %}TimeCost Calculator{% endblock %}
+
 {% block head %}
-  <style>
-    .form-container {
-      max-width: 800px;
-      margin: 0 auto;
-      text-align: left;
-    }
-    .form-container form div {
-      margin-bottom: 15px;
-    }
-    .form-container form label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-    .form-container form input,
-    .form-container form select {
-      width: 100%;
-      padding: 10px;
-      font-size: 1rem;
-      box-sizing: border-box;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    .form-container form button {
-      padding: 10px 20px;
-      font-size: 1rem;
-      border: none;
-      border-radius: 4px;
-      background-color: #333;
-      color: #fff;
-      cursor: pointer;
-    }
-    .form-container form button:hover {
-      background-color: #555;
-    }
-  </style>
+<style>
+  .form-container {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: left;
+  }
+
+  .form-container form div {
+    margin-bottom: 15px;
+  }
+
+  .form-container form label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+
+  .form-container form input,
+  .form-container form select {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  .form-container form button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 4px;
+    background-color: #333;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .form-container form button:hover {
+    background-color: #555;
+  }
+
+  .radio-group label {
+    margin-right: 15px;
+    font-weight: normal;
+  }
+</style>
 {% endblock %}
+
 {% block content %}
 <div class="form-container">
   <h1>TimeCost Calculator</h1>
   <p>Enter your item’s details to see how much work time it costs.</p>
+
   <form action="/" method="post">
-      <div>
-          <label for="itemName">Item Name:</label>
-          <input type="text" id="itemName" name="itemName" required>
-      </div>
-      <div>
-          <label for="itemCost">Item Cost ($):</label>
-          <input type="number" step="0.01" id="itemCost" name="itemCost" required>
-      </div>
-      <div>
-          <label for="wageType">Salary Type:</label>
-          <select id="wageType" name="wageType">
-              <option value="hourly" {% if pre_wage_type == "hourly" %}selected{% endif %}>Hourly Wage</option>
-              <option value="annual" {% if pre_wage_type == "annual" %}selected{% endif %}>Annual Salary</option>
-          </select>
-      </div>
-      <div>
-          <label for="wageAmount">Your Wage Amount ($):</label>
-          <input type="number" step="0.01" id="wageAmount" name="wageAmount" value="{{ pre_wage_amount }}" required>
-      </div>
-      <button type="submit">Calculate Time Cost</button>
+
+    <div>
+      <label for="itemName">Item Name:</label>
+      <input type="text" id="itemName" name="itemName" required>
+    </div>
+
+    <div>
+      <label for="itemCost">Item Cost:</label>
+      <input type="number" step="0.01" id="itemCost" name="itemCost" required>
+    </div>
+
+    <div>
+      <label for="currency">Currency Symbol:</label>
+      <select id="currency" name="currency">
+        <option value="$" {% if currency == "$" %}selected{% endif %}>$ (USD)</option>
+        <option value="£" {% if currency == "£" %}selected{% endif %}>£ (GBP)</option>
+        <option value="€" {% if currency == "€" %}selected{% endif %}>€ (EUR)</option>
+        <option value="¥" {% if currency == "¥" %}selected{% endif %}>¥ (JPY)</option>
+        <option value="₹" {% if currency == "₹" %}selected{% endif %}>₹ (INR)</option>
+      </select>
+    </div>
+
+    <div class="radio-group">
+      <label>Salary Type:</label><br>
+      <label><input type="radio" name="wageType" value="hourly" {% if pre_wage_type == "hourly" %}checked{% endif %}> Hourly</label>
+      <label><input type="radio" name="wageType" value="monthly" {% if pre_wage_type == "monthly" %}checked{% endif %}> Monthly</label>
+      <label><input type="radio" name="wageType" value="annual" {% if pre_wage_type == "annual" %}checked{% endif %}> Annual</label>
+    </div>
+
+    <div>
+      <label for="wageAmount">Your Wage Amount:</label>
+      <input type="number" step="0.01" id="wageAmount" name="wageAmount" value="{{ pre_wage_amount }}" required>
+    </div>
+
+    <button type="submit">Calculate Time Cost</button>
   </form>
+
   {% if result is defined %}
     <h2>Result for "{{ item_name }}"</h2>
     {% if result == "Invalid input" %}
       <p>Invalid input. Please check your values.</p>
-    {% else %}
+    {% elif result is not none %}
       <p>This item costs approximately <strong>{{ result|round(2) }}</strong> hours of work.</p>
     {% endif %}
   {% endif %}
