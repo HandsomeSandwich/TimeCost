@@ -22,7 +22,7 @@ def calculator():
         currency = request.form.get("currency", "$")
         session["currency"] = currency  # Save currency for reuse
 
-        item_name = request.form.get("itemName")
+        item_name = request.form.get("itemName", "")  # already optional
         item_cost = request.form.get("itemCost")
         wage_type = request.form.get("wageType") or pre_wage_type
         wage_amount = request.form.get("wageAmount") or pre_wage_amount
