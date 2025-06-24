@@ -84,24 +84,33 @@
         document.getElementById("expensesTotalInput").value = totalAmount.toFixed(2);
       }
 
-      function addExpenseRow(name = "", amount = "") {
-        let row = document.createElement("tr");
-        row.innerHTML = `
-          <td><input type="text" name="expense_name[]" value="${name}" required></td>
-          <td><input type="number" step="0.01" name="expense_amount[]" class="expenseAmount" value="${amount}" required></td>
-          <td><span class="expenseHourly">0.00</span></td>
-          <td><button type="button" class="removeRow">Remove</button></td>
-        `;
-        row.querySelector(".removeRow").addEventListener("click", function () {
-          // This remove only deletes the current row from the form.
-          row.remove();
+      function addExpenseRow(name = "", amount = "", category = "Other") {
+          let row = document.createElement("tr");
+          row.innerHTML = `
+            <td><input type="text" name="expense_name[]" value="${name}" required></td>
+            <td><input type="number" step="0.01" name="expense_amount[]" class="expenseAmount" value="${amount}" required></td>
+            <td>
+              <select name="expense_category[]" required>
+                <option value="Rent" ${category === "Rent" ? "selected" : ""}>Rent</option>
+                <option value="Utilities" ${category === "Utilities" ? "selected" : ""}>Utilities</option>
+                <option value="Savings" ${category === "Savings" ? "selected" : ""}>Savings</option>
+                <option value="Discretionary" ${category === "Discretionary" ? "selected" : ""}>Discretionary</option>
+                <option value="Other" ${category === "Other" ? "selected" : ""}>Other</option>
+              </select>
+            </td>
+            <td><span class="expenseHourly">0.00</span></td>
+            <td><button type="button" class="removeRow">Remove</button></td>
+          `;
+          row.querySelector(".removeRow").addEventListener("click", function () {
+            row.remove();
+            recalcTotals();
+          });
+          addRowListeners(row);
+          expenseTableBody.appendChild(row);
+          recalcRow(row);
           recalcTotals();
-        });
-        addRowListeners(row);
-        expenseTableBody.appendChild(row);
-        recalcRow(row);
-        recalcTotals();
-      }
+        }
+
 
       document.getElementById("addExpenseBtn").addEventListener("click", function () {
         addExpenseRow();
@@ -134,10 +143,11 @@
     <table>
       <thead>
         <tr>
-          <th>Expense Item</th>
-          <th>Expense ({{ currency }})</th>
-          <th>Expense (Hours)</th>
-          <th>Action</th>
+            <th>Expense Item</th>
+            <th>Expense ({{ currency }})</th>
+            <th>Category</th>
+            <th>Expense (Hours)</th>
+            <th>Action</th>
         </tr>
       </thead>
       <tbody id="expenseTableBody">
@@ -145,10 +155,11 @@
       </tbody>
       <tfoot>
         <tr>
-          <td><strong>Total</strong></td>
-          <td><strong id="totalAmount">0.00</strong></td>
-          <td><strong id="totalHourly">0.00</strong></td>
-          <td></td>
+            <td><strong>Total</strong></td>
+            <td><strong id="totalAmount">0.00</strong></td>
+            <td></td>
+            <td><strong id="totalHourly">0.00</strong></td>
+            <td></td>
         </tr>
       </tfoot>
     </table>
@@ -166,25 +177,70 @@
   <table>
     <thead>
       <tr>
-        <th>Expense Item</th>
-        <th>Expense (Currency)</th>
-        <th>Action</th>
+          <th>Expense Item</th>
+          <th>Amount ({{ currency }})</th>
+          <th>Category</th>
+          <th>Action</th>
       </tr>
     </thead>
     <tbody>
-      {% for expense in saved_expenses %}
-        <tr>
-          <td>{{ expense.name }}</td>
-          <td>{{ expense.amount }}</td>
-          <td>
-            <form action="{{ url_for('remove_expense', index=expense.id) }}" method="post" style="display:inline;">
-              <button type="submit" class="removeButton">Remove</button>
-            </form>
-          </td>
-        </tr>
-      {% endfor %}
+    {% for expense in saved_expenses %}
+    <tr>
+      <td>{{ expense.name }}</td>
+      <td>{{ expense.amount }}</td>
+      <td>
+        <form action="{{ url_for('update_expense_category') }}" method="post" style="display:inline;">
+          <input type="hidden" name="expense_id" value="{{ expense.id }}">
+          <select name="new_category" onchange="this.form.submit()">
+            {% for cat in ['Rent', 'Utilities', 'Savings', 'Discretionary', 'Other'] %}
+              <option value="{{ cat }}" {% if expense.category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </td>
+      <td>
+        <form action="{{ url_for('remove_expense', index=expense.id) }}" method="post" style="display:inline;">
+          <button type="submit" class="removeButton">Remove</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
     </tbody>
   </table>
     {% endif %}
 </div>
+
+{% if category_totals %}
+<div class="chart-container">
+  <canvas id="categoryChart"></canvas>
+</div>
+<script>
+  const ctx = document.getElementById("categoryChart").getContext("2d");
+  new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: [{% for row in category_totals %}"{{ row.category }}"{% if not loop.last %},{% endif %}{% endfor %}],
+      datasets: [{
+        data: [{% for row in category_totals %}{{ row.total }}{% if not loop.last %},{% endif %}{% endfor %}],
+        backgroundColor: ['#ff6384', '#36a2eb', '#ffcd56', '#4bc0c0']
+      }]
+    },
+    options: {
+      plugins: {
+        title: {
+          display: true,
+          text: "Expenses by Category"
+        },
+        legend: {
+          position: "bottom"
+        }
+      }
+    }
+  });
+</script>
+{% endif %}
+
+
 {% endblock %}
+
+

@@ -158,6 +158,22 @@ def expenses():
 
 
 
+@app.route("/update_expense_category", methods=["POST"])
+def update_expense_category():
+    expense_id = request.form.get("expense_id")
+    new_category = request.form.get("new_category")
+
+    try:
+        conn = get_db_connection()
+        conn.execute("UPDATE expenses SET category = ? WHERE id = ?", (new_category, expense_id))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("Error updating category:", e)
+
+    return redirect(url_for("expenses"))
+
+
 @app.route("/remove_expense/<int:index>", methods=["POST"])
 def remove_expense(index):
     conn = get_db_connection()

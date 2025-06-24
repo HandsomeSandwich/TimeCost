@@ -24,7 +24,8 @@ def init_db():
         CREATE TABLE IF NOT EXISTS expenses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            amount REAL NOT NULL
+            amount REAL NOT NULL,
+            category TEXT NOT NULL
         )
     ''')
 
