@@ -98,32 +98,43 @@ def timebank():
         except ValueError:
             income = expenses = hoursWorked = 0
 
+        # Query savings value from category
+        conn = get_db_connection()
+        savings_row = conn.execute("SELECT SUM(amount) as total FROM expenses WHERE category = 'Savings'").fetchone()
+        conn.close()
+        savings_value = savings_row["total"] or 0
+
         return render_template("timebank.html",
                                income=income,
                                expenses=expenses,
                                hoursWorked=hoursWorked,
+                               savings_value=savings_value,
                                currency=currency)
 
     # GET: load from session defaults
-    income = 0
-    if "annualRate" in session and session["annualRate"]:
-        try:
-            income = float(session["annualRate"]) / 12
-        except ValueError:
-            income = 0
+    try:
+        income = float(session.get("annualRate", 0)) / 12
+    except (ValueError, TypeError):
+        income = 0
 
-    # Expenses from DB
+    # Get all expenses and savings
     conn = get_db_connection()
-    rows = conn.execute("SELECT amount FROM expenses").fetchall()
+    all_rows = conn.execute("SELECT amount, category FROM expenses").fetchall()
     conn.close()
-    expenses = sum(row["amount"] for row in rows)
 
-    hoursWorked = float(session.get("workHours", 0))
+    expenses = sum(row["amount"] for row in all_rows)
+    savings_value = sum(row["amount"] for row in all_rows if row["category"] == "Savings")
+
+    try:
+        hoursWorked = float(session.get("workHours", 0))
+    except (ValueError, TypeError):
+        hoursWorked = 0
 
     return render_template("timebank.html",
                            income=income,
                            expenses=expenses,
                            hoursWorked=hoursWorked,
+                           savings_value=savings_value,
                            currency=currency)
 
 
@@ -132,30 +143,44 @@ def expenses():
     conn = get_db_connection()
 
     if request.method == "POST":
+        # Collect form data
         expense_names = request.form.getlist("expense_name[]")
         expense_amounts = request.form.getlist("expense_amount[]")
+        expense_categories = request.form.getlist("expense_category[]")
 
-        # Clear all existing expenses first (or adjust logic if you prefer appending)
+        # Clear old expenses (or modify logic to append if desired)
         conn.execute("DELETE FROM expenses")
 
-        for name, amount in zip(expense_names, expense_amounts):
+        for name, amount, category in zip(expense_names, expense_amounts, expense_categories):
             try:
                 amount = float(amount)
-                if name.strip():
-                    conn.execute("INSERT INTO expenses (name, amount) VALUES (?, ?)", (name.strip(), amount))
+                if name.strip() and category:
+                    conn.execute("INSERT INTO expenses (name, amount, category) VALUES (?, ?, ?)",
+                                 (name.strip(), amount, category))
             except ValueError:
-                continue  # Skip invalid rows
+                continue
 
         conn.commit()
         conn.close()
-        return redirect(url_for("personal"))
+        return redirect(url_for("expenses"))
 
-    # GET: retrieve expenses from DB
-    expenses_data = conn.execute("SELECT * FROM expenses").fetchall()
+    # GET: retrieve saved expenses
+    saved_expenses = conn.execute("SELECT * FROM expenses").fetchall()
+
+    # Calculate totals grouped by category
+    category_totals = conn.execute("""
+        SELECT category, SUM(amount) AS total
+        FROM expenses
+        GROUP BY category
+    """).fetchall()
+
     conn.close()
 
-    return render_template("expenses.html", saved_expenses=expenses_data)
-
+    currency = session.get("currency", "$")
+    return render_template("expenses.html",
+                           saved_expenses=saved_expenses,
+                           category_totals=category_totals,
+                           currency=currency)
 
 
 @app.route("/update_expense_category", methods=["POST"])
@@ -187,7 +212,7 @@ def remove_expense(index):
 def budget():
     currency = session.get("currency", "$")
 
-    # Get total expenses from database
+    # Step 1: Fetch total expenses from database
     conn = get_db_connection()
     expenses_rows = conn.execute("SELECT amount FROM expenses").fetchall()
     expenses = sum(row["amount"] for row in expenses_rows)
@@ -195,12 +220,19 @@ def budget():
 
     if request.method == "POST":
         try:
-            income = float(request.form.get("income", 0)) or float(session.get("annualRate", 0)) / 12
-            weekly_hours = float(request.form.get("weeklyHours", 0)) or float(session.get("workHours", 0))
+            # Step 2: Get form inputs with fallback to session
+            income_input = request.form.get("income")
+            income = float(income_input) if income_input else float(session.get("annualRate", 0)) / 12
+
+            hours_input = request.form.get("weeklyHours")
+            weekly_hours = float(hours_input) if hours_input else float(session.get("workHours", 0))
             monthly_hours = weekly_hours * 4.33 if weekly_hours else 1
+
+            # Step 3: Calculations
             discretionary_income = income - expenses
             hourly_value = discretionary_income / monthly_hours if monthly_hours else 0
 
+            # Step 4: Savings goals input
             savings_goal = float(request.form.get("savingsGoal", 0))
             current_savings = float(request.form.get("currentSavings", 0))
             remaining_to_save = savings_goal - current_savings if savings_goal > 0 else 0
@@ -211,6 +243,7 @@ def budget():
             income = weekly_hours = monthly_hours = discretionary_income = hourly_value = 0
             savings_goal = current_savings = remaining_to_save = progress_percent = 0
 
+        # Step 5: Retrieve goals from DB
         conn = get_db_connection()
         goals = conn.execute("SELECT * FROM goals").fetchall()
         conn.close()
@@ -219,6 +252,7 @@ def budget():
                                income=income,
                                expenses=expenses,
                                weekly_hours=weekly_hours,
+                               monthly_hours=monthly_hours,
                                discretionary_income=discretionary_income,
                                hourly_value=hourly_value,
                                savings_goal=savings_goal,
@@ -228,7 +262,7 @@ def budget():
                                goals=goals,
                                currency=currency)
 
-    # GET request
+    # GET request: prepopulate from session
     try:
         income = float(session.get("annualRate", 0)) / 12
         weekly_hours = float(session.get("workHours", 0))
@@ -236,11 +270,11 @@ def budget():
         discretionary_income = income - expenses
         hourly_value = discretionary_income / monthly_hours if monthly_hours else 0
     except ValueError:
-        income = weekly_hours = discretionary_income = hourly_value = 0
+        income = weekly_hours = monthly_hours = discretionary_income = hourly_value = 0
 
     savings_goal = current_savings = remaining_to_save = progress_percent = 0
 
-    # FIX: Re-open DB connection here
+    # Get goals again
     conn = get_db_connection()
     goals = conn.execute("SELECT * FROM goals").fetchall()
     conn.close()
@@ -249,6 +283,7 @@ def budget():
                            income=income,
                            expenses=expenses,
                            weekly_hours=weekly_hours,
+                           monthly_hours=monthly_hours,
                            discretionary_income=discretionary_income,
                            hourly_value=hourly_value,
                            savings_goal=savings_goal,

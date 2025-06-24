@@ -1,3 +1,6 @@
+
+{% set savings_value = savings_value|default(0)|float %}
+
 {% extends "base.html" %}
 {% block title %}Time Bank{% endblock %}
 
@@ -70,21 +73,33 @@
   </form>
 
   {% if income and expenses and hoursWorked %}
-    {% set income_value = income|float %}
-    {% set expenses_value = expenses|float %}
-    {% set hours_value = hoursWorked|float %}
-    {% if income_value > 0 and hours_value > 0 %}
-      {% set hourly_wage = income_value / hours_value %}
-      {% set expense_hours = expenses_value / hourly_wage %}
-      {% set discretionary_hours = hours_value - expense_hours %}
-    {% else %}
-      {% set hourly_wage = 0 %}
-      {% set expense_hours = 0 %}
-      {% set discretionary_hours = 0 %}
+  {% set income_value = income|float %}
+  {% set expenses_value = expenses|float %}
+  {% set hours_value = hoursWorked|float %}
+  {% set savings_value = 0 %}
+  {% for row in category_totals %}
+    {% if row.category == 'Savings' %}
+      {% set savings_value = row.total %}
     {% endif %}
+  {% endfor %}
+
+  {% if income_value > 0 and hours_value > 0 %}
+    {% set hourly_wage = income_value / hours_value %}
+    {% set savings_hours = savings_value / hourly_wage %}
+    {% set expense_hours = (expenses_value - savings_value) / hourly_wage %}
+    {% set discretionary_hours = hours_value - expense_hours - savings_hours %}
+  {% else %}
+    {% set hourly_wage = 0 %}
+    {% set savings_hours = 0 %}
+    {% set expense_hours = 0 %}
+    {% set discretionary_hours = 0 %}
+  {% endif %}
+
 
     <h2>Results</h2>
     <p><strong>Hourly Wage:</strong> {{ hourly_wage|round(2) }} {{ currency }}/hr</p>
+    <p><strong>Savings ({{ currency }}):</strong> {{ savings_value|round(2) }}</p>
+    <p><strong>Savings Hours:</strong> {{ savings_hours|round(2) }} hours</p>
     <p><strong>Expense Hours Required:</strong> {{ expense_hours|round(2) }} hours</p>
     <p><strong>Discretionary Hours Left:</strong> {{ discretionary_hours|round(2) }} hours</p>
 
@@ -96,16 +111,19 @@
       new Chart(ctx, {
         type: 'pie',
         data: {
-          labels: ['Expense Hours', 'Discretionary Hours'],
+          labels: ['Expenses', 'Savings', 'Discretionary'],
           datasets: [{
-            data: [{{ expense_hours }}, {{ discretionary_hours }}],
+            data: [{{ expense_hours|round(2) }}, {{ savings_hours|round(2) }}, {{ discretionary_hours|round(2) }}],
             backgroundColor: [
-              'rgba(255, 99, 132, 0.7)',    // Expense Hours
-              'rgba(54, 162, 235, 0.7)'     // Discretionary Hours
+                'rgba(255, 99, 132, 0.7)',    // Expense Hours
+                'rgba(255, 206, 86, 0.7)',    // Savings
+                'rgba(75, 192, 192, 0.7)'     // Discretionary Hours
             ],
+
             borderColor: [
-              'rgba(255, 99, 132, 1)',
-              'rgba(54, 162, 235, 1)'
+                'rgba(255, 99, 132, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(54, 162, 235, 1)'
             ],
             borderWidth: 1
           }]
