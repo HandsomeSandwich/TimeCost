@@ -338,6 +338,13 @@ def delete_goal(goal_id):
     conn.close()
     return redirect(url_for("goals"))
 
+@app.route("/set_currency", methods=["POST"])
+def set_currency():
+    selected = request.form.get("currency", "$")
+    session["currency"] = selected
+    return redirect(request.referrer or url_for("personal"))
+
+
 @app.route("/staples", methods=["GET"])
 def staples():
     return render_template("staples.html")

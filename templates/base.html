@@ -17,8 +17,8 @@
 </head>
 <body>
 
-  <!-- Navigation Bar -->
- <nav class="navbar">
+<!-- Navigation Bar -->
+<nav class="navbar">
   <a href="/" class="{% if request.path == '/' %}active{% endif %}">Calculator</a>
   <a href="/timebank" class="{% if request.path.startswith('/timebank') %}active{% endif %}">Time Bank</a>
   <a href="/budget" class="{% if request.path.startswith('/budget') %}active{% endif %}">Budget</a>
@@ -27,27 +27,36 @@
   <a href="/expenses" class="{% if request.path.startswith('/expenses') %}active{% endif %}">Expenses</a>
   <a href="/goals" class="{% if request.path.startswith('/goals') %}active{% endif %}">Goals</a>
 
- <button id="theme-toggle" aria-label="Toggle Dark Mode" style="margin-left: auto;">🌙</button>
+  <!-- Currency Selector -->
+  <form action="{{ url_for('set_currency') }}" method="post" style="margin-left: auto;">
+    <select name="currency" onchange="this.form.submit()" class="currency-selector">
+      {% for symbol in ['$', '€', '£', '¥', '₹', '₿', '₩', '₽'] %}
+        <option value="{{ symbol }}" {% if session.get('currency', '$') == symbol %}selected{% endif %}>{{ symbol }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <!-- Theme Toggle -->
+  <button id="theme-toggle" aria-label="Toggle Dark Mode">🌙</button>
 </nav>
 
+<!-- Page Content -->
+<main class="container">
+  {% block content %}{% endblock %}
+</main>
 
-  <!-- Page Content -->
-  <main class="container">
-    {% block content %}{% endblock %}
-  </main>
+<!-- Footer -->
+<footer>
+  <p>&copy; 2025 TimeCostApp</p>
+</footer>
 
-  <!-- Footer -->
-  <footer>
-    <p>&copy; 2025 TimeCostApp</p>
-  </footer>
+{% block scripts %}{% endblock %}
 
-  {% block scripts %}{% endblock %}
-
+<!-- Theme Toggle Script -->
 <script>
   const toggle = document.getElementById('theme-toggle');
   const body = document.body;
 
-  // Load user's theme preference
   if (localStorage.getItem('theme') === 'dark') {
     body.classList.add('dark-mode');
     toggle.textContent = '☀️';
@@ -60,6 +69,31 @@
     toggle.textContent = isDark ? '☀️' : '🌙';
   });
 </script>
+
+<style>
+  select.currency-selector {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-dark);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 1rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 8px;
+    margin-left: 1rem;
+    transition: background 0.2s ease;
+  }
+
+  body.dark-mode select.currency-selector {
+    background-color: #444;
+    color: white;
+    border-color: var(--border-color);
+  }
+
+  select.currency-selector:hover {
+    background-color: var(--accent);
+    color: white;
+  }
+</style>
 
 </body>
 </html>
