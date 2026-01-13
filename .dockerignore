@@ -1,0 +1,32 @@
+# flyctl launch added from .gitignore
+# Python
+**/__pycache__
+**/*.pyc
+
+# Virtual env
+**/venv
+**/.env
+**/.env.*
+
+# macOS
+**/.DS_Store
+
+# IDEs
+**/.idea
+**/.vscode
+
+# Databases
+**/*.db
+**/*.sqlite
+**/instance
+
+# flyctl launch added from .idea/.gitignore
+# Default ignored files
+.idea/shelf
+.idea/workspace.xml
+# Editor-based HTTP Client requests
+.idea/httpRequests
+# Datasource local storage ignored files
+.idea/dataSources
+.idea/dataSources.local.xml
+fly.toml
