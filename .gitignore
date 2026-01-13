@@ -1,6 +1,20 @@
+# Python
 __pycache__/
+*.pyc
+
+# Virtual env
+venv/
 .env
 .env.*
-*.sqlite
+
+# macOS
+.DS_Store
+
+# IDEs
+.idea/
+.vscode/
+
+# Databases
 *.db
+*.sqlite
 instance/
