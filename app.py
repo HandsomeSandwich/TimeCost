@@ -1,40 +1,37 @@
-import os
 from flask import Flask, render_template, request, session, redirect, url_for
 from sqlalchemy import text
-
 from database import get_db_connection, init_db
+import os
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(32))
 
+# Initialize DB on startup (needed for gunicorn/Fly)
+try:
+    init_db()
+except Exception as e:
+    print("Database init error:", e)
 
-# -----------------------
-# TimeCost Calculator
-# -----------------------
+
 @app.route("/", methods=["GET", "POST"])
 def calculator():
     pre_wage_amount = session.get("hourlyRate", "")
     pre_wage_type = "hourly"
-
     result = None
     item_name = ""
-    item_cost_value = ""
 
     if request.method == "POST":
         currency = request.form.get("currency", "$")
         session["currency"] = currency
 
         item_name = request.form.get("itemName", "")
-        item_cost_raw = request.form.get("itemCost")
-        item_cost_value = item_cost_raw or ""
-
+        item_cost = request.form.get("itemCost")
         wage_type = request.form.get("wageType") or pre_wage_type
-        wage_amount_raw = request.form.get("wageAmount") or pre_wage_amount
+        wage_amount = request.form.get("wageAmount") or pre_wage_amount
 
         try:
-            item_cost = float(item_cost_raw)
-            wage_amount = float(wage_amount_raw)
-
+            item_cost = float(item_cost)
+            wage_amount = float(wage_amount)
             if wage_amount <= 0:
                 raise ValueError("Wage must be > 0")
 
@@ -47,7 +44,6 @@ def calculator():
                 raise ValueError("Converted wage must be > 0")
 
             result = item_cost / wage_amount
-            pre_wage_amount = wage_amount_raw  # keep user's input visible
         except (ValueError, TypeError, ZeroDivisionError):
             result = "Invalid input"
 
@@ -55,9 +51,8 @@ def calculator():
             "calculator.html",
             result=result,
             item_name=item_name,
-            item_cost=item_cost_value,
             pre_wage_type=wage_type,
-            pre_wage_amount=wage_amount_raw,
+            pre_wage_amount=wage_amount,
             currency=currency,
         )
 
@@ -65,83 +60,43 @@ def calculator():
         "calculator.html",
         result=None,
         item_name="",
-        item_cost="",
         pre_wage_type=pre_wage_type,
         pre_wage_amount=pre_wage_amount,
         currency=session.get("currency", "$"),
     )
 
 
-# -----------------------
-# Personal Information
-# -----------------------
 @app.route("/personal", methods=["GET", "POST"])
 def personal():
     if request.method == "POST":
         session["username"] = (request.form.get("username") or "").strip()
+        session["workHours"] = request.form.get("workHours")
         session["currency"] = request.form.get("currency", "$")
-        session["payFrequency"] = request.form.get("payFrequency", "")
-        session["paycheckAmount"] = request.form.get("paycheckAmount", "")
 
-        work_hours_raw = request.form.get("workHours", 40)
-        try:
-            session["workHours"] = float(work_hours_raw)
-        except (ValueError, TypeError):
-            session["workHours"] = 40.0
+        # If your form has these fields, store them too
+        annual_rate = request.form.get("annualRate")
+        hourly_rate = request.form.get("hourlyRate")
+        pay_frequency = request.form.get("payFrequency")
+        paycheck_amount = request.form.get("paycheckAmount")
 
-        annual_raw = request.form.get("annualRate")
-        hourly_raw = request.form.get("hourlyRate")
-
-        def _clean_money(v):
-            if v is None:
-                return ""
-            v = str(v).strip()
-            if v == "":
-                return ""
-            try:
-                x = float(v)
-                return "" if x <= 0 else str(x)
-            except ValueError:
-                return ""
-
-        session["annualRate"] = _clean_money(annual_raw)
-        session["hourlyRate"] = _clean_money(hourly_raw)
-
-        def _as_float(v):
-            try:
-                return float(v)
-            except (ValueError, TypeError):
-                return None
-
-        paycheck = _as_float(session.get("paycheckAmount"))
-        freq = session.get("payFrequency")
-        work_hours_week = _as_float(session.get("workHours")) or 40.0
-
-        annual_est = None
-        if paycheck and paycheck > 0 and freq:
-            if freq == "weekly":
-                annual_est = paycheck * 52
-            elif freq == "biweekly":
-                annual_est = paycheck * 26
-            elif freq == "monthly":
-                annual_est = paycheck * 12
-
-        if (not session.get("annualRate")) and annual_est:
-            session["annualRate"] = str(annual_est)
-
-        annual_for_hourly = _as_float(session.get("annualRate"))
-        if (not session.get("hourlyRate")) and annual_for_hourly and annual_for_hourly > 0:
-            denom = 52 * work_hours_week
-            if denom > 0:
-                session["hourlyRate"] = str(annual_for_hourly / denom)
+        if annual_rate is not None:
+            session["annualRate"] = annual_rate
+        if hourly_rate is not None:
+            session["hourlyRate"] = hourly_rate
+        if pay_frequency is not None:
+            session["payFrequency"] = pay_frequency
+        if paycheck_amount is not None:
+            session["paycheckAmount"] = paycheck_amount
 
         return redirect(url_for("calculator"))
 
-    # GET: expenses total from DB
+    # GET: Pull expenses total from DB
     conn = get_db_connection()
     try:
         rows = conn.execute(text("SELECT amount FROM expenses")).mappings().all()
         expenses_total = sum((row["amount"] or 0) for row in rows)
+    except Exception:
+        expenses_total = 0
     finally:
         conn.close()
 
@@ -158,35 +113,28 @@ def personal():
     )
 
 
-# -----------------------
-# Timebank
-# -----------------------
 @app.route("/timebank", methods=["GET", "POST"])
 def timebank():
     currency = session.get("currency", "$")
 
-    # Always load savings_value from DB (source of truth)
-    conn = get_db_connection()
-    try:
-        savings_row = conn.execute(
-            text("SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE category = 'Savings'")
-        ).mappings().first()
-        savings_value = (savings_row["total"] if savings_row else 0) or 0
-
-        all_rows = conn.execute(text("SELECT amount, category FROM expenses")).mappings().all()
-        expenses_total = sum((r["amount"] or 0) for r in all_rows)
-    finally:
-        conn.close()
-
     if request.method == "POST":
         try:
             income = float(request.form.get("income", 0))
-            expenses = float(request.form.get("expenses", expenses_total))
+            expenses = float(request.form.get("expenses", 0))
             hoursWorked = float(request.form.get("hoursWorked", 0))
         except ValueError:
-            income = 0
-            expenses = expenses_total
-            hoursWorked = 0
+            income = expenses = hoursWorked = 0
+
+        conn = get_db_connection()
+        try:
+            savings_row = conn.execute(
+                text("SELECT SUM(amount) AS total FROM expenses WHERE category = 'Savings'")
+            ).mappings().first()
+            savings_value = (savings_row["total"] if savings_row else 0) or 0
+        except Exception:
+            savings_value = 0
+        finally:
+            conn.close()
 
         return render_template(
             "timebank.html",
@@ -203,8 +151,19 @@ def timebank():
     except (ValueError, TypeError):
         income = 0
 
+    conn = get_db_connection()
     try:
-        hoursWorked = float(session.get("workHours", 0)) * 4.33  # convert weekly to monthly-ish
+        all_rows = conn.execute(text("SELECT amount, category FROM expenses")).mappings().all()
+    except Exception:
+        all_rows = []
+    finally:
+        conn.close()
+
+    expenses_total = sum((row["amount"] or 0) for row in all_rows)
+    savings_value = sum((row["amount"] or 0) for row in all_rows if row["category"] == "Savings")
+
+    try:
+        hoursWorked = float(session.get("workHours", 0))
     except (ValueError, TypeError):
         hoursWorked = 0
 
@@ -218,12 +177,8 @@ def timebank():
     )
 
 
-# -----------------------
-# Expenses
-# -----------------------
 @app.route("/expenses", methods=["GET", "POST"])
 def expenses():
-    currency = session.get("currency", "$")
     conn = get_db_connection()
     try:
         if request.method == "POST":
@@ -238,7 +193,10 @@ def expenses():
                     amt = float(amount)
                     if name.strip() and category:
                         conn.execute(
-                            text("INSERT INTO expenses (name, amount, category) VALUES (:name, :amount, :category)"),
+                            text(
+                                "INSERT INTO expenses (name, amount, category) "
+                                "VALUES (:name, :amount, :category)"
+                            ),
                             {"name": name.strip(), "amount": amt, "category": category},
                         )
                 except ValueError:
@@ -248,26 +206,26 @@ def expenses():
             return redirect(url_for("expenses"))
 
         saved_expenses = conn.execute(text("SELECT * FROM expenses")).mappings().all()
-
         category_totals = conn.execute(
             text("SELECT category, SUM(amount) AS total FROM expenses GROUP BY category")
         ).mappings().all()
 
-        return render_template(
-            "expenses.html",
-            saved_expenses=saved_expenses,
-            category_totals=category_totals,
-            currency=currency,
-        )
     finally:
         conn.close()
+
+    currency = session.get("currency", "$")
+    return render_template(
+        "expenses.html",
+        saved_expenses=saved_expenses,
+        category_totals=category_totals,
+        currency=currency,
+    )
 
 
 @app.route("/update_expense_category", methods=["POST"])
 def update_expense_category():
     expense_id = request.form.get("expense_id")
     new_category = request.form.get("new_category")
-
     if not expense_id or not new_category:
         return redirect(url_for("expenses"))
 
@@ -295,43 +253,45 @@ def remove_expense(index):
     return redirect(url_for("expenses"))
 
 
-# -----------------------
-# Budget
-# -----------------------
 @app.route("/budget", methods=["GET", "POST"])
 def budget():
     currency = session.get("currency", "$")
 
-    # Expenses from DB (source of truth)
     conn = get_db_connection()
     try:
         expenses_rows = conn.execute(text("SELECT amount FROM expenses")).mappings().all()
         expenses_total = sum((row["amount"] or 0) for row in expenses_rows)
+    except Exception:
+        expenses_total = 0
     finally:
         conn.close()
 
-    def _as_float(v, default=0.0):
-        try:
-            return float(v)
-        except (ValueError, TypeError):
-            return default
-
     if request.method == "POST":
-        income_input = request.form.get("income")
-        income = _as_float(income_input, _as_float(session.get("annualRate"), 0) / 12)
+        try:
+            income_input = request.form.get("income")
+            income = float(income_input) if income_input else float(session.get("annualRate", 0)) / 12
 
-        weekly_hours = _as_float(request.form.get("weeklyHours"), _as_float(session.get("workHours"), 0))
-        monthly_hours = weekly_hours * 4.33 if weekly_hours else 1
+            hours_input = request.form.get("weeklyHours")
+            weekly_hours = float(hours_input) if hours_input else float(session.get("workHours", 0))
+            monthly_hours = weekly_hours * 4.33 if weekly_hours else 1
 
-        discretionary_income = income - expenses_total
-        hourly_value = discretionary_income / monthly_hours if monthly_hours else 0
+            discretionary_income = income - expenses_total
+            hourly_value = discretionary_income / monthly_hours if monthly_hours else 0
 
-        savings_goal = _as_float(request.form.get("savingsGoal"), 0)
-        current_savings = _as_float(request.form.get("currentSavings"), 0)
+            savings_goal = float(request.form.get("savingsGoal", 0))
+            current_savings = float(request.form.get("currentSavings", 0))
+            remaining_to_save = savings_goal - current_savings if savings_goal > 0 else 0
+            progress_percent = (current_savings / savings_goal) * 100 if savings_goal > 0 else 0
+
+        except ValueError:
+            income = weekly_hours = monthly_hours = discretionary_income = hourly_value = 0
+            savings_goal = current_savings = remaining_to_save = progress_percent = 0
 
         conn = get_db_connection()
         try:
             goals_rows = conn.execute(text("SELECT * FROM goals")).mappings().all()
+        except Exception:
+            goals_rows = []
         finally:
             conn.close()
 
@@ -345,22 +305,29 @@ def budget():
             hourly_value=hourly_value,
             savings_goal=savings_goal,
             current_savings=current_savings,
-            remaining_to_save=(savings_goal - current_savings) if savings_goal > 0 else 0,
-            progress_percent=(current_savings / savings_goal * 100) if savings_goal > 0 else 0,
+            remaining_to_save=remaining_to_save,
+            progress_percent=progress_percent,
             goals=goals_rows,
             currency=currency,
         )
 
     # GET defaults
-    income = _as_float(session.get("annualRate"), 0) / 12
-    weekly_hours = _as_float(session.get("workHours"), 0)
-    monthly_hours = weekly_hours * 4.33 if weekly_hours else 1
-    discretionary_income = income - expenses_total
-    hourly_value = discretionary_income / monthly_hours if monthly_hours else 0
+    try:
+        income = float(session.get("annualRate", 0)) / 12
+        weekly_hours = float(session.get("workHours", 0))
+        monthly_hours = weekly_hours * 4.33 if weekly_hours else 1
+        discretionary_income = income - expenses_total
+        hourly_value = discretionary_income / monthly_hours if monthly_hours else 0
+    except ValueError:
+        income = weekly_hours = monthly_hours = discretionary_income = hourly_value = 0
+
+    savings_goal = current_savings = remaining_to_save = progress_percent = 0
 
     conn = get_db_connection()
     try:
         goals_rows = conn.execute(text("SELECT * FROM goals")).mappings().all()
+    except Exception:
+        goals_rows = []
     finally:
         conn.close()
 
@@ -372,70 +339,56 @@ def budget():
         monthly_hours=monthly_hours,
         discretionary_income=discretionary_income,
         hourly_value=hourly_value,
-        savings_goal=0,
-        current_savings=0,
-        remaining_to_save=0,
-        progress_percent=0,
+        savings_goal=savings_goal,
+        current_savings=current_savings,
+        remaining_to_save=remaining_to_save,
+        progress_percent=progress_percent,
         goals=goals_rows,
         currency=currency,
     )
 
 
-# -----------------------
-# Goals
-# -----------------------
 @app.route("/goals", methods=["GET", "POST"])
 def goals():
-    currency = session.get("currency", "$")
     conn = get_db_connection()
     try:
         if request.method == "POST":
             if "new_goal" in request.form:
                 name = (request.form.get("goal_name") or "").strip()
-                try:
-                    target = float(request.form.get("target_amount", 0))
-                except ValueError:
-                    target = 0
-                try:
-                    current = float(request.form.get("current_savings", 0))
-                except ValueError:
-                    current = 0
-
+                target = float(request.form.get("target_amount", 0) or 0)
+                current = float(request.form.get("current_savings", 0) or 0)
                 if name:
                     conn.execute(
-                        text("INSERT INTO goals (name, target, current) VALUES (:name, :target, :current)"),
-                        {"name": name, "target": target, "current": current},
+                        text("INSERT INTO goals (name, target, current) VALUES (:n,:t,:c)"),
+                        {"n": name, "t": target, "c": current},
                     )
                     conn.commit()
 
             elif "update_goal" in request.form:
-                try:
-                    goal_id = int(request.form.get("goal_index"))
-                    add_amount = float(request.form.get("savings_to_add", 0))
-                except (ValueError, TypeError):
-                    goal_id = None
-                    add_amount = 0
+                goal_id = int(request.form.get("goal_index", 0) or 0)
+                add_amount = float(request.form.get("savings_to_add", 0) or 0)
 
-                if goal_id is not None:
-                    goal = conn.execute(
-                        text("SELECT * FROM goals WHERE id = :id"),
-                        {"id": goal_id},
-                    ).mappings().first()
+                goal = conn.execute(
+                    text("SELECT * FROM goals WHERE id = :id"),
+                    {"id": goal_id},
+                ).mappings().first()
 
-                    if goal:
-                        new_total = float(goal["current"]) + add_amount
-                        conn.execute(
-                            text("UPDATE goals SET current = :current WHERE id = :id"),
-                            {"current": new_total, "id": goal_id},
-                        )
-                        conn.commit()
+                if goal:
+                    new_total = float(goal["current"]) + add_amount
+                    conn.execute(
+                        text("UPDATE goals SET current = :c WHERE id = :id"),
+                        {"c": new_total, "id": goal_id},
+                    )
+                    conn.commit()
 
             return redirect(url_for("goals"))
 
         goals_rows = conn.execute(text("SELECT * FROM goals")).mappings().all()
-        return render_template("goals.html", goals=goals_rows, currency=currency)
     finally:
         conn.close()
+
+    currency = session.get("currency", "$")
+    return render_template("goals.html", goals=goals_rows, currency=currency)
 
 
 @app.route("/delete_goal/<int:goal_id>", methods=["POST"])
@@ -451,24 +404,10 @@ def delete_goal(goal_id):
 
 @app.route("/set_currency", methods=["POST"])
 def set_currency():
-    selected = request.form.get("currency", "$")
-    session["currency"] = selected
+    session["currency"] = request.form.get("currency", "$")
     return redirect(request.referrer or url_for("personal"))
 
 
 @app.route("/staples", methods=["GET"])
 def staples():
-    return render_template(
-        "staples.html",
-        currency=session.get("currency", "$"),
-        hourlyRate=session.get("hourlyRate", "")
-    )
-
-
-# -----------------------
-# Main
-# -----------------------
-if __name__ == "__main__":
-    # Run init locally only
-    init_db()
-    app.run(debug=True)
+    return render_template("staples.html")
