@@ -62,173 +62,201 @@
   </style>
 
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const expenseTableBody = document.getElementById("expenseTableBody");
-      const cardsWrap = document.getElementById("expenseCards");
-      const hourlyWageInput = document.getElementById("userHourlyRate");
+document.addEventListener("DOMContentLoaded", function () {
+  const expenseTableBody = document.getElementById("expenseTableBody");
+  const cardsWrap = document.getElementById("expenseCards");
+  const hourlyWageInput = document.getElementById("userHourlyRate");
+  const addBtn = document.getElementById("addExpenseBtn");
 
-      function hourlyRate() {
-        return parseFloat(hourlyWageInput.value) || 0;
-      }
+  function hourlyRate() {
+    return parseFloat(hourlyWageInput.value) || 0;
+  }
 
-      function calcHours(amount) {
-        const rate = hourlyRate();
-        return rate > 0 ? (amount / rate) : 0;
-      }
+  function calcHours(amount) {
+    const rate = hourlyRate();
+    return rate > 0 ? (amount / rate) : 0;
+  }
 
-      function recalcRow(row) {
-        const amountInput = row.querySelector(".expenseAmount");
-        const hourlyCostSpan = row.querySelector(".expenseHourly");
-        const amount = parseFloat(amountInput.value) || 0;
-        hourlyCostSpan.textContent = calcHours(amount).toFixed(2);
-      }
+  function recalcRow(row) {
+    const amountInput = row.querySelector(".expenseAmount");
+    const hourlyCostSpan = row.querySelector(".expenseHourly");
+    const amount = parseFloat(amountInput.value) || 0;
+    hourlyCostSpan.textContent = calcHours(amount).toFixed(2);
+  }
 
-      function recalcTotals() {
-        let totalAmount = 0;
-        let totalHourly = 0;
-        const rate = hourlyRate();
+  function recalcTotals() {
+    let totalAmount = 0;
+    let totalHourly = 0;
+    const rate = hourlyRate();
 
-        document.querySelectorAll("#expenseTableBody tr").forEach(function (row) {
-          const amount = parseFloat(row.querySelector(".expenseAmount").value) || 0;
-          totalAmount += amount;
-          if (rate > 0) totalHourly += (amount / rate);
-        });
+    document.querySelectorAll("#expenseTableBody tr").forEach(function (row) {
+      const amount = parseFloat(row.querySelector(".expenseAmount").value) || 0;
+      totalAmount += amount;
+      if (rate > 0) totalHourly += (amount / rate);
+    });
 
-        document.getElementById("totalAmount").textContent = totalAmount.toFixed(2);
-        document.getElementById("totalHourly").textContent = totalHourly.toFixed(2);
-        document.getElementById("expensesTotalInput").value = totalAmount.toFixed(2);
-      }
+    document.getElementById("totalAmount").textContent = totalAmount.toFixed(2);
+    document.getElementById("totalHourly").textContent = totalHourly.toFixed(2);
+    document.getElementById("expensesTotalInput").value = totalAmount.toFixed(2);
+  }
 
-      function addRowListeners(row) {
-        const amountInput = row.querySelector(".expenseAmount");
-        const nameInput = row.querySelector(".expenseName");
-        const catSelect = row.querySelector(".expenseCategory");
+  function syncCardsFromTable() {
+    cardsWrap.innerHTML = "";
 
-        [amountInput, nameInput, catSelect].forEach(el => {
-          el.addEventListener("input", () => {
-            recalcRow(row);
-            recalcTotals();
-            syncCardsFromTable();
-          });
-          el.addEventListener("change", () => {
-            recalcRow(row);
-            recalcTotals();
-            syncCardsFromTable();
-          });
-        });
+    document.querySelectorAll("#expenseTableBody tr").forEach((row, idx) => {
+      const nameEl = row.querySelector(".expenseName");
+      const amountEl = row.querySelector(".expenseAmount");
+      const catEl = row.querySelector(".expenseCategory");
 
-        row.querySelector(".removeRow").addEventListener("click", function () {
-          row.remove();
-          recalcTotals();
-          syncCardsFromTable();
-        });
-      }
+      const name = nameEl.value || "";
+      const amount = amountEl.value || "";
+      const category = catEl.value || "Other";
 
-      function addExpenseRow(name = "", amount = "", category = "Other") {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td><input type="text" name="expense_name[]" class="expenseName" value="${name}" required></td>
-          <td><input type="number" step="0.01" name="expense_amount[]" class="expenseAmount" value="${amount}" required></td>
-          <td>
-            <select name="expense_category[]" class="expenseCategory" required>
-              <option value="Rent" ${category === "Rent" ? "selected" : ""}>Rent</option>
-              <option value="Utilities" ${category === "Utilities" ? "selected" : ""}>Utilities</option>
-              <option value="Savings" ${category === "Savings" ? "selected" : ""}>Savings</option>
-              <option value="Discretionary" ${category === "Discretionary" ? "selected" : ""}>Discretionary</option>
-              <option value="Other" ${category === "Other" ? "selected" : ""}>Other</option>
+      const hours = calcHours(parseFloat(amount) || 0).toFixed(2);
+
+      const safeName = name.replace(/&/g, "&amp;")
+                           .replace(/</g, "&lt;")
+                           .replace(/>/g, "&gt;")
+                           .replace(/"/g, "&quot;")
+                           .replace(/'/g, "&#039;");
+
+      const card = document.createElement("div");
+      card.className = "expense-card";
+      card.innerHTML = `
+        <div class="expense-card-title">Expense #${idx + 1}</div>
+
+        <div class="expense-card-grid">
+          <div class="full">
+            <label>Expense Item</label>
+            <input type="text" class="cardName" value="${safeName}" required>
+          </div>
+
+          <div>
+            <label>Amount ({{ currency }})</label>
+            <input type="number" step="0.01" class="cardAmount" value="${amount}" required>
+          </div>
+
+          <div>
+            <label>Category</label>
+            <select class="cardCategory" required>
+              ${["Rent","Utilities","Savings","Discretionary","Other"].map(c =>
+                `<option value="${c}" ${c===category ? "selected" : ""}>${c}</option>`
+              ).join("")}
             </select>
-          </td>
-          <td><span class="expenseHourly">0.00</span></td>
-          <td><button type="button" class="removeRow">Remove</button></td>
-        `;
+          </div>
+        </div>
 
-        expenseTableBody.appendChild(row);
-        addRowListeners(row);
+        <div class="expense-meta">
+          <span><strong>Hours:</strong> <span class="cardHours">${hours}</span></span>
+          <button type="button" class="removeButton">Remove</button>
+        </div>
+      `;
+
+      const cardName = card.querySelector(".cardName");
+      const cardAmount = card.querySelector(".cardAmount");
+      const cardCategory = card.querySelector(".cardCategory");
+      const cardHours = card.querySelector(".cardHours");
+
+      cardName.addEventListener("input", () => {
+        nameEl.value = cardName.value;
+      });
+
+      cardAmount.addEventListener("input", () => {
+        amountEl.value = cardAmount.value;
+        recalcRow(row);
+        recalcTotals();
+        cardHours.textContent = calcHours(parseFloat(cardAmount.value) || 0).toFixed(2);
+      });
+
+      cardCategory.addEventListener("change", () => {
+        catEl.value = cardCategory.value;
+      });
+
+      card.querySelector(".removeButton").addEventListener("click", () => {
+        row.remove();
+        recalcTotals();
+        syncCardsFromTable();
+      });
+
+      cardsWrap.appendChild(card);
+    });
+  }
+
+  function addRowListeners(row) {
+    const amountInput = row.querySelector(".expenseAmount");
+    const nameInput = row.querySelector(".expenseName");
+    const catSelect = row.querySelector(".expenseCategory");
+
+    [amountInput, nameInput, catSelect].forEach(el => {
+      el.addEventListener("input", () => {
         recalcRow(row);
         recalcTotals();
         syncCardsFromTable();
-      }
-
-      function syncCardsFromTable() {
-        // Build cards from the current table rows, so we only keep ONE source of truth.
-        cardsWrap.innerHTML = "";
-        const rate = hourlyRate();
-
-        document.querySelectorAll("#expenseTableBody tr").forEach((row, idx) => {
-          const name = row.querySelector(".expenseName");
-          const amount = row.querySelector(".expenseAmount");
-          const cat = row.querySelector(".expenseCategory");
-
-          const card = document.createElement("div");
-          card.className = "expense-card";
-          card.innerHTML = `
-            <div class="expense-card-title">Expense #${idx + 1}</div>
-            <div class="expense-card-grid">
-              <div class="full">
-                <label>Expense Item</label>
-              </div>
-              <div class="full" data-slot="name"></div>
-
-              <div>
-                <label>Amount ({{ currency }})</label>
-              </div>
-              <div data-slot="amount"></div>
-
-              <div class="full">
-                <label>Category</label>
-              </div>
-              <div class="full" data-slot="cat"></div>
-            </div>
-
-            <div class="expense-meta">
-              <span><strong>Hours:</strong> ${calcHours(parseFloat(amount.value)||0).toFixed(2)}</span>
-              <button type="button" class="removeButton">Remove</button>
-            </div>
-          `;
-
-          // Move/clone inputs into the card UI (same inputs, same form submit)
-          card.querySelector('[data-slot="name"]').appendChild(name);
-          card.querySelector('[data-slot="amount"]').appendChild(amount);
-          card.querySelector('[data-slot="cat"]').appendChild(cat);
-
-          // Card remove button removes the whole row from the table source
-          card.querySelector(".removeButton").addEventListener("click", () => {
-            row.remove();
-            recalcTotals();
-            syncCardsFromTable();
-          });
-
-          cardsWrap.appendChild(card);
-        });
-
-        // After moving inputs into cards on mobile, the table cells might be empty.
-        // That’s OK because table is hidden on mobile. On desktop refresh, reload page or use wider viewport.
-      }
-
-      document.getElementById("addExpenseBtn").addEventListener("click", function () {
-        addExpenseRow();
       });
-
-      hourlyWageInput.addEventListener("input", function () {
-        document.querySelectorAll("#expenseTableBody tr").forEach(recalcRow);
+      el.addEventListener("change", () => {
+        recalcRow(row);
         recalcTotals();
         syncCardsFromTable();
       });
-
-      // Prefill editable rows from saved_expenses if present
-      const existing = [
-        {% for e in saved_expenses %}
-          { name: {{ e.name|tojson }}, amount: {{ e.amount|tojson }}, category: {{ e.category|tojson }} }{% if not loop.last %},{% endif %}
-        {% endfor %}
-      ];
-
-      if (existing.length) {
-        existing.forEach(e => addExpenseRow(e.name, e.amount, e.category));
-      } else {
-        addExpenseRow();
-      }
     });
-  </script>
+
+    row.querySelector(".removeRow").addEventListener("click", function () {
+      row.remove();
+      recalcTotals();
+      syncCardsFromTable();
+    });
+  }
+
+  function addExpenseRow(name = "", amount = "", category = "Other") {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><input type="text" name="expense_name[]" class="expenseName" value="${name}" required></td>
+      <td><input type="number" step="0.01" name="expense_amount[]" class="expenseAmount" value="${amount}" required></td>
+      <td>
+        <select name="expense_category[]" class="expenseCategory" required>
+          <option value="Rent" ${category === "Rent" ? "selected" : ""}>Rent</option>
+          <option value="Utilities" ${category === "Utilities" ? "selected" : ""}>Utilities</option>
+          <option value="Savings" ${category === "Savings" ? "selected" : ""}>Savings</option>
+          <option value="Discretionary" ${category === "Discretionary" ? "selected" : ""}>Discretionary</option>
+          <option value="Other" ${category === "Other" ? "selected" : ""}>Other</option>
+        </select>
+      </td>
+      <td><span class="expenseHourly">0.00</span></td>
+      <td><button type="button" class="removeRow">Remove</button></td>
+    `;
+
+    expenseTableBody.appendChild(row);
+    addRowListeners(row);
+    recalcRow(row);
+    recalcTotals();
+    syncCardsFromTable();
+  }
+
+  // Add button
+  addBtn.addEventListener("click", () => addExpenseRow());
+
+  // Hourly rate changes
+  hourlyWageInput.addEventListener("input", () => {
+    document.querySelectorAll("#expenseTableBody tr").forEach(recalcRow);
+    recalcTotals();
+    syncCardsFromTable();
+  });
+
+  // Prefill from saved_expenses
+  const existing = [
+    {% for e in saved_expenses %}
+      { name: {{ e.name|tojson }}, amount: {{ e.amount|tojson }}, category: {{ e.category|tojson }} }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  if (existing.length) {
+    existing.forEach(e => addExpenseRow(e.name, e.amount, e.category));
+  } else {
+    addExpenseRow();
+  }
+});
+</script>
+
 {% endblock %}
 
 {% block content %}
