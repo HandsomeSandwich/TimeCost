@@ -30,10 +30,22 @@
     <a href="{{ url_for('staples') }}">Staples</a>
   </div>
 
-  <div class="nav-right">
-    {# your currency dropdown + Set button stays here #}
+    <div class="nav-right">
+    <form action="{{ url_for('set_currency') }}" method="post" class="currency-form">
+      <select name="currency" aria-label="Currency">
+        {% set cur = session.get("currency", "$") %}
+        <option value="$" {{ "selected" if cur == "$" else "" }}>$ (USD)</option>
+        <option value="£" {{ "selected" if cur == "£" else "" }}>£ (GBP)</option>
+        <option value="€" {{ "selected" if cur == "€" else "" }}>€ (EUR)</option>
+        <option value="¥" {{ "selected" if cur == "¥" else "" }}>¥ (JPY)</option>
+        <option value="₹" {{ "selected" if cur == "₹" else "" }}>₹ (INR)</option>
+      </select>
+      <button type="submit">Set</button>
+    </form>
+
     {% block nav_right %}{% endblock %}
   </div>
+
 </nav>
 
 <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
@@ -81,6 +93,7 @@
 
     closeBtn?.addEventListener("click", closeDrawer);
     backdrop?.addEventListener("click", closeDrawer);
+    drawer?.querySelectorAll("a").forEach(a => a.addEventListener("click", closeDrawer));
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") closeDrawer();
@@ -94,7 +107,7 @@
   </main>
 
   <footer>
-    <p>&copy; {{ (now().year if now is defined else "") }} TimeCost</p>
+    <p>&copy; TimeCost</p>
   </footer>
 </body>
 </html>

@@ -446,6 +446,18 @@ input, select, button {
   width: 100%;
 }
 
+.currency-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+@media (max-width: 720px) {
+  .currency-form select { max-width: 110px; }
+  .currency-form button { padding: 0.55rem 0.8rem; }
+}
+
+
 @media (max-width: 700px) {
   .goal-table { display: none; }
   .goals-cards { display: block; }
