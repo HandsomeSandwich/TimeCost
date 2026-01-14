@@ -111,6 +111,16 @@
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") closeDrawer();
     });
+
+    // ✅ Auto-close if viewport is desktop
+    function closeIfDesktop() {
+      if (window.matchMedia("(min-width: 721px)").matches) {
+        closeDrawer();
+      }
+    }
+
+    window.addEventListener("resize", closeIfDesktop);
+    closeIfDesktop(); // run once on load too
   })();
 </script>
 

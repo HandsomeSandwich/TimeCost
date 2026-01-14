@@ -237,6 +237,14 @@ button:hover { background-color: #bc5843; }
   }
 }
 
+/* Safety: never show the mobile drawer/backdrop on desktop */
+@media (min-width: 721px) {
+  .drawer,
+  .drawer-backdrop {
+    display: none !important;
+  }
+}
+
 /* Prevent background scroll when drawer open */
 body.drawer-open {
   overflow: hidden;
