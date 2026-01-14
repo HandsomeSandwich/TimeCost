@@ -120,9 +120,10 @@ button:hover { background-color: #bc5843; }
 .navbar {
   background-color: #2F3E46;
   display: flex;
-  justify-content: center;
-  gap: 1.5rem;
-  padding: 1rem 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
   margin-bottom: 2rem;
   font-family: var(--font);
   font-weight: 600;
@@ -130,6 +131,7 @@ button:hover { background-color: #bc5843; }
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   position: relative;
   z-index: 1;
+  flex-wrap: wrap;
 }
 
 .navbar a {
@@ -305,15 +307,6 @@ progress::-moz-progress-bar {
   aspect-ratio: 1 / 1;
 }
 
-/* === Savings Form === */
-.savingsForm {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-}
-
-.savingsForm input { flex: 1; }
-
 /* === Focus states === */
 a:focus,
 button:focus,
@@ -324,12 +317,6 @@ select:focus {
 }
 
 /* === Responsive Layout === */
-
-/* Make the main container breathe on small screens */
-main.container {
-  padding: 1.25rem;
-  margin: 0 auto;
-}
 
 /* Prevent fixed width layouts from squishing */
 .form-container {
@@ -346,27 +333,21 @@ main.container {
   border-radius: 10px;
 }
 
-/* Make any table behave nicely */
+/* Default table behavior (no forced min-width globally) */
 table {
   width: 100%;
-  min-width: 650px; /* so columns don’t become 2px wide */
   border-collapse: collapse;
 }
+
+/* Optional: apply a min-width only to tables that need it */
+.table-wide {
+  min-width: 650px;
+}
+
 
 /* Inputs: don’t zoom on iOS because of tiny font */
 input, select, button {
   font-size: 16px;
-}
-
-/* Navbar: wrap on small screens */
-.navbar {
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.75rem;
-}
-
-.navbar a {
-  padding: 0.4rem 0.7rem;
 }
 
 /* Currency dropdown + Set button: keep them from floating offscreen */
@@ -410,56 +391,113 @@ input, select, button {
   }
 }
 
+@media (max-width: 720px) {
+  .currency-form select { max-width: 110px; }
+  .currency-form button { padding: 0.55rem 0.8rem; }
+}
 
-/* Goals: table on desktop, cards on mobile */
-.goals-cards { display: none; }
+/* =========================
+   Goals (responsive)
+   ========================= */
+
+.goal-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.goal-table,
+.goal-table th,
+.goal-table td {
+  border: 1px solid var(--border-color);
+}
+
+.goal-table th,
+.goal-table td {
+  padding: 10px;
+  text-align: left;
+}
+
+/* Progress (table + cards) */
+.progress-container {
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  margin-top: 6px;
+  height: 22px;
+  overflow: hidden;
+}
+
+body.dark-mode .progress-container {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: var(--secondary-accent);
+  color: var(--text-dark);
+  text-align: center;
+  line-height: 22px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* Cards (mobile) */
+.goals-cards {
+  display: none;
+  margin-top: 16px;
+}
 
 .goal-card {
   border: 1px solid var(--border-color);
   background: var(--card-bg);
   border-radius: 12px;
   padding: 14px;
-  margin-top: 12px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
 }
 
 .goal-card-title {
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 10px;
+  font-size: 1.05rem;
   color: var(--text-dark);
 }
 
 .goal-card-row {
   display: flex;
   justify-content: space-between;
+  gap: 10px;
   margin: 6px 0;
   color: var(--text-medium);
 }
 
+/* Buttons */
 .danger-btn {
-  background-color: #e07a5f;
+  background-color: var(--accent);
   color: white;
   border: none;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
   width: 100%;
 }
 
-.currency-form {
+/* Savings form inside goal card/table actions */
+.savingsForm {
   display: flex;
-  gap: 0.5rem;
+  gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
+.savingsForm input[type="number"] {
+  flex: 1;
+  min-width: 140px;
+}
+
+/* Switch: cards on mobile, table on desktop */
 @media (max-width: 720px) {
-  .currency-form select { max-width: 110px; }
-  .currency-form button { padding: 0.55rem 0.8rem; }
-}
-
-
-@media (max-width: 700px) {
   .goal-table { display: none; }
   .goals-cards { display: block; }
 }
-

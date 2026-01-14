@@ -63,6 +63,19 @@
   <a href="{{ url_for('budget') }}">Budget</a>
   <a href="{{ url_for('goals') }}">Goals</a>
   <a href="{{ url_for('staples') }}">Staples</a>
+
+  <form action="{{ url_for('set_currency') }}" method="post" class="currency-form drawer-currency">
+  <select name="currency" aria-label="Currency">
+    {% set cur = session.get("currency", "$") %}
+    <option value="$" {{ "selected" if cur == "$" else "" }}>$ (USD)</option>
+    <option value="£" {{ "selected" if cur == "£" else "" }}>£ (GBP)</option>
+    <option value="€" {{ "selected" if cur == "€" else "" }}>€ (EUR)</option>
+    <option value="¥" {{ "selected" if cur == "¥" else "" }}>¥ (JPY)</option>
+    <option value="₹" {{ "selected" if cur == "₹" else "" }}>₹ (INR)</option>
+  </select>
+  <button type="submit">Set</button>
+</form>
+
 </aside>
 
 <script>

@@ -1,50 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Long Term Savings Goals{% endblock %}
 
-{% block head %}
-  <style>
-    .form-container { max-width: 800px; margin: 0 auto; text-align: left; }
-
-    .goal-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    .goal-table, .goal-table th, .goal-table td { border: 1px solid #ccc; }
-    .goal-table th, .goal-table td { padding: 10px; text-align: left; }
-
-    .progress-container { width: 100%; background-color: #eee; border-radius: 5px; margin-top: 5px; height: 25px; overflow: hidden; }
-    .progress-bar { height: 100%; background-color: #76c7c0; text-align: center; line-height: 25px; color: #fff; }
-
-    .savingsForm input[type="number"] { width: 100%; padding: 8px; }
-    .savingsForm button { padding: 8px 10px; cursor: pointer; }
-
-    /* --- Cards --- */
-    .goals-cards { display: none; margin-top: 16px; }
-    .goal-card {
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 12px;
-      background: #fff;
-    }
-    .goal-card-title { font-weight: 700; margin-bottom: 10px; font-size: 1.05rem; }
-    .goal-card-row { display: flex; justify-content: space-between; gap: 10px; margin: 6px 0; }
-    .danger-btn {
-      background-color: #e07a5f;
-      color: white;
-      border: none;
-      padding: 6px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    /* --- Responsive switching --- */
-    @media (max-width: 720px) {
-      .goal-table { display: none; }
-      .goals-cards { display: block; }
-      .savingsForm { display: flex; gap: 8px; align-items: center; }
-      .savingsForm input { flex: 1; }
-    }
-  </style>
-{% endblock %}
-
 {% block content %}
 <div class="form-container">
   <h1>Long Term Savings Goals</h1>
