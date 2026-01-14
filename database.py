@@ -1,40 +1,39 @@
 import os
 from sqlalchemy import create_engine, text
 
-def _db_url() -> str:
-    url = os.environ.get("DATABASE_URL", "sqlite:///timecost.db")
+def get_database_url():
+    url = os.environ.get("DATABASE_URL")
+    if url:
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        return url
+    return "sqlite:///timecost.db"
 
-    # Railway/Postgres sometimes uses postgres:// which SQLAlchemy wants as postgresql://
-    if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql+psycopg2://", 1)
-
-    # SQLite URL is already fine
-    return url
-
-engine = create_engine(_db_url(), future=True)
+engine = create_engine(
+    get_database_url(),
+    pool_pre_ping=True,
+    future=True,
+)
 
 def get_db_connection():
-    # returns a SQLAlchemy Connection (close it when done)
     return engine.connect()
 
 def init_db():
-    # Create tables if they don't exist
-    # (This is okay for now, but later you’ll want Alembic migrations.)
     with engine.begin() as conn:
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS expenses (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 name TEXT NOT NULL,
-                amount REAL NOT NULL,
+                amount DOUBLE PRECISION NOT NULL,
                 category TEXT NOT NULL
             )
         """))
 
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS goals (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 name TEXT NOT NULL,
-                target REAL NOT NULL,
-                current REAL NOT NULL
+                target DOUBLE PRECISION NOT NULL,
+                current DOUBLE PRECISION NOT NULL DEFAULT 0
             )
         """))
