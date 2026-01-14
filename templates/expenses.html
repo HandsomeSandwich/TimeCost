@@ -3,64 +3,6 @@
 
 {% block head %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    .form-container { max-width: 800px; margin: 0 auto; text-align: left; }
-
-    /* Desktop table */
-    .expense-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    .expense-table, .expense-table th, .expense-table td { border: 1px solid #ccc; }
-    .expense-table th, .expense-table td { padding: 10px; text-align: left; }
-
-    input[type="number"], input[type="text"], select {
-      width: 100%;
-      padding: 8px;
-      box-sizing: border-box;
-    }
-
-    button { padding: 10px 14px; margin-top: 10px; cursor: pointer; }
-    .removeRow, .removeButton {
-      background-color: #c00;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      padding: 8px 10px;
-    }
-
-    .chart-container { position: relative; margin: 40px auto; height: 400px; width: 400px; max-width: 100%; }
-
-    /* Mobile cards */
-    .expense-cards { display: none; margin-top: 16px; }
-    .expense-card {
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      padding: 12px;
-      background: #fff;
-      margin-bottom: 12px;
-    }
-    .expense-card-title { font-weight: 700; margin-bottom: 10px; }
-    .expense-card-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .expense-card-grid .full { grid-column: 1 / -1; }
-
-    .expense-meta {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 10px;
-      font-size: 0.95rem;
-    }
-
-    /* Switch layouts */
-    @media (max-width: 720px) {
-      .expense-table { display: none; }
-      .expense-cards { display: block; }
-      .chart-container { width: 100%; height: auto; }
-    }
-  </style>
-
   <script>
 document.addEventListener("DOMContentLoaded", function () {
   const expenseTableBody = document.getElementById("expenseTableBody");
