@@ -232,3 +232,132 @@ select:focus {
   outline: 2px dashed var(--accent);
   outline-offset: 2px;
 }
+
+/* === Responsive Layout === */
+
+/* Make the main container breathe on small screens */
+main.container {
+  padding: 1.25rem;
+  margin: 0 auto;
+}
+
+/* Prevent fixed width layouts from squishing */
+.form-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Tables: allow horizontal scroll instead of exploding the layout */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+}
+
+/* Make any table behave nicely */
+table {
+  width: 100%;
+  min-width: 650px; /* so columns don’t become 2px wide */
+  border-collapse: collapse;
+}
+
+/* Inputs: don’t zoom on iOS because of tiny font */
+input, select, button {
+  font-size: 16px;
+}
+
+/* Navbar: wrap on small screens */
+.navbar {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.navbar a {
+  padding: 0.4rem 0.7rem;
+}
+
+/* Currency dropdown + Set button: keep them from floating offscreen */
+.navbar form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Charts scale down on phones */
+.chart-container {
+  max-width: 100%;
+  width: 100%;
+}
+
+/* Mobile-specific tweaks */
+@media (max-width: 600px) {
+  main.container {
+    padding: 1rem;
+    border-radius: 10px;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  /* Forms stack naturally */
+  .radio-group {
+    gap: 10px;
+  }
+
+  /* Buttons full width on mobile (friendlier tapping) */
+  button {
+    width: 100%;
+  }
+
+  /* Make progress bars not look tiny */
+  .progress-container {
+    height: 22px;
+  }
+}
+
+
+/* Goals: table on desktop, cards on mobile */
+.goals-cards { display: none; }
+
+.goal-card {
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 12px;
+}
+
+.goal-card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: var(--text-dark);
+}
+
+.goal-card-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 0;
+  color: var(--text-medium);
+}
+
+.danger-btn {
+  background-color: #e07a5f;
+  color: white;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+}
+
+@media (max-width: 700px) {
+  .goal-table { display: none; }
+  .goals-cards { display: block; }
+}
+
