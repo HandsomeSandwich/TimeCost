@@ -1,17 +1,50 @@
 {% extends "base.html" %}
 {% block title %}Long Term Savings Goals{% endblock %}
+
 {% block head %}
   <style>
     .form-container { max-width: 800px; margin: 0 auto; text-align: left; }
+
     .goal-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     .goal-table, .goal-table th, .goal-table td { border: 1px solid #ccc; }
     .goal-table th, .goal-table td { padding: 10px; text-align: left; }
+
     .progress-container { width: 100%; background-color: #eee; border-radius: 5px; margin-top: 5px; height: 25px; overflow: hidden; }
     .progress-bar { height: 100%; background-color: #76c7c0; text-align: center; line-height: 25px; color: #fff; }
-    .savingsForm input[type="number"] { width: 80%; padding: 5px; }
-    .savingsForm button { padding: 5px 10px; cursor: pointer; }
+
+    .savingsForm input[type="number"] { width: 100%; padding: 8px; }
+    .savingsForm button { padding: 8px 10px; cursor: pointer; }
+
+    /* --- Cards --- */
+    .goals-cards { display: none; margin-top: 16px; }
+    .goal-card {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: #fff;
+    }
+    .goal-card-title { font-weight: 700; margin-bottom: 10px; font-size: 1.05rem; }
+    .goal-card-row { display: flex; justify-content: space-between; gap: 10px; margin: 6px 0; }
+    .danger-btn {
+      background-color: #e07a5f;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* --- Responsive switching --- */
+    @media (max-width: 720px) {
+      .goal-table { display: none; }
+      .goals-cards { display: block; }
+      .savingsForm { display: flex; gap: 8px; align-items: center; }
+      .savingsForm input { flex: 1; }
+    }
   </style>
 {% endblock %}
+
 {% block content %}
 <div class="form-container">
   <h1>Long Term Savings Goals</h1>
@@ -37,56 +70,58 @@
 
   {% if goals %}
     <h2>Saved Goals</h2>
+
+    <!-- Mobile cards -->
+    <div class="goals-cards">
+      {% for goal in goals %}
+        {% set raw_progress = (goal.current / goal.target * 100) if goal.target > 0 else 0 %}
+        {% set progress = 100 if raw_progress > 100 else (0 if raw_progress < 0 else raw_progress) %}
+
+        <div class="goal-card">
+          <div class="goal-card-title">{{ goal.name }}</div>
+
+          <div class="goal-card-row">
+            <span>Target</span>
+            <strong>{{ currency }}{{ goal.target|round(2) }}</strong>
+          </div>
+
+          <div class="goal-card-row">
+            <span>Saved</span>
+            <strong>{{ currency }}{{ goal.current|round(2) }}</strong>
+          </div>
+
+          <div class="progress-container">
+            <div class="progress-bar" style="width: {{ progress }}%;">
+              {{ progress|round(1) }}%
+            </div>
+          </div>
+
+          <form action="{{ url_for('goals') }}" method="post" class="savingsForm" style="margin-top: 10px;">
+            <input type="hidden" name="goal_index" value="{{ goal.id }}">
+            <input type="number" step="0.01" name="savings_to_add" placeholder="Add {{ currency }}" required>
+            <button type="submit" name="update_goal" value="1">Add</button>
+          </form>
+
+          <form action="{{ url_for('delete_goal', goal_id=goal.id) }}" method="post" style="margin-top: 8px;">
+            <button type="submit" onclick="return confirm('Delete this goal?')" class="danger-btn">
+              🗑️ Delete
+            </button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Desktop table -->
     <table class="goal-table">
       <thead>
         <tr>
           <th>Goal Name</th>
-          <th>Target Amount ({{ currency }})</th>
-          <th>Current Savings ({{ currency }})</th>
+          <th>Target ({{ currency }})</th>
+          <th>Saved ({{ currency }})</th>
           <th>Progress</th>
-          <th>Add Savings</th>
+          <th>Actions</th>
         </tr>
       </thead>
-
-      <div class="goals-cards">
-  {% for goal in goals %}
-    {% set raw_progress = (goal.current / goal.target * 100) if goal.target > 0 else 0 %}
-    {% set progress = 100 if raw_progress > 100 else (0 if raw_progress < 0 else raw_progress) %}
-
-    <div class="goal-card">
-      <div class="goal-card-title">{{ goal.name }}</div>
-
-      <div class="goal-card-row">
-        <span>Target</span>
-        <strong>{{ currency }}{{ goal.target|round(2) }}</strong>
-      </div>
-
-      <div class="goal-card-row">
-        <span>Saved</span>
-        <strong>{{ currency }}{{ goal.current|round(2) }}</strong>
-      </div>
-
-      <div class="progress-container">
-        <div class="progress-bar" style="width: {{ progress }}%;">
-          {{ progress|round(1) }}%
-        </div>
-      </div>
-
-      <form action="{{ url_for('goals') }}" method="post" class="savingsForm" style="margin-top: 10px;">
-        <input type="hidden" name="goal_index" value="{{ goal.id }}">
-        <input type="number" step="0.01" name="savings_to_add" placeholder="Add {{ currency }}" required>
-        <button type="submit" name="update_goal" value="1">Add Savings</button>
-      </form>
-
-      <form action="{{ url_for('delete_goal', goal_id=goal.id) }}" method="post" style="margin-top: 6px;">
-        <button type="submit" onclick="return confirm('Delete this goal?')" class="danger-btn">
-          🗑️ Delete
-        </button>
-      </form>
-    </div>
-    {% endfor %}
-    </div>
-
       <tbody>
         {% for goal in goals %}
           {% set raw_progress = (goal.current / goal.target * 100) if goal.target > 0 else 0 %}
@@ -98,7 +133,7 @@
             <td>
               <div class="progress-container">
                 <div class="progress-bar" style="width: {{ progress }}%;">
-                  {{ progress|round(2) }}%
+                  {{ progress|round(1) }}%
                 </div>
               </div>
             </td>
@@ -106,13 +141,11 @@
               <form action="{{ url_for('goals') }}" method="post" class="savingsForm">
                 <input type="hidden" name="goal_index" value="{{ goal.id }}">
                 <input type="number" step="0.01" name="savings_to_add" placeholder="Add {{ currency }}" required>
-                <button type="submit" name="update_goal" value="1">Add Savings</button>
+                <button type="submit" name="update_goal" value="1">Add</button>
               </form>
 
               <form action="{{ url_for('delete_goal', goal_id=goal.id) }}" method="post" style="margin-top: 6px;">
-                <button type="submit"
-                        onclick="return confirm('Delete this goal?')"
-                        style="background-color:#e07a5f;color:white;border:none;padding:4px 8px;border-radius:5px;cursor:pointer;">
+                <button type="submit" onclick="return confirm('Delete this goal?')" class="danger-btn">
                   🗑️ Delete
                 </button>
               </form>
