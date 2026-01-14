@@ -16,6 +16,11 @@
   </header>
 
   <nav class="navbar">
+  <button class="nav-toggle" aria-label="Open menu" aria-controls="mobile-drawer" aria-expanded="false">
+    ☰
+  </button>
+
+  <div class="nav-links">
     <a href="{{ url_for('calculator') }}">Calculator</a>
     <a href="{{ url_for('personal') }}">Personal</a>
     <a href="{{ url_for('expenses') }}">Expenses</a>
@@ -23,18 +28,66 @@
     <a href="{{ url_for('budget') }}">Budget</a>
     <a href="{{ url_for('goals') }}">Goals</a>
     <a href="{{ url_for('staples') }}">Staples</a>
+  </div>
 
-    <form action="{{ url_for('set_currency') }}" method="post" style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-      <select name="currency" aria-label="Currency">
-        <option value="$" {% if session.get('currency', '$') == "$" %}selected{% endif %}>$</option>
-        <option value="£" {% if session.get('currency') == "£" %}selected{% endif %}>£</option>
-        <option value="€" {% if session.get('currency') == "€" %}selected{% endif %}>€</option>
-        <option value="¥" {% if session.get('currency') == "¥" %}selected{% endif %}>¥</option>
-        <option value="₹" {% if session.get('currency') == "₹" %}selected{% endif %}>₹</option>
-      </select>
-      <button type="submit">Set</button>
-    </form>
-  </nav>
+  <div class="nav-right">
+    {# your currency dropdown + Set button stays here #}
+    {% block nav_right %}{% endblock %}
+  </div>
+</nav>
+
+<div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
+
+<aside id="mobile-drawer" class="drawer" hidden>
+  <div class="drawer-header">
+    <strong>Menu</strong>
+    <button class="drawer-close" aria-label="Close menu">✕</button>
+  </div>
+
+  <a href="{{ url_for('calculator') }}">Calculator</a>
+  <a href="{{ url_for('personal') }}">Personal</a>
+  <a href="{{ url_for('expenses') }}">Expenses</a>
+  <a href="{{ url_for('timebank') }}">Time Bank</a>
+  <a href="{{ url_for('budget') }}">Budget</a>
+  <a href="{{ url_for('goals') }}">Goals</a>
+  <a href="{{ url_for('staples') }}">Staples</a>
+</aside>
+
+<script>
+  (function () {
+    const toggle = document.querySelector(".nav-toggle");
+    const drawer = document.getElementById("mobile-drawer");
+    const backdrop = document.getElementById("drawer-backdrop");
+    const closeBtn = document.querySelector(".drawer-close");
+
+    function openDrawer() {
+      drawer.hidden = false;
+      backdrop.hidden = false;
+      toggle.setAttribute("aria-expanded", "true");
+      document.body.classList.add("drawer-open");
+    }
+
+    function closeDrawer() {
+      drawer.hidden = true;
+      backdrop.hidden = true;
+      toggle.setAttribute("aria-expanded", "false");
+      document.body.classList.remove("drawer-open");
+    }
+
+    toggle?.addEventListener("click", () => {
+      const isOpen = toggle.getAttribute("aria-expanded") === "true";
+      isOpen ? closeDrawer() : openDrawer();
+    });
+
+    closeBtn?.addEventListener("click", closeDrawer);
+    backdrop?.addEventListener("click", closeDrawer);
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeDrawer();
+    });
+  })();
+</script>
+
 
   <main class="container">
     {% block content %}{% endblock %}
