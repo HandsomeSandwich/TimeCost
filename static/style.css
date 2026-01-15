@@ -775,6 +775,50 @@ body.dark-mode .progress-container {
   font-weight: 600;
 }
 
+/* Personal page */
+.form-container {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.form-container form div { margin-bottom: 15px; }
+
+.form-container form label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.form-container form input,
+.form-container form select {
+  width: 100%;
+  padding: 10px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-dark);
+}
+
+.form-container form input[readonly] {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: var(--text-medium);
+  cursor: not-allowed;
+}
+
+body.dark-mode .form-container form input[readonly] {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.hint {
+  font-size: 0.9rem;
+  color: var(--text-medium);
+  margin-top: 6px;
+}
+
+
 /* =========================
    Mobile tweaks
    ========================= */

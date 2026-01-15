@@ -1,67 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Personal Information{% endblock %}
 
-{% block head %}
-<style>
-  .form-container {
-    max-width: 800px;
-    margin: 0 auto;
-    text-align: left;
-  }
-
-  .form-container form div {
-    margin-bottom: 15px;
-  }
-
-  .form-container form label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 5px;
-  }
-
-  .form-container form input,
-  .form-container form select {
-    width: 100%;
-    padding: 10px;
-    font-size: 1rem;
-    box-sizing: border-box;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-
-  .form-container form input[readonly] {
-    background-color: #f5f5f5;
-    color: #555;
-    cursor: not-allowed;
-  }
-
-  .form-container form button {
-    padding: 10px 20px;
-    font-size: 1rem;
-    border: none;
-    border-radius: 4px;
-    background-color: #333;
-    color: #fff;
-    cursor: pointer;
-  }
-
-  .form-container form button:hover {
-    background-color: #555;
-  }
-
-  .radio-group label {
-    margin-right: 15px;
-    font-weight: normal;
-  }
-
-  .hint {
-    font-size: 0.9rem;
-    color: #666;
-    margin-top: 5px;
-  }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="form-container">
   <h1>Personal Information</h1>

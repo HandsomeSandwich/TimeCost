@@ -188,7 +188,10 @@ def personal():
     if request.method == "POST":
         session["username"] = (request.form.get("username") or "").strip()
         session["workHours"] = request.form.get("workHours")
-        session["currency"] = request.form.get("currency", "$")
+
+        allowed_currencies = {"$", "£", "€", "¥", "₹", "₩", "₽"}
+        c = request.form.get("currency", "$")
+        session["currency"] = c if c in allowed_currencies else "$"
 
         # If your form has these fields, store them too
         annual_rate = request.form.get("annualRate")
@@ -518,18 +521,22 @@ def delete_goal(goal_id):
         conn.close()
     return redirect(url_for("goals"))
 
-
-@app.route("/set_currency", methods=["POST"])
-def set_currency():
-    session["currency"] = request.form.get("currency", "$")
-    return redirect(request.referrer or url_for("personal"))
-
-
 @app.route("/staples", methods=["GET"])
 def staples():
     return render_template("staples.html")
 
+@app.route("/set_currency", methods=["POST"])
+def set_currency():
+    allowed = {"$", "£", "€", "¥", "₹", "₩", "₽"}
+    c = request.form.get("currency", "$")
+    session["currency"] = c if c in allowed else "$"
+    return redirect(request.referrer or url_for("personal"))
+
+
 @app.route("/set_perspective", methods=["POST"])
 def set_perspective():
-    session["perspective"] = request.form.get("perspective", "river")
+    allowed = {"river", "leslie", "eddie"}
+    p = request.form.get("perspective", "river")
+    session["perspective"] = p if p in allowed else "river"
     return redirect(request.referrer or url_for("calculator"))
+
