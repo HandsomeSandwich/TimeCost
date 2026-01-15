@@ -2,41 +2,24 @@
 
 {% block title %}TimeCost Calculator{% endblock %}
 
-{% block head %}
-<style>
-  .form-container { max-width: 800px; margin: 0 auto; text-align: left; }
-  .form-container form div { margin-bottom: 15px; }
-  .form-container form label { display: block; font-weight: bold; margin-bottom: 5px; }
-  .form-container form input, .form-container form select {
-    width: 100%; padding: 10px; font-size: 1rem; box-sizing: border-box;
-    border: 1px solid #ccc; border-radius: 4px;
-  }
-  .form-container form button {
-    padding: 10px 20px; font-size: 1rem; border: none; border-radius: 4px;
-    background-color: #333; color: #fff; cursor: pointer;
-  }
-  .form-container form button:hover { background-color: #555; }
-  .radio-group label { margin-right: 15px; font-weight: normal; }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="form-container">
   <h1>TimeCost Calculator</h1>
   <p>Enter your item’s details to see how much work time it costs.</p>
 
-  <form action="{{ url_for('calculator') }}" method="post">
-    <div>
+  <form action="{{ url_for('calculator') }}" method="post" class="calc-form">
+    <div class="field">
       <label for="itemName">Item Name (optional):</label>
       <input type="text" id="itemName" name="itemName" value="{{ item_name or '' }}">
     </div>
 
-    <div>
+    <div class="field">
       <label for="itemCost">Item Cost:</label>
       <input type="number" step="0.01" id="itemCost" name="itemCost" value="{{ item_cost or '' }}" required>
+
     </div>
 
-    <div>
+    <div class="field">
       <label for="currency">Currency Symbol:</label>
       <select id="currency" name="currency">
         <option value="$" {% if currency == "$" %}selected{% endif %}>$ (USD)</option>
@@ -47,14 +30,14 @@
       </select>
     </div>
 
-    <div class="radio-group">
-      <label>Salary Type:</label><br>
+    <fieldset class="radio-group field">
+      <legend>Salary Type:</legend>
       <label><input type="radio" name="wageType" value="hourly" {% if pre_wage_type == "hourly" %}checked{% endif %}> Hourly</label>
       <label><input type="radio" name="wageType" value="monthly" {% if pre_wage_type == "monthly" %}checked{% endif %}> Monthly</label>
       <label><input type="radio" name="wageType" value="annual" {% if pre_wage_type == "annual" %}checked{% endif %}> Annual</label>
-    </div>
+    </fieldset>
 
-    <div>
+    <div class="field">
       <label for="wageAmount">Your Wage Amount:</label>
       <input type="number" step="0.01" id="wageAmount" name="wageAmount" value="{{ pre_wage_amount or '' }}" required>
     </div>
@@ -63,11 +46,28 @@
   </form>
 
   {% if result == "Invalid input" %}
-    <h2>Result</h2>
-    <p>Invalid input. Please check your values.</p>
+    <div class="result-card" role="status">
+      <h2>Result</h2>
+      <p class="error-text">Invalid input. Please check your values.</p>
+    </div>
+
   {% elif result is not none %}
-    <h2>Result{% if item_name %} for "{{ item_name }}"{% endif %}</h2>
-    <p>This item costs approximately <strong>{{ result|round(2) }}</strong> hours of work.</p>
+    <div class="result-card" role="status">
+      <h2>Result{% if item_name %} for “{{ item_name }}”{% endif %}</h2>
+
+      <p>
+        This item costs approximately <strong>{{ result|round(2) }}</strong> hours of work.
+      </p>
+
+      {% if time_cost and time_cost.ok %}
+        <p>
+          That’s <strong>{{ time_cost.human }}</strong>
+          {% if workday_text %}({{ workday_text }}){% endif %}.
+        </p>
+      {% elif time_cost and not time_cost.ok %}
+        <p class="error-text">{{ time_cost.error }}</p>
+      {% endif %}
+    </div>
   {% endif %}
 </div>
 {% endblock %}

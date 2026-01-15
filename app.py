@@ -2,6 +2,114 @@ from flask import Flask, render_template, request, session, redirect, url_for
 from sqlalchemy import text
 from database import get_db_connection, init_db
 import os
+import math
+
+def _clamp(n: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, n))
+
+def money_to_time(cost: float, hourly_rate: float) -> dict:
+    """
+    Convert money cost into time cost based on hourly_rate.
+    Returns a dict safe for templates.
+
+    Output keys:
+      - ok (bool)
+      - error (str|None)
+      - cost (float)
+      - hourly_rate (float)
+      - total_hours (float)  # e.g. 2.63
+      - hours (int)
+      - minutes (int)
+      - total_minutes (int)
+      - human (str)          # e.g. "2h 38m"
+    """
+    try:
+        cost = float(cost)
+        hourly_rate = float(hourly_rate)
+    except (TypeError, ValueError):
+        return {"ok": False, "error": "Invalid number.", "human": ""}
+
+    if hourly_rate <= 0:
+        return {"ok": False, "error": "Hourly rate must be greater than 0.", "human": ""}
+
+    if cost < 0:
+        return {"ok": False, "error": "Cost can't be negative.", "human": ""}
+
+    total_hours = cost / hourly_rate
+
+    # Round to nearest minute for a nicer UX
+    total_minutes = int(round(total_hours * 60))
+
+    hours = total_minutes // 60
+    minutes = total_minutes % 60
+
+    # Human string
+    if hours == 0 and minutes == 0:
+        human = "0m"
+    elif hours == 0:
+        human = f"{minutes}m"
+    elif minutes == 0:
+        human = f"{hours}h"
+    else:
+        human = f"{hours}h {minutes}m"
+
+    return {
+        "ok": True,
+        "error": None,
+        "cost": round(cost, 2),
+        "hourly_rate": round(hourly_rate, 2),
+        "total_hours": round(total_minutes / 60, 2),
+        "hours": hours,
+        "minutes": minutes,
+        "total_minutes": total_minutes,
+        "human": human,
+    }
+
+def workday_equivalent(total_hours: float, hours_per_day: float = 8.0) -> str:
+    """
+    Convert hours into a friendly phrase like:
+      - "about 1 workday"
+      - "about 2.5 workdays"
+    """
+    try:
+        total_hours = float(total_hours)
+        hours_per_day = float(hours_per_day)
+    except (TypeError, ValueError):
+        return ""
+
+    if total_hours <= 0 or hours_per_day <= 0:
+        return ""
+
+    days = total_hours / hours_per_day
+
+    # Keep it readable: 1 decimal place max, and clamp silly precision
+    if days < 0.25:
+        return "less than a quarter workday"
+    if days < 1:
+        return f"about {round(days, 1)} workday"
+    if days < 2:
+        return "about 1 workday"
+    return f"about {round(days, 1)} workdays"
+
+def week_equivalent(total_hours: float, hours_per_week: float = 40.0) -> str:
+    """
+    Convert hours into a friendly phrase like "about 0.2 workweeks".
+    Optional. Useful once you add monthly statements.
+    """
+    try:
+        total_hours = float(total_hours)
+        hours_per_week = float(hours_per_week)
+    except (TypeError, ValueError):
+        return ""
+
+    if total_hours <= 0 or hours_per_week <= 0:
+        return ""
+
+    weeks = total_hours / hours_per_week
+    if weeks < 0.1:
+        return "less than a tenth of a workweek"
+    return f"about {round(weeks, 1)} workweeks"
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(32))
@@ -17,54 +125,61 @@ except Exception as e:
 def calculator():
     pre_wage_amount = session.get("hourlyRate", "")
     pre_wage_type = "hourly"
+
     result = None
     item_name = ""
+    item_cost = ""
+    time_cost = None
+    workday_text = ""
 
     if request.method == "POST":
         currency = request.form.get("currency", "$")
         session["currency"] = currency
 
         item_name = request.form.get("itemName", "")
-        item_cost = request.form.get("itemCost")
+        item_cost = request.form.get("itemCost", "")
         wage_type = request.form.get("wageType") or pre_wage_type
         wage_amount = request.form.get("wageAmount") or pre_wage_amount
 
         try:
-            item_cost = float(item_cost)
-            wage_amount = float(wage_amount)
-            if wage_amount <= 0:
+            item_cost_f = float(item_cost)
+            wage_amount_f = float(wage_amount)
+
+            if wage_amount_f <= 0:
                 raise ValueError("Wage must be > 0")
 
+            # Convert wage to hourly for BOTH result and time_cost
+            hourly_rate = wage_amount_f
             if wage_type == "annual":
-                wage_amount /= 2080
+                hourly_rate = wage_amount_f / 2080
             elif wage_type == "monthly":
-                wage_amount /= 173.33
+                hourly_rate = wage_amount_f / 173.33
 
-            if wage_amount <= 0:
+            if hourly_rate <= 0:
                 raise ValueError("Converted wage must be > 0")
 
-            result = item_cost / wage_amount
+            result = item_cost_f / hourly_rate
+
+            # Use the SAME hourly_rate for time_cost
+            time_cost = money_to_time(item_cost_f, hourly_rate)
+            if time_cost["ok"]:
+                workday_text = workday_equivalent(time_cost["total_hours"])
+
         except (ValueError, TypeError, ZeroDivisionError):
             result = "Invalid input"
-
-        return render_template(
-            "calculator.html",
-            result=result,
-            item_name=item_name,
-            pre_wage_type=wage_type,
-            pre_wage_amount=wage_amount,
-            currency=currency,
-        )
+            time_cost = {"ok": False, "error": "Invalid input.", "human": ""}
 
     return render_template(
         "calculator.html",
-        result=None,
-        item_name="",
+        result=result,
+        item_name=item_name,
+        item_cost=item_cost,
         pre_wage_type=pre_wage_type,
         pre_wage_amount=pre_wage_amount,
         currency=session.get("currency", "$"),
+        time_cost=time_cost,
+        workday_text=workday_text
     )
-
 
 @app.route("/personal", methods=["GET", "POST"])
 def personal():

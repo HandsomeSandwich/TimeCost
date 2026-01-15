@@ -621,3 +621,45 @@ body.dark-mode .progress-container {
     height: auto;
   }
 }
+
+/* Calculator page */
+.calc-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.calc-form fieldset.radio-group {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.calc-form fieldset.radio-group legend {
+  padding: 0 0.4rem;
+  color: var(--text-medium);
+  font-weight: 700;
+}
+
+.calc-form fieldset.radio-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-right: 0.75rem;
+  margin-top: 0.35rem;
+  font-weight: 500;
+}
+
+.result-card {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.error-text {
+  color: #c00;
+  font-weight: 600;
+}
