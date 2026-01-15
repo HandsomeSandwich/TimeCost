@@ -120,6 +120,12 @@ try:
 except Exception as e:
     print("Database init error:", e)
 
+@app.context_processor
+def inject_globals():
+    return {
+        "currency": session.get("currency", "$"),
+        "perspective": session.get("perspective", "river"),
+    }
 
 @app.route("/", methods=["GET", "POST"])
 def calculator():
@@ -133,9 +139,6 @@ def calculator():
     workday_text = ""
 
     if request.method == "POST":
-        currency = request.form.get("currency", "$")
-        session["currency"] = currency
-
         item_name = request.form.get("itemName", "")
         item_cost = request.form.get("itemCost", "")
         wage_type = request.form.get("wageType") or pre_wage_type
@@ -176,7 +179,6 @@ def calculator():
         item_cost=item_cost,
         pre_wage_type=pre_wage_type,
         pre_wage_amount=pre_wage_amount,
-        currency=session.get("currency", "$"),
         time_cost=time_cost,
         workday_text=workday_text
     )

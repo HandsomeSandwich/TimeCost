@@ -44,7 +44,7 @@
     </div>
 
     <div class="field">
-      <label for="itemCost">Item Cost:</label>
+      <label for="itemCost">Item Cost ({{ currency }}):</label>
       <input
         type="number"
         step="0.01"
@@ -55,17 +55,6 @@
       >
     </div>
 
-    <div class="field">
-      <label for="currency">Currency Symbol:</label>
-      <select id="currency" name="currency">
-        <option value="$" {% if currency == "$" %}selected{% endif %}>$ (USD)</option>
-        <option value="£" {% if currency == "£" %}selected{% endif %}>£ (GBP)</option>
-        <option value="€" {% if currency == "€" %}selected{% endif %}>€ (EUR)</option>
-        <option value="¥" {% if currency == "¥" %}selected{% endif %}>¥ (JPY)</option>
-        <option value="₹" {% if currency == "₹" %}selected{% endif %}>₹ (INR)</option>
-      </select>
-    </div>
-
     <fieldset class="radio-group field">
       <legend>Salary Type:</legend>
       <label><input type="radio" name="wageType" value="hourly" {% if pre_wage_type == "hourly" %}checked{% endif %}> Hourly</label>
@@ -74,7 +63,7 @@
     </fieldset>
 
     <div class="field">
-      <label for="wageAmount">Your Wage Amount:</label>
+      <label for="wageAmount">Your Wage Amount ({{ currency }}):</label>
       <input
         type="number"
         step="0.01"
@@ -131,7 +120,6 @@
 (function () {
   const itemCostEl = document.getElementById("itemCost");
   const wageAmountEl = document.getElementById("wageAmount");
-  const currencyEl = document.getElementById("currency");
   const wageTypeEls = () => document.querySelectorAll('input[name="wageType"]');
 
   const liveResult = document.getElementById("liveResult");
@@ -195,8 +183,7 @@
     else rateHint.textContent = "";
   }
 
-  function recalc() {
-    const currency = currencyEl.value || "$";
+    function recalc() {
     const wageType = getWageType();
     updateHint(wageType);
 
@@ -204,7 +191,6 @@
     const wageAmount = parseFloat(wageAmountEl.value);
     const hourly = hourlyFromWage(wageAmount, wageType);
 
-    // Hide until user starts typing something meaningful
     const hasAnything = (itemCostEl.value.trim() !== "" || wageAmountEl.value.trim() !== "");
     if (!hasAnything) {
       liveResult.style.display = "none";
@@ -223,18 +209,15 @@
 
     liveResult.style.display = "block";
     resultTitle.textContent = {{ c.live_title|tojson }};
-    resultHoursLine.innerHTML = `${{{ c.hours_line|tojson }}} <strong>${hours.toFixed(2)}</strong> hours of work.`;
-    resultHumanLine.innerHTML = `${{{ c.thats|tojson }}} <strong>${human}</strong>${workday ? ` (${workday})` : ""}.`;
-}
+    resultHoursLine.innerHTML =
+      `${{ c.hours_line|tojson }} <strong>${hours.toFixed(2)}</strong> hours of work.`;
+    resultHumanLine.innerHTML =
+      `${{ c.thats|tojson }} <strong>${human}</strong>${workday ? ` (${workday})` : ""}.`;
+  }
 
   // Events
   itemCostEl.addEventListener("input", recalc);
   wageAmountEl.addEventListener("input", recalc);
-  currencyEl.addEventListener("change", recalc);
   wageTypeEls().forEach(r => r.addEventListener("change", recalc));
 
-  // Initial run
   recalc();
-})();
-</script>
-{% endblock %}
