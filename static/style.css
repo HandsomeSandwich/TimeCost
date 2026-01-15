@@ -788,3 +788,18 @@ body.dark-mode .progress-container {
     gap: 0.5rem;
   }
 }
+
+.perspective-form {
+  display: flex;
+  align-items: center;
+}
+
+.perspective-form select {
+  max-width: 140px;
+}
+
+/* Optional: spacing when inside the drawer */
+.drawer .drawer-perspective,
+.drawer .drawer-currency {
+  margin-top: 10px;
+}

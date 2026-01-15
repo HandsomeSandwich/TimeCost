@@ -526,3 +526,8 @@ def set_currency():
 @app.route("/staples", methods=["GET"])
 def staples():
     return render_template("staples.html")
+
+@app.route("/set_perspective", methods=["POST"])
+def set_perspective():
+    session["perspective"] = request.form.get("perspective", "river")
+    return redirect(request.referrer or url_for("calculator"))

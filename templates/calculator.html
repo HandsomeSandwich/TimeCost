@@ -3,9 +3,39 @@
 {% block title %}TimeCost Calculator{% endblock %}
 
 {% block content %}
+
+{% set perspective = session.get("perspective", "river") %}
+
+{% set copy = {
+  "river": {
+    "intro": "Enter your item’s details to see how much work time it costs.",
+    "hours_line": "This item costs approximately",
+    "thats": "That’s",
+    "invalid": "Invalid input. Please check your values.",
+    "live_title": "Live Result"
+  },
+  "leslie": {
+    "intro": "Okay team, let’s do the math and make your money serve your dreams.",
+    "hours_line": "This item will require roughly",
+    "thats": "That’s",
+    "invalid": "Nope. Something’s off. Let’s fix the numbers and try again.",
+    "live_title": "Live Result (Optimism Mode)"
+  },
+  "eddie": {
+    "intro": "Right, darling. Let’s see how much of your actual life this little purchase wants to eat.",
+    "hours_line": "This item costs you about",
+    "thats": "That’s",
+    "invalid": "Darling. Those numbers are a mess. Try again with something that exists in this universe.",
+    "live_title": "Live Result (Drama)"
+  }
+} %}
+{% set c = copy.get(perspective, copy["river"]) %}
+
+
 <div class="form-container">
   <h1>TimeCost Calculator</h1>
-  <p>Enter your item’s details to see how much work time it costs.</p>
+  <p>{{ c.intro }}</p>
+
 
   <form action="{{ url_for('calculator') }}" method="post" class="calc-form" id="calcForm">
     <div class="field">
@@ -80,16 +110,18 @@
       <h2>Result{% if item_name %} for “{{ item_name }}”{% endif %}</h2>
 
       <p>
-        This item costs approximately <strong>{{ result|round(2) }}</strong> hours of work.
+        {{ c.hours_line }} <strong>{{ result|round(2) }}</strong> hours of work.
       </p>
+
 
       {% if time_cost and time_cost.ok %}
         <p>
-          That’s <strong>{{ time_cost.human }}</strong>
+          {{ c.thats }} <strong>{{ time_cost.human }}</strong>
           {% if workday_text %}({{ workday_text }}){% endif %}.
         </p>
+
       {% elif time_cost and not time_cost.ok %}
-        <p class="error-text">{{ time_cost.error }}</p>
+        <p class="error-text">{{ c.invalid }}</p>
       {% endif %}
     </div>
   {% endif %}
@@ -190,10 +222,10 @@
     const workday = workdayEquivalent(hours);
 
     liveResult.style.display = "block";
-    resultTitle.textContent = "Live Result";
-    resultHoursLine.innerHTML = `This item costs approximately <strong>${hours.toFixed(2)}</strong> hours of work.`;
-    resultHumanLine.innerHTML = `That’s <strong>${human}</strong>${workday ? ` (${workday})` : ""}.`;
-  }
+    resultTitle.textContent = {{ c.live_title|tojson }};
+    resultHoursLine.innerHTML = `${{{ c.hours_line|tojson }}} <strong>${hours.toFixed(2)}</strong> hours of work.`;
+    resultHumanLine.innerHTML = `${{{ c.thats|tojson }}} <strong>${human}</strong>${workday ? ` (${workday})` : ""}.`;
+}
 
   // Events
   itemCostEl.addEventListener("input", recalc);
