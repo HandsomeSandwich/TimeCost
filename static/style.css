@@ -663,3 +663,128 @@ body.dark-mode .progress-container {
   color: #c00;
   font-weight: 600;
 }
+
+/* =========================
+   TimeCost Calculator
+   ========================= */
+
+/* Form layout */
+.calc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.calc-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.calc-form label,
+.calc-form legend {
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+/* Inputs */
+.calc-form input,
+.calc-form select {
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-dark);
+  font-size: 1rem;
+}
+
+/* Radio group */
+.calc-form .radio-group {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+}
+
+.calc-form .radio-group legend {
+  padding: 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.calc-form .radio-group label {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Hint text under wage */
+.calc-form small {
+  font-size: 0.85rem;
+  color: var(--text-medium);
+}
+
+/* Submit button */
+.calc-form button[type="submit"] {
+  align-self: flex-start;
+  background-color: var(--accent);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.4rem;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.calc-form button[type="submit"]:hover {
+  background-color: #bc5843;
+}
+
+/* =========================
+   Result Card
+   ========================= */
+
+.result-card {
+  margin-top: 2rem;
+  padding: 1.25rem 1.4rem;
+  border-radius: 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+}
+
+.result-card h2 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.result-card p {
+  margin: 0.4rem 0;
+  color: var(--text-medium);
+}
+
+.result-card strong {
+  color: var(--text-dark);
+}
+
+/* Error text */
+.error-text {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* =========================
+   Mobile tweaks
+   ========================= */
+
+@media (max-width: 600px) {
+  .calc-form button[type="submit"] {
+    width: 100%;
+  }
+
+  .calc-form .radio-group {
+    gap: 0.5rem;
+  }
+}
