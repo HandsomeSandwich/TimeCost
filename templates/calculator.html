@@ -17,7 +17,7 @@
   "err_cost": "The cost hasn’t come into focus.",
   "err_wage": "Your wage needs a little more shape.",
   "err_convert": "These numbers don’t resolve into an hourly rhythm."
-}
+},
 
   "leslie": {
   "intro": "Okay, amazing human. Let’s calculate how much time this costs so you can make an informed, powerful life decision.",
@@ -29,7 +29,7 @@
   "err_cost": "That cost needs adjusting — and I believe in you.",
   "err_wage": "Your wage amount needs a tweak. This is normal. We are calm.",
   "err_convert": "These numbers need a moment to cooperate. They will."
-}
+},
 
   "eddie": {
   "intro": "Right. Let’s see what this little indulgence thinks your life is worth.",
@@ -144,11 +144,13 @@
   const resultError = document.getElementById("resultError");
   const rateHint = document.getElementById("rateHint");
 
-  // ✅ Pull your copy into JS safely
   const COPY = {
     liveTitle: {{ c.live_title|tojson }},
     hoursLine: {{ c.hours_line|tojson }},
-    thats: {{ c.thats|tojson }}
+    thats: {{ c.thats|tojson }},
+    errCost: {{ c.err_cost|tojson }},
+    errWage: {{ c.err_wage|tojson }},
+    errConvert: {{ c.err_convert|tojson }}
   };
 
   function getWageType() {
@@ -157,14 +159,14 @@
   }
 
   function hourlyFromWage(amount, type) {
-    if (!isFinite(amount) || amount <= 0) return 0;
-    if (type === "annual") return amount / 2080;
-    if (type === "monthly") return amount / 173.33;
-    return amount;
+    if (!Number.isFinite(amount) || amount <= 0) return 0;
+    if (type === "annual") return amount / 2080;     // 52w * 40h
+    if (type === "monthly") return amount / 173.33;  // 40h * 52 / 12
+    return amount; // hourly
   }
 
   function toHumanHours(hours) {
-    if (!isFinite(hours) || hours < 0) return "";
+    if (!Number.isFinite(hours) || hours < 0) return "";
     const totalMinutes = Math.round(hours * 60);
     const h = Math.floor(totalMinutes / 60);
     const m = totalMinutes % 60;
@@ -176,7 +178,7 @@
   }
 
   function workdayEquivalent(hours, hoursPerDay = 8) {
-    if (!isFinite(hours) || hours <= 0) return "";
+    if (!Number.isFinite(hours) || hours <= 0) return "";
     const days = hours / hoursPerDay;
 
     if (days < 0.25) return "less than a quarter workday";
@@ -187,6 +189,8 @@
 
   function showError(msg) {
     liveResult.style.display = "block";
+    resultTitle.textContent = COPY.liveTitle;
+
     resultError.style.display = "block";
     resultError.textContent = msg;
 
@@ -200,6 +204,7 @@
   }
 
   function updateHint(type) {
+    if (!rateHint) return;
     if (type === "annual") rateHint.textContent = "Converted using 2080 working hours/year.";
     else if (type === "monthly") rateHint.textContent = "Converted using ~173.33 working hours/month.";
     else rateHint.textContent = "";
@@ -209,19 +214,23 @@
     const wageType = getWageType();
     updateHint(wageType);
 
-    const cost = parseFloat(itemCostEl.value);
-    const wageAmount = parseFloat(wageAmountEl.value);
-    const hourly = hourlyFromWage(wageAmount, wageType);
+    const costRaw = (itemCostEl?.value ?? "").trim();
+    const wageRaw = (wageAmountEl?.value ?? "").trim();
 
-    const hasAnything = (itemCostEl.value.trim() !== "" || wageAmountEl.value.trim() !== "");
+    // Hide until user starts typing something meaningful
+    const hasAnything = costRaw !== "" || wageRaw !== "";
     if (!hasAnything) {
       liveResult.style.display = "none";
       return;
     }
 
-    if (!isFinite(cost) || cost < 0) return showError("Enter a valid item cost.");
-    if (!isFinite(wageAmount) || wageAmount <= 0) return showError("Enter a valid wage amount.");
-    if (!isFinite(hourly) || hourly <= 0) return showError("Wage conversion resulted in an invalid hourly rate.");
+    const cost = parseFloat(costRaw);
+    const wageAmount = parseFloat(wageRaw);
+    const hourly = hourlyFromWage(wageAmount, wageType);
+
+    if (!Number.isFinite(cost) || cost < 0) return showError(COPY.errCost);
+    if (!Number.isFinite(wageAmount) || wageAmount <= 0) return showError(COPY.errWage);
+    if (!Number.isFinite(hourly) || hourly <= 0) return showError(COPY.errConvert);
 
     clearError();
 
@@ -231,15 +240,18 @@
 
     liveResult.style.display = "block";
     resultTitle.textContent = COPY.liveTitle;
-    resultHoursLine.innerHTML = `${COPY.hoursLine} <strong>${hours.toFixed(2)}</strong> hours of work.`;
-    resultHumanLine.innerHTML = `${COPY.thats} <strong>${human}</strong>${workday ? ` (${workday})` : ""}.`;
+
+    resultHoursLine.innerHTML =
+      `${COPY.hoursLine} <strong>${hours.toFixed(2)}</strong> hours of work.`;
+
+    resultHumanLine.innerHTML =
+      `${COPY.thats} <strong>${human}</strong>${workday ? ` (${workday})` : ""}.`;
   }
 
-  itemCostEl.addEventListener("input", recalc);
-  wageAmountEl.addEventListener("input", recalc);
+  itemCostEl?.addEventListener("input", recalc);
+  wageAmountEl?.addEventListener("input", recalc);
   wageTypeEls().forEach(r => r.addEventListener("change", recalc));
 
   recalc();
 })();
 </script>
-{% endblock %}
