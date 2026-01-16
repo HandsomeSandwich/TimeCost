@@ -3,6 +3,8 @@ from sqlalchemy import text
 from database import get_db_connection, init_db
 import os
 import math
+from typing import Optional  # ✅ add this
+
 
 def _clamp(n: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, n))
@@ -126,11 +128,22 @@ def inject_globals():
         "currency": session.get("currency", "$"),
         "perspective": session.get("perspective", "river"),
     }
+# ... your helper functions money_to_time/workday_equivalent/week_equivalent stay the same ...
+
 
 @app.route("/", methods=["GET", "POST"])
 def calculator():
-    pre_wage_amount = session.get("hourlyRate", "")
+    effective_hourly = get_effective_hourly_rate()
+
+    # ✅ Default wage type is hourly (we can prefill hourly value)
     pre_wage_type = "hourly"
+
+    # ✅ Prefer computed effective hourly; fall back to stored hourlyRate; else blank
+    pre_wage_amount = ""
+    if effective_hourly and effective_hourly > 0:
+        pre_wage_amount = round(effective_hourly, 2)
+    else:
+        pre_wage_amount = session.get("hourlyRate", "")
 
     result = None
     item_name = ""
@@ -141,29 +154,43 @@ def calculator():
     if request.method == "POST":
         item_name = request.form.get("itemName", "")
         item_cost = request.form.get("itemCost", "")
+
+        # User-selected wage type (hourly/monthly/annual)
         wage_type = request.form.get("wageType") or pre_wage_type
-        wage_amount = request.form.get("wageAmount") or pre_wage_amount
+
+        # Raw wage input from the form (might be blank)
+        wage_amount_raw = (request.form.get("wageAmount") or "").strip()
 
         try:
             item_cost_f = float(item_cost)
-            wage_amount_f = float(wage_amount)
 
-            if wage_amount_f <= 0:
-                raise ValueError("Wage must be > 0")
+            if item_cost_f < 0:
+                raise ValueError("Cost can't be negative")
 
-            # Convert wage to hourly for BOTH result and time_cost
-            hourly_rate = wage_amount_f
-            if wage_type == "annual":
-                hourly_rate = wage_amount_f / 2080
-            elif wage_type == "monthly":
-                hourly_rate = wage_amount_f / 173.33
+            # ✅ If they left wage blank, use effective hourly from Personal info
+            if wage_amount_raw == "":
+                if effective_hourly is None or effective_hourly <= 0:
+                    raise ValueError("No wage available")
+                # Force hourly mode since effective_hourly is already hourly
+                wage_type = "hourly"
+                hourly_rate = float(effective_hourly)
+            else:
+                wage_amount_f = float(wage_amount_raw)
+                if wage_amount_f <= 0:
+                    raise ValueError("Wage must be > 0")
 
-            if hourly_rate <= 0:
-                raise ValueError("Converted wage must be > 0")
+                # Convert wage to hourly for BOTH result and time_cost
+                hourly_rate = wage_amount_f
+                if wage_type == "annual":
+                    hourly_rate = wage_amount_f / 2080
+                elif wage_type == "monthly":
+                    hourly_rate = wage_amount_f / 173.33
+
+                if hourly_rate <= 0:
+                    raise ValueError("Converted wage must be > 0")
 
             result = item_cost_f / hourly_rate
 
-            # Use the SAME hourly_rate for time_cost
             time_cost = money_to_time(item_cost_f, hourly_rate)
             if time_cost["ok"]:
                 workday_text = workday_equivalent(time_cost["total_hours"])
@@ -182,6 +209,62 @@ def calculator():
         time_cost=time_cost,
         workday_text=workday_text
     )
+
+
+def get_effective_hourly_rate() -> Optional[float]:
+    """
+    Returns effective hourly rate based on session info.
+    Priority:
+      1) hourlyRate
+      2) annualRate + workHours
+      3) paycheckAmount + payFrequency + workHours
+    """
+    # 1) direct hourly
+    try:
+        hr = float(session.get("hourlyRate") or 0)
+        if hr > 0:
+            return hr
+    except ValueError:
+        pass
+
+    # Hours per week (default 40)
+    try:
+        weekly_hours = float(session.get("workHours") or 40)
+        if weekly_hours <= 0:
+            weekly_hours = 40
+    except ValueError:
+        weekly_hours = 40
+
+    hours_per_year = weekly_hours * 52
+
+    # 2) annual salary
+    try:
+        annual = float(session.get("annualRate") or 0)
+        if annual > 0 and hours_per_year > 0:
+            return annual / hours_per_year
+    except ValueError:
+        pass
+
+    # 3) paycheck conversion
+    try:
+        paycheck = float(session.get("paycheckAmount") or 0)
+        freq = (session.get("payFrequency") or "").lower()
+
+        if paycheck > 0 and freq in {"weekly", "biweekly", "monthly"}:
+            if freq == "weekly":
+                annual = paycheck * 52
+            elif freq == "biweekly":
+                annual = paycheck * 26
+            else:  # monthly
+                annual = paycheck * 12
+
+            if hours_per_year > 0:
+                return annual / hours_per_year
+    except ValueError:
+        pass
+
+    return None
+
 
 @app.route("/personal", methods=["GET", "POST"])
 def personal():
@@ -539,4 +622,3 @@ def set_perspective():
     p = request.form.get("perspective", "river")
     session["perspective"] = p if p in allowed else "river"
     return redirect(request.referrer or url_for("calculator"))
-
