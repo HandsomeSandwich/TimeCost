@@ -6,7 +6,6 @@
   <title>{% block title %}TimeCost{% endblock %}</title>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
   {% block head %}{% endblock %}
 </head>
 
@@ -16,133 +15,35 @@
   </header>
 
   <nav class="navbar">
-  <button class="nav-toggle" aria-label="Open menu" aria-controls="mobile-drawer" aria-expanded="false">
-    ☰
-  </button>
+    <button
+      class="nav-toggle"
+      aria-label="Open menu"
+      aria-controls="mobile-drawer"
+      aria-expanded="false">
+      ☰
+    </button>
 
-  <div class="nav-links">
-    <a href="{{ url_for('calculator') }}">Calculator</a>
-    <a href="{{ url_for('personal') }}">Personal</a>
-    <a href="{{ url_for('expenses') }}">Expenses</a>
-    <a href="{{ url_for('timebank') }}">Time Bank</a>
-    <a href="{{ url_for('budget') }}">Budget</a>
-    <a href="{{ url_for('goals') }}">Goals</a>
-    <a href="{{ url_for('staples') }}">Staples</a>
-  </div>
+    <div class="nav-links">
+      {% include "partials/_nav_links.html" %}
+    </div>
 
     <div class="nav-right">
-    <form action="{{ url_for('set_currency') }}" method="post" class="currency-form">
-      <select name="currency" aria-label="Currency">
-        {% set cur = session.get("currency", "$") %}
-        <option value="$" {{ "selected" if cur == "$" else "" }}>$ (USD)</option>
-        <option value="£" {{ "selected" if cur == "£" else "" }}>£ (GBP)</option>
-        <option value="€" {{ "selected" if cur == "€" else "" }}>€ (EUR)</option>
-        <option value="¥" {{ "selected" if cur == "¥" else "" }}>¥ (JPY)</option>
-        <option value="₹" {{ "selected" if cur == "₹" else "" }}>₹ (INR)</option>
-      </select>
-      <button type="submit">Set</button>
-    </form>
+      {% include "partials/_nav_controls.html" %}
+      {% block nav_right %}{% endblock %}
+    </div>
+  </nav>
 
-      <form action="{{ url_for('set_perspective') }}" method="post" class="perspective-form">
-  {% set p = session.get("perspective", "river") %}
-  <select name="perspective" aria-label="Tone" onchange="this.form.submit()">
-    <option value="river"  {{ "selected" if p == "river" else "" }}>River</option>
-    <option value="leslie" {{ "selected" if p == "leslie" else "" }}>Leslie</option>
-    <option value="eddie"  {{ "selected" if p == "eddie" else "" }}>Eddie</option>
-  </select>
-</form>
+  <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
 
+  <aside id="mobile-drawer" class="drawer" hidden>
+    <div class="drawer-header">
+      <strong>Menu</strong>
+      <button class="drawer-close" aria-label="Close menu">✕</button>
+    </div>
 
-    {% block nav_right %}{% endblock %}
-  </div>
-
-</nav>
-
-<div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
-
-<aside id="mobile-drawer" class="drawer" hidden>
-  <div class="drawer-header">
-    <strong>Menu</strong>
-    <button class="drawer-close" aria-label="Close menu">✕</button>
-  </div>
-
-  <a href="{{ url_for('calculator') }}">Calculator</a>
-  <a href="{{ url_for('personal') }}">Personal</a>
-  <a href="{{ url_for('expenses') }}">Expenses</a>
-  <a href="{{ url_for('timebank') }}">Time Bank</a>
-  <a href="{{ url_for('budget') }}">Budget</a>
-  <a href="{{ url_for('goals') }}">Goals</a>
-  <a href="{{ url_for('staples') }}">Staples</a>
-
-  <form action="{{ url_for('set_currency') }}" method="post" class="currency-form drawer-currency">
-  <select name="currency" aria-label="Currency">
-    {% set cur = session.get("currency", "$") %}
-    <option value="$" {{ "selected" if cur == "$" else "" }}>$ (USD)</option>
-    <option value="£" {{ "selected" if cur == "£" else "" }}>£ (GBP)</option>
-    <option value="€" {{ "selected" if cur == "€" else "" }}>€ (EUR)</option>
-    <option value="¥" {{ "selected" if cur == "¥" else "" }}>¥ (JPY)</option>
-    <option value="₹" {{ "selected" if cur == "₹" else "" }}>₹ (INR)</option>
-  </select>
-  <button type="submit">Set</button>
-</form>
-
-<form action="{{ url_for('set_perspective') }}" method="post" class="perspective-form drawer-perspective">
-  {% set p = session.get("perspective", "river") %}
-  <select name="perspective" aria-label="Tone" onchange="this.form.submit()">
-    <option value="river"  {{ "selected" if p == "river" else "" }}>River</option>
-    <option value="leslie" {{ "selected" if p == "leslie" else "" }}>Leslie</option>
-    <option value="eddie"  {{ "selected" if p == "eddie" else "" }}>Eddie</option>
-  </select>
-</form>
-
-</aside>
-
-<script>
-  (function () {
-    const toggle = document.querySelector(".nav-toggle");
-    const drawer = document.getElementById("mobile-drawer");
-    const backdrop = document.getElementById("drawer-backdrop");
-    const closeBtn = document.querySelector(".drawer-close");
-
-    function openDrawer() {
-      drawer.hidden = false;
-      backdrop.hidden = false;
-      toggle.setAttribute("aria-expanded", "true");
-      document.body.classList.add("drawer-open");
-    }
-
-    function closeDrawer() {
-      drawer.hidden = true;
-      backdrop.hidden = true;
-      toggle.setAttribute("aria-expanded", "false");
-      document.body.classList.remove("drawer-open");
-    }
-
-    toggle?.addEventListener("click", () => {
-      const isOpen = toggle.getAttribute("aria-expanded") === "true";
-      isOpen ? closeDrawer() : openDrawer();
-    });
-
-    closeBtn?.addEventListener("click", closeDrawer);
-    backdrop?.addEventListener("click", closeDrawer);
-    drawer?.querySelectorAll("a").forEach(a => a.addEventListener("click", closeDrawer));
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeDrawer();
-    });
-
-    // ✅ Auto-close if viewport is desktop
-    function closeIfDesktop() {
-      if (window.matchMedia("(min-width: 721px)").matches) {
-        closeDrawer();
-      }
-    }
-
-    window.addEventListener("resize", closeIfDesktop);
-    closeIfDesktop(); // run once on load too
-  })();
-</script>
-
+    {% include "partials/_nav_links.html" %}
+    {% include "partials/_nav_controls.html" %}
+  </aside>
 
   <main class="container">
     {% block content %}{% endblock %}
@@ -151,5 +52,58 @@
   <footer>
     <p>&copy; TimeCost</p>
   </footer>
+
+  <script>
+    (function () {
+      const toggle = document.querySelector(".nav-toggle");
+      const drawer = document.getElementById("mobile-drawer");
+      const backdrop = document.getElementById("drawer-backdrop");
+      const closeBtn = drawer?.querySelector(".drawer-close");
+
+      function openDrawer() {
+        if (!drawer.hidden) return;
+        drawer.hidden = false;
+        backdrop.hidden = false;
+        toggle.setAttribute("aria-expanded", "true");
+        document.body.classList.add("drawer-open");
+        closeBtn?.focus();
+      }
+
+      function closeDrawer() {
+        if (drawer.hidden) return;
+        drawer.hidden = true;
+        backdrop.hidden = true;
+        toggle.setAttribute("aria-expanded", "false");
+        document.body.classList.remove("drawer-open");
+        toggle?.focus();
+      }
+
+      toggle?.addEventListener("click", () => {
+        toggle.getAttribute("aria-expanded") === "true"
+          ? closeDrawer()
+          : openDrawer();
+      });
+
+      closeBtn?.addEventListener("click", closeDrawer);
+      backdrop?.addEventListener("click", closeDrawer);
+
+      drawer?.querySelectorAll("a, form").forEach(el =>
+        el.addEventListener("click", closeDrawer)
+      );
+
+      document.addEventListener("keydown", e => {
+        if (e.key === "Escape") closeDrawer();
+      });
+
+      function closeIfDesktop() {
+        if (window.matchMedia("(min-width: 721px)").matches) {
+          closeDrawer();
+        }
+      }
+
+      window.addEventListener("resize", closeIfDesktop);
+      closeIfDesktop();
+    })();
+  </script>
 </body>
 </html>

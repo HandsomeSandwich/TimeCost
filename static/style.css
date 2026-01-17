@@ -1,11 +1,11 @@
 /* === Base Retro Minimalist Light & Dark Mode Styles === */
 
 :root {
-  --bg-color: #F5FDF6;
+  --bg-color: #F1F8F2;          /* was #F5FDF6, slightly richer */
   --card-bg: #FAFAF9;
-  --primary: #A3B18A;
-  --accent: #E07A5F;
-  --secondary-accent: #FFD37F;
+  --primary: #A3B18A;           /* growth/stability */
+  --accent: #E07A5F;            /* action + warning */
+  --secondary-accent: #FFD37F;  /* nav / friendly highlight */
   --text-dark: #2F3E46;
   --text-medium: #495057;
   --border-color: #CED4DA;
@@ -23,7 +23,7 @@ body.dark-mode {
   --text-dark: #F1F1F1;
   --text-medium: #CCCCCC;
   --border-color: #555;
-  --input-bg: #333;
+  --input-bg: #3A3A3A;          /* was #333, slightly lighter */
   --shadow: 0 2px 8px rgba(0,0,0,0.35);
 }
 
@@ -78,15 +78,14 @@ h2, h3 {
   margin-top: 1.5rem;
 }
 
-p, label {
-  color: var(--text-medium);
-}
+p, label { color: var(--text-medium); }
 
 ul { padding-left: 1.2rem; }
 ul li { margin-bottom: 0.5rem; }
 
 /* === Forms === */
-form {
+/* Scope layout to main content so navbar forms don't get column-stacked */
+main form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -102,6 +101,9 @@ input, select {
   color: var(--text-dark);
 }
 
+/* Avoid iOS zoom */
+input, select, button { font-size: 16px; }
+
 button {
   background-color: var(--accent);
   color: white;
@@ -115,6 +117,15 @@ button {
 }
 
 button:hover { background-color: #bc5843; }
+
+/* === Focus states === */
+a:focus,
+button:focus,
+input:focus,
+select:focus {
+  outline: 2px dashed var(--accent);
+  outline-offset: 2px;
+}
 
 /* === Navbar === */
 .navbar {
@@ -142,10 +153,11 @@ button:hover { background-color: #bc5843; }
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+/* Keep coral meaning “action/warning”, so hover uses subtle lightness */
 .navbar a:hover,
 .navbar a:focus {
-  background-color: var(--accent);
-  color: white;
+  background-color: rgba(255, 211, 127, 0.18);
+  color: #ffffff;
 }
 
 .navbar a.active {
@@ -176,6 +188,19 @@ button:hover { background-color: #bc5843; }
   gap: 0.75rem;
   align-items: center;
 }
+
+/* Nav controls (forms in header area) */
+.nav-right form,
+.navbar form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Keep selectors tidy */
+.currency-form select { max-width: 140px; }
+.perspective-form select { max-width: 140px; }
 
 /* Drawer */
 .drawer-backdrop {
@@ -215,9 +240,7 @@ button:hover { background-color: #bc5843; }
   border-radius: 10px;
 }
 
-.drawer a:hover {
-  background: rgba(0,0,0,0.06);
-}
+.drawer a:hover { background: rgba(0,0,0,0.06); }
 
 .drawer-close {
   background: none;
@@ -225,6 +248,9 @@ button:hover { background-color: #bc5843; }
   font-size: 1.2rem;
   cursor: pointer;
 }
+
+/* Prevent background scroll when drawer open */
+body.drawer-open { overflow: hidden; }
 
 /* Mobile rules */
 @media (max-width: 720px) {
@@ -245,12 +271,7 @@ button:hover { background-color: #bc5843; }
   }
 }
 
-/* Prevent background scroll when drawer open */
-body.drawer-open {
-  overflow: hidden;
-}
-
-
+/* Theme toggle button (if used) */
 #theme-toggle {
   background: none;
   border: none;
@@ -259,10 +280,35 @@ body.drawer-open {
   color: var(--secondary-accent);
   transition: transform 0.2s ease;
 }
+#theme-toggle:hover { transform: scale(1.1); }
 
-#theme-toggle:hover { transform: scale(1.2); }
+/* === Cards === */
+.card {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
 
-/* === Progress Bar === */
+/* === Tables wrapper === */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Optional: apply a min-width only to tables that need it */
+.table-wide { min-width: 650px; }
+
+/* === Progress Bar (native progress element) === */
 progress {
   width: 100%;
   height: 1rem;
@@ -276,136 +322,123 @@ progress::-webkit-progress-bar {
 
 progress::-webkit-progress-value,
 progress::-moz-progress-bar {
-  background-color: var(--secondary-accent);
+  background-color: var(--primary); /* was secondary-accent */
   border-radius: 10px;
 }
 
-/* === Cards === */
-.card {
-  background-color: var(--input-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-}
-
-/* === Radio Group === */
-.radio-group {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.radio-group label {
-  font-weight: normal;
-  display: flex;
-  align-items: center;
-}
-
-.radio-group input[type="radio"] { margin-right: 6px; }
-
-/* === Chart Container (single definition) === */
-.chart-container {
-  width: 100%;
-  max-width: 420px;
-  margin: 2rem auto;
-  aspect-ratio: 1 / 1;
-}
-
-/* === Focus states === */
-a:focus,
-button:focus,
-input:focus,
-select:focus {
-  outline: 2px dashed var(--accent);
-  outline-offset: 2px;
-}
-
-/* === Responsive Layout === */
-
-/* Prevent fixed width layouts from squishing */
+/* === Shared layout helpers === */
 .form-container {
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
+  text-align: left;
 }
 
-/* Tables: allow horizontal scroll instead of exploding the layout */
-.table-wrap {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  border-radius: 10px;
-}
-
-/* Default table behavior (no forced min-width globally) */
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-/* Optional: apply a min-width only to tables that need it */
-.table-wide {
-  min-width: 650px;
-}
-
-
-/* Inputs: don’t zoom on iOS because of tiny font */
-input, select, button {
-  font-size: 16px;
-}
-
-/* Currency dropdown + Set button: keep them from floating offscreen */
-.navbar form {
+.field {
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.hint,
+small {
+  color: var(--text-medium);
+  font-size: 0.9rem;
+}
+
+/* === Result Card === */
+.result-card {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  box-shadow: var(--shadow);
+}
+
+.error-text {
+  color: #b84b35; /* slightly deeper than accent for clearer “error” meaning */
+  font-weight: 600;
+}
+
+/* =========================
+   Calculator page
+   ========================= */
+
+.calc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.calc-form .field { gap: 0.4rem; }
+
+.calc-form label,
+.calc-form legend {
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.calc-form input,
+.calc-form select {
+  padding: 0.65rem 0.7rem;
+  border-radius: 8px;
+}
+
+.calc-form fieldset.radio-group {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+}
+
+.calc-form fieldset.radio-group legend {
+  padding: 0 0.4rem;
+  color: var(--text-medium);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.calc-form fieldset.radio-group label {
+  display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-right: 0.75rem;
+  margin-top: 0.35rem;
+  font-weight: 500;
 }
 
-/* Charts scale down on phones */
-.chart-container {
-  max-width: 100%;
-  width: 100%;
+.calc-form button[type="submit"] {
+  align-self: flex-start;
+  padding: 0.75rem 1.4rem;
+  border-radius: 10px;
+  font-weight: 700;
 }
 
-/* Mobile-specific tweaks */
 @media (max-width: 600px) {
   main.container {
     padding: 1rem;
     border-radius: 10px;
   }
-
-  h1 {
-    font-size: 1.6rem;
-  }
-
-  /* Forms stack naturally */
-  .radio-group {
-    gap: 10px;
-  }
-
-  /* Buttons full width on mobile (friendlier tapping) */
-  button {
-    width: 100%;
-  }
-
-  /* Make progress bars not look tiny */
-  .progress-container {
-    height: 22px;
-  }
-}
-
-@media (max-width: 720px) {
-  .currency-form select { max-width: 110px; }
-  .currency-form button { padding: 0.55rem 0.8rem; }
+  h1 { font-size: 1.6rem; }
+  .calc-form button[type="submit"] { width: 100%; }
 }
 
 /* =========================
-   Goals (responsive)
+   Personal page
+   ========================= */
+
+input[readonly] {
+  background-color: rgba(0,0,0,0.04);
+  color: var(--text-medium);
+  cursor: not-allowed;
+}
+
+body.dark-mode input[readonly] {
+  background-color: rgba(255,255,255,0.08);
+}
+
+/* =========================
+   Goals page (table + cards)
    ========================= */
 
 .goal-table {
@@ -426,31 +459,6 @@ input, select, button {
   text-align: left;
 }
 
-/* Progress (table + cards) */
-.progress-container {
-  width: 100%;
-  background-color: rgba(0, 0, 0, 0.08);
-  border-radius: 8px;
-  margin-top: 6px;
-  height: 22px;
-  overflow: hidden;
-}
-
-body.dark-mode .progress-container {
-  background-color: rgba(255, 255, 255, 0.12);
-}
-
-.progress-bar {
-  height: 100%;
-  background-color: var(--secondary-accent);
-  color: var(--text-dark);
-  text-align: center;
-  line-height: 22px;
-  font-weight: 700;
-  font-size: 0.9rem;
-}
-
-/* Cards (mobile) */
 .goals-cards {
   display: none;
   margin-top: 16px;
@@ -480,7 +488,30 @@ body.dark-mode .progress-container {
   color: var(--text-medium);
 }
 
-/* Buttons */
+/* Progress (custom bar) */
+.progress-container {
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  margin-top: 6px;
+  height: 22px;
+  overflow: hidden;
+}
+
+body.dark-mode .progress-container {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: var(--primary); /* aligns with growth */
+  color: var(--text-dark);
+  text-align: center;
+  line-height: 22px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
 .danger-btn {
   background-color: var(--accent);
   color: white;
@@ -504,427 +535,9 @@ body.dark-mode .progress-container {
   min-width: 140px;
 }
 
-//* =========================
-   Expenses (responsive)
-   ========================= */
-
-/* Desktop table */
-.expense-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-.expense-table,
-.expense-table th,
-.expense-table td {
-  border: 1px solid var(--border-color);
-}
-
-.expense-table th,
-.expense-table td {
-  padding: 10px;
-  text-align: left;
-}
-
-/* Inputs */
-.expense-table input[type="number"],
-.expense-table input[type="text"],
-.expense-table select {
-  width: 100%;
-  padding: 8px;
-  box-sizing: border-box;
-}
-
-/* Buttons */
-.removeRow,
-.removeButton {
-  background-color: #c00;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  padding: 8px 10px;
-}
-
-/* Chart */
-.chart-container {
-  position: relative;
-  margin: 40px auto;
-  height: 400px;
-  width: 400px;
-  max-width: 100%;
-}
-
-/* =========================
-   Mobile cards
-   ========================= */
-
-.expense-cards {
-  display: none;
-  margin-top: 16px;
-}
-
-.expense-card {
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 14px;
-  background: var(--card-bg);
-  box-shadow: var(--shadow);
-  margin-bottom: 12px;
-}
-
-.expense-card-title {
-  font-weight: 700;
-  margin-bottom: 10px;
-}
-
-.expense-card-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.expense-card-grid .full {
-  grid-column: 1 / -1;
-}
-
-.expense-meta {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 10px;
-  font-size: 0.95rem;
-  align-items: center;
-}
-
-/* =========================
-   Responsive switch
-   ========================= */
-
 @media (max-width: 720px) {
-  .expense-table {
-    display: none;
-  }
-
-  .expense-cards {
-    display: block;
-  }
-
-  .chart-container {
-    width: 100%;
-    height: auto;
-  }
-}
-
-/* Calculator page */
-.calc-form .field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.calc-form fieldset.radio-group {
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 0.75rem;
-}
-
-.calc-form fieldset.radio-group legend {
-  padding: 0 0.4rem;
-  color: var(--text-medium);
-  font-weight: 700;
-}
-
-.calc-form fieldset.radio-group label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin-right: 0.75rem;
-  margin-top: 0.35rem;
-  font-weight: 500;
-}
-
-.result-card {
-  margin-top: 1.25rem;
-  padding: 1rem;
-  border: 1px solid var(--border-color);
-  background: var(--input-bg);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-}
-
-.error-text {
-  color: #c00;
-  font-weight: 600;
-}
-
-/* =========================
-   TimeCost Calculator
-   ========================= */
-
-/* Form layout */
-.calc-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.calc-form .field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.calc-form label,
-.calc-form legend {
-  font-weight: 600;
-  color: var(--text-dark);
-}
-
-/* Inputs */
-.calc-form input,
-.calc-form select {
-  padding: 0.65rem 0.7rem;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--input-bg);
-  color: var(--text-dark);
-  font-size: 1rem;
-}
-
-/* Radio group */
-.calc-form .radio-group {
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 0.75rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.25rem;
-}
-
-.calc-form .radio-group legend {
-  padding: 0 0.4rem;
-  font-size: 0.95rem;
-}
-
-.calc-form .radio-group label {
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-/* Hint text under wage */
-.calc-form small {
-  font-size: 0.85rem;
-  color: var(--text-medium);
-}
-
-/* Submit button */
-.calc-form button[type="submit"] {
-  align-self: flex-start;
-  background-color: var(--accent);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.4rem;
-  border-radius: 10px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.calc-form button[type="submit"]:hover {
-  background-color: #bc5843;
-}
-
-/* =========================
-   Result Card
-   ========================= */
-
-.result-card {
-  margin-top: 2rem;
-  padding: 1.25rem 1.4rem;
-  border-radius: 14px;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow);
-}
-
-.result-card h2 {
-  margin-top: 0;
-  margin-bottom: 0.75rem;
-}
-
-.result-card p {
-  margin: 0.4rem 0;
-  color: var(--text-medium);
-}
-
-.result-card strong {
-  color: var(--text-dark);
-}
-
-/* Error text */
-.error-text {
-  color: var(--accent);
-  font-weight: 600;
-}
-
-/* Personal page */
-.form-container {
-  max-width: 800px;
-  margin: 0 auto;
-  text-align: left;
-}
-
-.form-container form div { margin-bottom: 15px; }
-
-.form-container form label {
-  display: block;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-.form-container form input,
-.form-container form select {
-  width: 100%;
-  padding: 10px;
-  font-size: 1rem;
-  box-sizing: border-box;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--input-bg);
-  color: var(--text-dark);
-}
-
-.form-container form input[readonly] {
-  background-color: rgba(0, 0, 0, 0.04);
-  color: var(--text-medium);
-  cursor: not-allowed;
-}
-
-body.dark-mode .form-container form input[readonly] {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-.hint {
-  font-size: 0.9rem;
-  color: var(--text-medium);
-  margin-top: 6px;
-}
-
-
-/* =========================
-   Mobile tweaks
-   ========================= */
-
-@media (max-width: 600px) {
-  .calc-form button[type="submit"] {
-    width: 100%;
-  }
-
-  .calc-form .radio-group {
-    gap: 0.5rem;
-  }
-}
-
-.perspective-form {
-  display: flex;
-  align-items: center;
-}
-
-.perspective-form select {
-  max-width: 140px;
-}
-
-/* Optional: spacing when inside the drawer */
-.drawer .drawer-perspective,
-.drawer .drawer-currency {
-  margin-top: 10px;
-}
-
-/* =========================
-   Shared layout helpers
-   ========================= */
-
-.form-container {
-  max-width: 800px;
-  margin: 0 auto;
-  text-align: left;
-}
-
-/* A consistent “field” pattern */
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.hint,
-small {
-  color: var(--text-medium);
-  font-size: 0.9rem;
-}
-
-/* Result card */
-.result-card {
-  margin-top: 1.25rem;
-  padding: 1rem;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  background: var(--input-bg);
-  box-shadow: var(--shadow);
-}
-
-.error-text {
-  color: var(--accent);
-  font-weight: 600;
-}
-
-/* =========================
-   Calculator page
-   ========================= */
-
-.calc-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.calc-form fieldset.radio-group {
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 0.75rem 0.9rem;
-}
-
-.calc-form fieldset.radio-group legend {
-  padding: 0 0.4rem;
-  color: var(--text-medium);
-  font-weight: 600;
-}
-
-.calc-form button {
-  width: fit-content;
-}
-
-/* Make primary action button full width on mobile */
-@media (max-width: 600px) {
-  .calc-form button {
-    width: 100%;
-  }
-}
-
-/* =========================
-   Personal page
-   ========================= */
-
-input[readonly] {
-  background-color: rgba(0,0,0,0.04);
-  color: var(--text-medium);
-  cursor: not-allowed;
-}
-
-body.dark-mode input[readonly] {
-  background-color: rgba(255,255,255,0.08);
+  .goal-table { display: none; }
+  .goals-cards { display: block; }
 }
 
 /* =========================
@@ -950,6 +563,15 @@ body.dark-mode input[readonly] {
   vertical-align: top;
 }
 
+/* Inputs inside expense table */
+.expense-table input[type="number"],
+.expense-table input[type="text"],
+.expense-table select {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
 .expense-cards {
   display: none;
   margin-top: 16px;
@@ -975,9 +597,7 @@ body.dark-mode input[readonly] {
   gap: 10px;
 }
 
-.expense-card-grid .full {
-  grid-column: 1 / -1;
-}
+.expense-card-grid .full { grid-column: 1 / -1; }
 
 .expense-meta {
   display: flex;
@@ -1000,107 +620,14 @@ body.dark-mode input[readonly] {
 
 /* Chart sizing */
 .chart-container {
-  position: relative;
-  margin: 40px auto;
-  height: 400px;
-  width: 400px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 420px;
+  margin: 2rem auto;
+  aspect-ratio: 1 / 1;
 }
 
-/* Switch layouts */
 @media (max-width: 720px) {
   .expense-table { display: none; }
   .expense-cards { display: block; }
-  .chart-container { width: 100%; height: auto; }
-}
-
-/* =========================
-   Goals page (table + cards)
-   ========================= */
-/* (If you already have Goals styles, keep ONE copy and delete duplicates.) */
-
-/* Desktop table default */
-.goal-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-.goal-table,
-.goal-table th,
-.goal-table td {
-  border: 1px solid var(--border-color);
-}
-
-.goal-table th,
-.goal-table td {
-  padding: 10px;
-  text-align: left;
-}
-
-.goals-cards {
-  display: none;
-  margin-top: 16px;
-}
-
-.goal-card {
-  border: 1px solid var(--border-color);
-  background: var(--card-bg);
-  border-radius: 12px;
-  padding: 14px;
-  margin-bottom: 12px;
-  box-shadow: var(--shadow);
-}
-
-.goal-card-title {
-  font-weight: 800;
-  margin-bottom: 10px;
-  font-size: 1.05rem;
-  color: var(--text-dark);
-}
-
-.goal-card-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin: 6px 0;
-  color: var(--text-medium);
-}
-
-.progress-container {
-  width: 100%;
-  background-color: rgba(0, 0, 0, 0.08);
-  border-radius: 8px;
-  margin-top: 6px;
-  height: 22px;
-  overflow: hidden;
-}
-
-body.dark-mode .progress-container {
-  background-color: rgba(255, 255, 255, 0.12);
-}
-
-.progress-bar {
-  height: 100%;
-  background-color: var(--secondary-accent);
-  color: var(--text-dark);
-  text-align: center;
-  line-height: 22px;
-  font-weight: 700;
-  font-size: 0.9rem;
-}
-
-.danger-btn {
-  background-color: var(--accent);
-  color: white;
-  border: none;
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  width: 100%;
-}
-
-@media (max-width: 720px) {
-  .goal-table { display: none; }
-  .goals-cards { display: block; }
+  .chart-container { max-width: 100%; }
 }

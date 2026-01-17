@@ -72,11 +72,39 @@
     </div>
 
     <fieldset class="radio-group field">
-      <legend>Salary Type:</legend>
-      <label><input type="radio" name="wageType" value="hourly" {% if pre_wage_type == "hourly" %}checked{% endif %}> Hourly</label>
-      <label><input type="radio" name="wageType" value="monthly" {% if pre_wage_type == "monthly" %}checked{% endif %}> Monthly</label>
-      <label><input type="radio" name="wageType" value="annual" {% if pre_wage_type == "annual" %}checked{% endif %}> Annual</label>
-    </fieldset>
+  <legend>Salary Type:</legend>
+
+  <label>
+    <input type="radio" name="wageType" value="hourly"
+           {% if pre_wage_type == "hourly" %}checked{% endif %}>
+    Hourly
+  </label>
+
+  <label>
+    <input type="radio" name="wageType" value="weekly"
+           {% if pre_wage_type == "weekly" %}checked{% endif %}>
+    Weekly
+  </label>
+
+  <label>
+    <input type="radio" name="wageType" value="biweekly"
+           {% if pre_wage_type == "biweekly" %}checked{% endif %}>
+    Biweekly
+  </label>
+
+  <label>
+    <input type="radio" name="wageType" value="monthly"
+           {% if pre_wage_type == "monthly" %}checked{% endif %}>
+    Monthly
+  </label>
+
+  <label>
+    <input type="radio" name="wageType" value="annual"
+           {% if pre_wage_type == "annual" %}checked{% endif %}>
+    Annual
+  </label>
+</fieldset>
+
 
     <div class="field">
       <label for="wageAmount">Your Wage Amount ({{ currency }}):</label>

@@ -1,0 +1,21 @@
+<form action="{{ url_for('set_currency') }}" method="post" class="currency-form">
+  {# {{ csrf_token() }} if you enable Flask-WTF later #}
+  {% set cur = session.get("currency", "$") %}
+  <select name="currency" aria-label="Currency" onchange="this.form.submit()">
+    <option value="$" {{ "selected" if cur == "$" else "" }}>$ (USD)</option>
+    <option value="£" {{ "selected" if cur == "£" else "" }}>£ (GBP)</option>
+    <option value="€" {{ "selected" if cur == "€" else "" }}>€ (EUR)</option>
+    <option value="¥" {{ "selected" if cur == "¥" else "" }}>¥ (JPY)</option>
+    <option value="₹" {{ "selected" if cur == "₹" else "" }}>₹ (INR)</option>
+  </select>
+</form>
+
+<form action="{{ url_for('set_perspective') }}" method="post" class="perspective-form">
+  {# {{ csrf_token() }} if you enable Flask-WTF later #}
+  {% set p = session.get("perspective", "river") %}
+  <select name="perspective" aria-label="Tone" onchange="this.form.submit()">
+    <option value="river"  {{ "selected" if p == "river" else "" }}>River</option>
+    <option value="leslie" {{ "selected" if p == "leslie" else "" }}>Leslie</option>
+    <option value="eddie"  {{ "selected" if p == "eddie" else "" }}>Eddie</option>
+  </select>
+</form>
