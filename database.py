@@ -7,7 +7,10 @@ def get_database_url():
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql://", 1)
         return url
-    return "sqlite:///timecost.db"
+
+    # Stable local SQLite path
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    return f"sqlite:///{os.path.join(base_dir, 'timecost.db')}"
 
 engine = create_engine(
     get_database_url(),
@@ -15,14 +18,14 @@ engine = create_engine(
     future=True,
 )
 
-def get_db_connection():
+def get_connection():
     return engine.connect()
 
 def init_db():
     with engine.begin() as conn:
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS expenses (
-                id SERIAL PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 amount DOUBLE PRECISION NOT NULL,
                 category TEXT NOT NULL
@@ -31,7 +34,7 @@ def init_db():
 
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS goals (
-                id SERIAL PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 target DOUBLE PRECISION NOT NULL,
                 current DOUBLE PRECISION NOT NULL DEFAULT 0

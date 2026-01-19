@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Budget Calculator{% endblock %}
 
+{% macro goal_progress(goal) -%}
+  {% set raw = (goal.current / goal.target * 100) if goal.target > 0 else 0 %}
+  {{ 100 if raw > 100 else (0 if raw < 0 else raw) }}
+{%- endmacro %}
+
 {% block head %}
   {{ super() }}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    .hint { font-size: 0.9rem; color: #666; margin-top: 6px; }
-    .progress-container { width: 100%; background-color: #eee; border-radius: 5px; height: 20px; overflow: hidden; }
-    .progress-bar { height: 100%; background-color: #76c7c0; text-align: center; line-height: 20px; color: #fff; font-size: 0.85rem; }
-  </style>
 {% endblock %}
 
 {% block content %}
@@ -16,28 +16,28 @@
   <h1>Budget Calculator</h1>
 
   <form method="POST" action="{{ url_for('budget') }}">
-    <div>
+    <div class="field">
       <label for="income">Monthly Income ({{ currency }}):</label>
       <input type="number" step="0.01" id="income" name="income" value="{{ income or '' }}" required>
     </div>
 
-    <div>
+    <div class="field">
       <label for="expenses">Monthly Expenses ({{ currency }}):</label>
       <input type="number" step="0.01" id="expenses" name="expenses" value="{{ expenses or '' }}" readonly>
       <div class="hint">This total is pulled from your Expenses page.</div>
     </div>
 
-    <div>
+    <div class="field">
       <label for="weeklyHours">Weekly Hours:</label>
       <input type="number" step="0.1" id="weeklyHours" name="weeklyHours" value="{{ weekly_hours or '' }}" required>
     </div>
 
-    <div>
+    <div class="field">
       <label for="savingsGoal">Long Term Savings Goal ({{ currency }}):</label>
       <input type="number" step="0.01" id="savingsGoal" name="savingsGoal" value="{{ savings_goal or '' }}">
     </div>
 
-    <div>
+    <div class="field">
       <label for="currentSavings">Amount Already Saved ({{ currency }}):</label>
       <input type="number" step="0.01" id="currentSavings" name="currentSavings" value="{{ current_savings or '' }}">
     </div>
@@ -46,16 +46,25 @@
   </form>
 
   {% if hourly_value is not none %}
-    <h2>Budget Results</h2>
-    <p><strong>Monthly Discretionary Income:</strong> {{ currency }}{{ discretionary_income|round(2) }}</p>
-    <p><strong>Estimated Hourly Value (of discretionary income):</strong> {{ currency }}{{ hourly_value|round(2) }}/hr</p>
+    <div class="result-card">
+      <h2>Budget Results</h2>
+      <p><strong>Monthly Discretionary Income:</strong> {{ currency }}{{ discretionary_income|round(2) }}</p>
+      <p><strong>Estimated Hourly Value (of discretionary income):</strong> {{ currency }}{{ hourly_value|round(2) }}/hr</p>
+    </div>
 
-    <div class="chart-container" style="margin-top: 2rem;">
+    <div class="chart-container">
       <canvas id="budgetChart"></canvas>
     </div>
 
     <script>
       const ctx = document.getElementById("budgetChart").getContext("2d");
+
+      // Theme-aware chart colors from CSS vars
+      const styles = getComputedStyle(document.documentElement);
+      const primary = styles.getPropertyValue("--primary").trim() || "#A3B18A";
+      const accent = styles.getPropertyValue("--accent").trim() || "#E07A5F";
+      const secondary = styles.getPropertyValue("--secondary-accent").trim() || "#FFD37F";
+      const textDark = styles.getPropertyValue("--text-dark").trim() || "#2F3E46";
 
       new Chart(ctx, {
         type: 'bar',
@@ -64,16 +73,14 @@
           datasets: [{
             label: 'Monthly Budget',
             data: {{ [income|default(0), expenses|default(0), discretionary_income|default(0)] | tojson }},
-            backgroundColor: [
-              'rgba(75, 192, 192, 0.6)',
-              'rgba(255, 99, 132, 0.6)',
-              'rgba(255, 206, 86, 0.6)'
-            ],
-            borderWidth: 1
+            backgroundColor: [primary, accent, secondary],
+            borderWidth: 1,
+            borderColor: textDark
           }]
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
             title: { display: true, text: 'Monthly Budget Overview' },
             legend: { display: false }
@@ -86,35 +93,38 @@
 
   <div class="goals-section">
     <h2>Long Term Savings Goals</h2>
+
     {% if goals %}
-      <table class="table-wrap">
-        <thead>
-          <tr>
-            <th>Goal Name</th>
-            <th>Target ({{ currency }})</th>
-            <th>Saved ({{ currency }})</th>
-            <th>Progress</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for goal in goals %}
-            {% set raw_progress = (goal.current / goal.target * 100) if goal.target > 0 else 0 %}
-            {% set progress = 100 if raw_progress > 100 else (0 if raw_progress < 0 else raw_progress) %}
+      <div class="table-wrap">
+        <table class="goal-table">
+          <thead>
             <tr>
-              <td>{{ goal.name }}</td>
-              <td>{{ goal.target|round(2) }}</td>
-              <td>{{ goal.current|round(2) }}</td>
-              <td>
-                <div class="progress-container">
-                  <div class="progress-bar" style="width: {{ progress }}%;">
-                    {{ progress|round(1) }}%
-                  </div>
-                </div>
-              </td>
+              <th>Goal Name</th>
+              <th>Target ({{ currency }})</th>
+              <th>Saved ({{ currency }})</th>
+              <th>Progress</th>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody>
+            {% for goal in goals %}
+              {% set progress = goal_progress(goal)|float %}
+              <tr>
+                <td>{{ goal.name }}</td>
+                <td>{{ currency }}{{ goal.target|round(2) }}</td>
+                <td>{{ currency }}{{ goal.current|round(2) }}</td>
+                <td>
+                  <div class="progress-container">
+                    <div class="progress-bar" style="width: {{ progress }}%;">
+                      {{ progress|round(1) }}%
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     {% else %}
       <p>No goals added yet.</p>
     {% endif %}

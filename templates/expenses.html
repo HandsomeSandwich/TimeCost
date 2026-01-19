@@ -1,3 +1,4 @@
+```jinja2
 {% extends "base.html" %}
 {% block title %}Expenses{% endblock %}
 
@@ -9,6 +10,15 @@ document.addEventListener("DOMContentLoaded", function () {
   const cardsWrap = document.getElementById("expenseCards");
   const hourlyWageInput = document.getElementById("userHourlyRate");
   const addBtn = document.getElementById("addExpenseBtn");
+
+  function escapeAttr(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/'/g, "&#039;");
+  }
 
   function hourlyRate() {
     return parseFloat(hourlyWageInput.value) || 0;
@@ -56,11 +66,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const hours = calcHours(parseFloat(amount) || 0).toFixed(2);
 
-      const safeName = name.replace(/&/g, "&amp;")
-                           .replace(/</g, "&lt;")
-                           .replace(/>/g, "&gt;")
-                           .replace(/"/g, "&quot;")
-                           .replace(/'/g, "&#039;");
+      const safeName = escapeAttr(name);
 
       const card = document.createElement("div");
       card.className = "expense-card";
@@ -75,7 +81,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
           <div>
             <label>Amount ({{ currency }})</label>
-            <input type="number" step="0.01" class="cardAmount" value="${amount}" required>
+            <input type="number" step="0.01" class="cardAmount" value="${escapeAttr(amount)}" required>
           </div>
 
           <div>
@@ -129,18 +135,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const nameInput = row.querySelector(".expenseName");
     const catSelect = row.querySelector(".expenseCategory");
 
-    [amountInput, nameInput, catSelect].forEach(el => {
-      el.addEventListener("input", () => {
-        recalcRow(row);
-        recalcTotals();
-        syncCardsFromTable();
-      });
-      el.addEventListener("change", () => {
-        recalcRow(row);
-        recalcTotals();
-        syncCardsFromTable();
-      });
-    });
+    function onRowEdit() {
+      recalcRow(row);
+      recalcTotals();
+      syncCardsFromTable();
+    }
+
+    amountInput.addEventListener("input", onRowEdit);
+    nameInput.addEventListener("input", onRowEdit);
+    catSelect.addEventListener("change", onRowEdit);
 
     row.querySelector(".removeRow").addEventListener("click", function () {
       row.remove();
@@ -151,9 +154,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function addExpenseRow(name = "", amount = "", category = "Other") {
     const row = document.createElement("tr");
+
+    const safeName = escapeAttr(name);
+    const safeAmount = escapeAttr(amount);
+
     row.innerHTML = `
-      <td><input type="text" name="expense_name[]" class="expenseName" value="${name}" required></td>
-      <td><input type="number" step="0.01" name="expense_amount[]" class="expenseAmount" value="${amount}" required></td>
+      <td><input type="text" name="expense_name[]" class="expenseName" value="${safeName}" required></td>
+      <td><input type="number" step="0.01" name="expense_amount[]" class="expenseAmount" value="${safeAmount}" required></td>
       <td>
         <select name="expense_category[]" class="expenseCategory" required>
           <option value="Rent" ${category === "Rent" ? "selected" : ""}>Rent</option>
@@ -258,13 +265,20 @@ document.addEventListener("DOMContentLoaded", function () {
   </div>
   <script>
     const ctx = document.getElementById("categoryChart").getContext("2d");
+
+    // Optional: pull theme vars for a cohesive chart palette
+    const styles = getComputedStyle(document.documentElement);
+    const primary = styles.getPropertyValue("--primary").trim() || "#A3B18A";
+    const accent = styles.getPropertyValue("--accent").trim() || "#E07A5F";
+    const secondary = styles.getPropertyValue("--secondary-accent").trim() || "#FFD37F";
+
     new Chart(ctx, {
       type: "pie",
       data: {
         labels: [{% for row in category_totals %}"{{ row.category }}"{% if not loop.last %},{% endif %}{% endfor %}],
         datasets: [{
           data: [{% for row in category_totals %}{{ row.total }}{% if not loop.last %},{% endif %}{% endfor %}],
-          backgroundColor: ["#ff6384", "#36a2eb", "#ffcd56", "#4bc0c0"]
+          backgroundColor: [primary, accent, secondary, "#4bc0c0"]
         }]
       },
       options: {
@@ -277,3 +291,4 @@ document.addEventListener("DOMContentLoaded", function () {
   </script>
 {% endif %}
 {% endblock %}
+```

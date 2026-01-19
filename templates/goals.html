@@ -1,27 +1,34 @@
 {% extends "base.html" %}
 {% block title %}Long Term Savings Goals{% endblock %}
 
+{% macro goal_progress(goal) -%}
+  {# returns clamped progress 0..100 #}
+  {% set raw = (goal.current / goal.target * 100) if goal.target > 0 else 0 %}
+  {{ 100 if raw > 100 else (0 if raw < 0 else raw) }}
+{%- endmacro %}
+
 {% block content %}
 <div class="form-container">
   <h1>Long Term Savings Goals</h1>
 
   <h2>Add New Goal</h2>
   <form action="{{ url_for('goals') }}" method="post">
-    <div>
+    <div class="field">
       <label for="goal_name">Goal Name:</label>
       <input type="text" id="goal_name" name="goal_name" required>
     </div>
-    <div>
+
+    <div class="field">
       <label for="target_amount">Target Amount ({{ currency }}):</label>
       <input type="number" step="0.01" id="target_amount" name="target_amount" required>
     </div>
-    <div>
+
+    <div class="field">
       <label for="current_savings">Initial Savings ({{ currency }}):</label>
       <input type="number" step="0.01" id="current_savings" name="current_savings" value="0" required>
     </div>
-    <div>
-      <button type="submit" name="new_goal" value="1">Add Goal</button>
-    </div>
+
+    <button type="submit" name="new_goal" value="1">Add Goal</button>
   </form>
 
   {% if goals %}
@@ -30,9 +37,7 @@
     <!-- Mobile cards -->
     <div class="goals-cards">
       {% for goal in goals %}
-        {% set raw_progress = (goal.current / goal.target * 100) if goal.target > 0 else 0 %}
-        {% set progress = 100 if raw_progress > 100 else (0 if raw_progress < 0 else raw_progress) %}
-
+        {% set progress = goal_progress(goal)|float %}
         <div class="goal-card">
           <div class="goal-card-title">{{ goal.name }}</div>
 
@@ -52,13 +57,13 @@
             </div>
           </div>
 
-          <form action="{{ url_for('goals') }}" method="post" class="savingsForm" style="margin-top: 10px;">
+          <form action="{{ url_for('goals') }}" method="post" class="savingsForm">
             <input type="hidden" name="goal_index" value="{{ goal.id }}">
             <input type="number" step="0.01" name="savings_to_add" placeholder="Add {{ currency }}" required>
             <button type="submit" name="update_goal" value="1">Add</button>
           </form>
 
-          <form action="{{ url_for('delete_goal', goal_id=goal.id) }}" method="post" style="margin-top: 8px;">
+          <form action="{{ url_for('delete_goal', goal_id=goal.id) }}" method="post">
             <button type="submit" onclick="return confirm('Delete this goal?')" class="danger-btn">
               🗑️ Delete
             </button>
@@ -78,14 +83,14 @@
           <th>Actions</th>
         </tr>
       </thead>
+
       <tbody>
         {% for goal in goals %}
-          {% set raw_progress = (goal.current / goal.target * 100) if goal.target > 0 else 0 %}
-          {% set progress = 100 if raw_progress > 100 else (0 if raw_progress < 0 else raw_progress) %}
+          {% set progress = goal_progress(goal)|float %}
           <tr>
             <td>{{ goal.name }}</td>
-            <td>{{ goal.target|round(2) }}</td>
-            <td>{{ goal.current|round(2) }}</td>
+            <td>{{ currency }}{{ goal.target|round(2) }}</td>
+            <td>{{ currency }}{{ goal.current|round(2) }}</td>
             <td>
               <div class="progress-container">
                 <div class="progress-bar" style="width: {{ progress }}%;">
@@ -100,7 +105,7 @@
                 <button type="submit" name="update_goal" value="1">Add</button>
               </form>
 
-              <form action="{{ url_for('delete_goal', goal_id=goal.id) }}" method="post" style="margin-top: 6px;">
+              <form action="{{ url_for('delete_goal', goal_id=goal.id) }}" method="post">
                 <button type="submit" onclick="return confirm('Delete this goal?')" class="danger-btn">
                   🗑️ Delete
                 </button>

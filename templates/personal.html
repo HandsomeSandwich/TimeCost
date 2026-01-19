@@ -8,13 +8,13 @@
 
   <form action="{{ url_for('personal') }}" method="post">
 
-    <div>
+    <div class="field">
       <label for="username">Name:</label>
       <input type="text" id="username" name="username" value="{{ username }}" required>
     </div>
 
-    <div>
-      <label for="currency">Preferred Currency:</label>
+    <div class="field">
+      <label for="currency">Preferred Currency (optional override):</label>
       <select id="currency" name="currency">
         <option value="$" {% if currency == "$" %}selected{% endif %}>USD ($)</option>
         <option value="£" {% if currency == "£" %}selected{% endif %}>GBP (£)</option>
@@ -24,9 +24,10 @@
         <option value="₩" {% if currency == "₩" %}selected{% endif %}>KRW (₩)</option>
         <option value="₽" {% if currency == "₽" %}selected{% endif %}>RUB (₽)</option>
       </select>
+      <div class="hint">You can also change currency any time from the top navbar.</div>
     </div>
 
-    <div>
+    <div class="field">
       <label>Pay Frequency:</label>
       <div class="radio-group">
         <label>
@@ -45,10 +46,10 @@
           Monthly
         </label>
       </div>
-      <p class="hint">Used to estimate your annual and hourly rates.</p>
+      <div class="hint">Used to estimate your annual and hourly rates.</div>
     </div>
 
-    <div>
+    <div class="field">
       <label for="paycheckAmount">Take-home Paycheck Amount:</label>
       <input type="number" step="0.01" id="paycheckAmount"
              name="paycheckAmount"
@@ -56,37 +57,40 @@
              placeholder="e.g. 1500">
     </div>
 
-    <div>
+    <div class="field">
       <label for="annualRate">Annual Salary (optional):</label>
       <input type="number" step="0.01" id="annualRate"
              name="annualRate"
-             value="{{ annualRate }}">
+             value="{{ annualRate or '' }}">
+      <div class="hint">If you enter this, it can auto-fill monthly income on other pages.</div>
     </div>
 
-    <div>
+    <div class="field">
       <label for="hourlyRate">Hourly Rate (optional):</label>
       <input type="number" step="0.01" id="hourlyRate"
              name="hourlyRate"
-             value="{{ hourlyRate }}">
+             value="{{ hourlyRate or '' }}">
+      <div class="hint">If blank, we’ll estimate hourly from annual salary or paycheck amount + frequency.</div>
     </div>
 
-    <div>
+    <div class="field">
       <label for="workHours">Work Hours per Week:</label>
       <input type="number" step="0.1" id="workHours"
              name="workHours"
              value="{{ workHours or 40 }}"
              required>
+      <div class="hint">Used to estimate monthly and hourly time-cost.</div>
     </div>
 
-    <div>
-      <label for="monthlyExpenses">Monthly Expenses:</label>
+    <div class="field">
+      <label for="monthlyExpenses">Monthly Expenses (auto-filled):</label>
       <input type="number" step="0.01" id="monthlyExpenses"
-             value="{{ expenses }}"
+             name="monthlyExpenses"
+             value="{{ expenses or 0 }}"
              readonly>
-      <p class="hint">
-        This total comes from your Expenses list.
-        Edit individual items on the <strong>Expenses</strong> page.
-      </p>
+      <div class="hint">
+        This total comes from your Expenses list. Edit items on the <strong>Expenses</strong> page.
+      </div>
     </div>
 
     <button type="submit">Save Information</button>

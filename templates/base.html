@@ -38,7 +38,7 @@
   <aside id="mobile-drawer" class="drawer" hidden>
     <div class="drawer-header">
       <strong>Menu</strong>
-      <button class="drawer-close" aria-label="Close menu">✕</button>
+      <button class="drawer-close" aria-label="Close menu" type="button">✕</button>
     </div>
 
     {% include "partials/_nav_links.html" %}
@@ -60,6 +60,8 @@
       const backdrop = document.getElementById("drawer-backdrop");
       const closeBtn = drawer?.querySelector(".drawer-close");
 
+      if (!toggle || !drawer || !backdrop) return;
+
       function openDrawer() {
         if (!drawer.hidden) return;
         drawer.hidden = false;
@@ -75,20 +77,26 @@
         backdrop.hidden = true;
         toggle.setAttribute("aria-expanded", "false");
         document.body.classList.remove("drawer-open");
-        toggle?.focus();
+        toggle.focus();
       }
 
-      toggle?.addEventListener("click", () => {
+      toggle.addEventListener("click", () => {
         toggle.getAttribute("aria-expanded") === "true"
           ? closeDrawer()
           : openDrawer();
       });
 
       closeBtn?.addEventListener("click", closeDrawer);
-      backdrop?.addEventListener("click", closeDrawer);
+      backdrop.addEventListener("click", closeDrawer);
 
-      drawer?.querySelectorAll("a, form").forEach(el =>
-        el.addEventListener("click", closeDrawer)
+      // ✅ Close drawer when navigating (links), but NOT when clicking inside forms
+      drawer.querySelectorAll("a").forEach(a =>
+        a.addEventListener("click", closeDrawer)
+      );
+
+      // Optional: close when a drawer form is submitted (currency/tone)
+      drawer.querySelectorAll("form").forEach(f =>
+        f.addEventListener("submit", closeDrawer)
       );
 
       document.addEventListener("keydown", e => {
@@ -96,9 +104,7 @@
       });
 
       function closeIfDesktop() {
-        if (window.matchMedia("(min-width: 721px)").matches) {
-          closeDrawer();
-        }
+        if (window.matchMedia("(min-width: 721px)").matches) closeDrawer();
       }
 
       window.addEventListener("resize", closeIfDesktop);

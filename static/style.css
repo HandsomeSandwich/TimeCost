@@ -1,31 +1,54 @@
-/* === Base Retro Minimalist Light & Dark Mode Styles === */
+/* ==========================================
+   TimeCost - Retro Minimalist (Light/Dark)
+   ========================================== */
 
+/* ---------- Theme Tokens ---------- */
 :root {
-  --bg-color: #F1F8F2;          /* was #F5FDF6, slightly richer */
-  --card-bg: #FAFAF9;
-  --primary: #A3B18A;           /* growth/stability */
-  --accent: #E07A5F;            /* action + warning */
-  --secondary-accent: #FFD37F;  /* nav / friendly highlight */
+  --bg-color: #F1F8F2;           /* soft sage */
+  --card-bg: #FAFAF9;            /* warm off-white */
+  --primary: #A3B18A;            /* growth/stability */
+  --accent: #E07A5F;             /* primary action */
+  --secondary-accent: #FFD37F;   /* nav highlight */
+  --danger: #C94A3A;             /* delete/error (separate from accent) */
+
   --text-dark: #2F3E46;
   --text-medium: #495057;
-  --border-color: #CED4DA;
+
+  /* Slightly warmer border to match sage + cream */
+  --border-color: #D6D2C7;
+
   --input-bg: #FFFFFF;
   --shadow: 0 2px 6px rgba(0,0,0,0.06);
   --font: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+
+  /* Subtle tinted surfaces */
+  --tint-primary: rgba(163, 177, 138, 0.10);
+  --tint-secondary: rgba(255, 211, 127, 0.18);
 }
 
 body.dark-mode {
   --bg-color: #1E1E1E;
   --card-bg: #2C2C2C;
+
   --primary: #A3B18A;
   --accent: #E07A5F;
   --secondary-accent: #F2CC8F;
+  --danger: #E56A5C;
+
   --text-dark: #F1F1F1;
   --text-medium: #CCCCCC;
+
   --border-color: #555;
-  --input-bg: #3A3A3A;          /* was #333, slightly lighter */
+  --input-bg: #3A3A3A;
+
   --shadow: 0 2px 8px rgba(0,0,0,0.35);
+
+  --tint-primary: rgba(163, 177, 138, 0.14);
+  --tint-secondary: rgba(242, 204, 143, 0.14);
 }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
 
 body {
   background-color: var(--bg-color);
@@ -34,8 +57,11 @@ body {
   margin: 0;
   padding: 0;
   line-height: 1.6;
-  transition: background-color 0.3s, color 0.3s;
+  transition: background-color 0.25s, color 0.25s;
 }
+
+/* Avoid iOS zoom */
+input, select, button { font-size: 16px; }
 
 /* Keep content above fixed footer */
 main.container {
@@ -44,12 +70,12 @@ main.container {
   margin: 0 auto;
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: var(--shadow);
   padding-bottom: 5rem;
 }
 
-/* === Header / Footer === */
+/* ---------- Header / Footer ---------- */
 header, footer {
   background-color: var(--text-dark);
   color: white;
@@ -71,10 +97,20 @@ footer {
   box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* === Typography === */
+/* ---------- Typography ---------- */
+h1, h2, h3 {
+  margin: 0 0 0.75rem 0;
+}
+
+h1 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-dark);
+}
+
 h2, h3 {
   color: var(--primary);
-  font-weight: 600;
+  font-weight: 650;
   margin-top: 1.5rem;
 }
 
@@ -83,42 +119,7 @@ p, label { color: var(--text-medium); }
 ul { padding-left: 1.2rem; }
 ul li { margin-bottom: 0.5rem; }
 
-/* === Forms === */
-/* Scope layout to main content so navbar forms don't get column-stacked */
-main form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-input, select {
-  padding: 0.6rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 1rem;
-  font-family: var(--font);
-  background-color: var(--input-bg);
-  color: var(--text-dark);
-}
-
-/* Avoid iOS zoom */
-input, select, button { font-size: 16px; }
-
-button {
-  background-color: var(--accent);
-  color: white;
-  border: none;
-  padding: 0.7rem 1.2rem;
-  font-size: 1rem;
-  font-weight: bold;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-button:hover { background-color: #bc5843; }
-
-/* === Focus states === */
+/* ---------- Focus states ---------- */
 a:focus,
 button:focus,
 input:focus,
@@ -127,7 +128,51 @@ select:focus {
   outline-offset: 2px;
 }
 
-/* === Navbar === */
+/* ---------- Forms (scope to main so navbar doesn't get wrecked) ---------- */
+main form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+input, select {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-family: var(--font);
+  background-color: var(--input-bg);
+  color: var(--text-dark);
+}
+
+input::placeholder { color: rgba(73, 80, 87, 0.65); }
+body.dark-mode input::placeholder { color: rgba(204, 204, 204, 0.65); }
+
+button {
+  background-color: var(--accent);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  font-weight: 800;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.06s ease;
+}
+
+button:hover { filter: brightness(0.95); }
+button:active { transform: translateY(1px); }
+
+/* Danger */
+.danger-btn {
+  background-color: var(--danger);
+  color: #fff;
+  border: none;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* ---------- Navbar ---------- */
 .navbar {
   background-color: #2F3E46;
   display: flex;
@@ -137,7 +182,7 @@ select:focus {
   padding: 1rem;
   margin-bottom: 2rem;
   font-family: var(--font);
-  font-weight: 600;
+  font-weight: 650;
   font-size: 1rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   position: relative;
@@ -148,23 +193,27 @@ select:focus {
 .navbar a {
   color: var(--secondary-accent);
   text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  padding: 0.55rem 0.95rem;
+  border-radius: 10px;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.06s ease;
 }
 
-/* Keep coral meaning “action/warning”, so hover uses subtle lightness */
 .navbar a:hover,
 .navbar a:focus {
-  background-color: rgba(255, 211, 127, 0.18);
+  background-color: var(--tint-secondary);
   color: #ffffff;
 }
 
+.navbar a:active { transform: translateY(1px); }
+
+/* Active state: calmer and more “selected” */
 .navbar a.active {
-  background-color: var(--primary);
-  color: #2F3E46;
+  background-color: rgba(163, 177, 138, 0.30);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+/* Burger */
 .nav-toggle {
   display: none;
   background: none;
@@ -173,12 +222,12 @@ select:focus {
   color: var(--secondary-accent);
   cursor: pointer;
   padding: 0.25rem 0.75rem;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .nav-links {
   display: flex;
-  gap: 1.5rem;
+  gap: 1.25rem;
   align-items: center;
 }
 
@@ -189,7 +238,7 @@ select:focus {
   align-items: center;
 }
 
-/* Nav controls (forms in header area) */
+/* Nav controls: keep them row-based */
 .nav-right form,
 .navbar form {
   display: flex;
@@ -198,11 +247,10 @@ select:focus {
   flex-wrap: wrap;
 }
 
-/* Keep selectors tidy */
 .currency-form select { max-width: 140px; }
 .perspective-form select { max-width: 140px; }
 
-/* Drawer */
+/* ---------- Drawer ---------- */
 .drawer-backdrop {
   position: fixed;
   inset: 0;
@@ -237,10 +285,11 @@ select:focus {
   color: var(--text-dark);
   text-decoration: none;
   padding: 0.75rem;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .drawer a:hover { background: rgba(0,0,0,0.06); }
+body.dark-mode .drawer a:hover { background: rgba(255,255,255,0.06); }
 
 .drawer-close {
   background: none;
@@ -263,7 +312,7 @@ body.drawer-open { overflow: hidden; }
   }
 }
 
-/* Safety: never show the mobile drawer/backdrop on desktop */
+/* Safety: never show drawer on desktop */
 @media (min-width: 721px) {
   .drawer,
   .drawer-backdrop {
@@ -271,7 +320,7 @@ body.drawer-open { overflow: hidden; }
   }
 }
 
-/* Theme toggle button (if used) */
+/* Theme toggle (if used) */
 #theme-toggle {
   background: none;
   border: none;
@@ -280,19 +329,19 @@ body.drawer-open { overflow: hidden; }
   color: var(--secondary-accent);
   transition: transform 0.2s ease;
 }
-#theme-toggle:hover { transform: scale(1.1); }
+#theme-toggle:hover { transform: scale(1.05); }
 
-/* === Cards === */
+/* ---------- Cards ---------- */
 .card {
   background-color: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1.5rem;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
-/* === Tables wrapper === */
+/* ---------- Tables wrapper ---------- */
 .table-wrap {
   width: 100%;
   overflow-x: auto;
@@ -305,10 +354,9 @@ table {
   border-collapse: collapse;
 }
 
-/* Optional: apply a min-width only to tables that need it */
 .table-wide { min-width: 650px; }
 
-/* === Progress Bar (native progress element) === */
+/* ---------- Progress (native progress element) ---------- */
 progress {
   width: 100%;
   height: 1rem;
@@ -316,17 +364,20 @@ progress {
 }
 
 progress::-webkit-progress-bar {
-  background-color: #E9ECEF;
+  background-color: rgba(0,0,0,0.08);
   border-radius: 10px;
+}
+body.dark-mode progress::-webkit-progress-bar {
+  background-color: rgba(255,255,255,0.12);
 }
 
 progress::-webkit-progress-value,
 progress::-moz-progress-bar {
-  background-color: var(--primary); /* was secondary-accent */
+  background-color: var(--primary);
   border-radius: 10px;
 }
 
-/* === Shared layout helpers === */
+/* ---------- Shared layout helpers ---------- */
 .form-container {
   width: 100%;
   max-width: 900px;
@@ -346,7 +397,7 @@ small {
   font-size: 0.9rem;
 }
 
-/* === Result Card === */
+/* ---------- Result Card ---------- */
 .result-card {
   margin-top: 1.25rem;
   padding: 1rem;
@@ -357,8 +408,8 @@ small {
 }
 
 .error-text {
-  color: #b84b35; /* slightly deeper than accent for clearer “error” meaning */
-  font-weight: 600;
+  color: var(--danger);
+  font-weight: 700;
 }
 
 /* =========================
@@ -375,26 +426,28 @@ small {
 
 .calc-form label,
 .calc-form legend {
-  font-weight: 600;
+  font-weight: 650;
   color: var(--text-dark);
 }
 
 .calc-form input,
 .calc-form select {
-  padding: 0.65rem 0.7rem;
-  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
 }
 
+/* Radio group: gently highlighted so it reads as a unit */
 .calc-form fieldset.radio-group {
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  background-color: var(--tint-primary);
 }
 
 .calc-form fieldset.radio-group legend {
   padding: 0 0.4rem;
   color: var(--text-medium);
-  font-weight: 600;
+  font-weight: 650;
   font-size: 0.95rem;
 }
 
@@ -402,25 +455,15 @@ small {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  margin-right: 0.75rem;
-  margin-top: 0.35rem;
-  font-weight: 500;
+  margin-right: 0.9rem;
+  margin-top: 0.45rem;
+  font-weight: 550;
 }
 
 .calc-form button[type="submit"] {
   align-self: flex-start;
-  padding: 0.75rem 1.4rem;
-  border-radius: 10px;
-  font-weight: 700;
-}
-
-@media (max-width: 600px) {
-  main.container {
-    padding: 1rem;
-    border-radius: 10px;
-  }
-  h1 { font-size: 1.6rem; }
-  .calc-form button[type="submit"] { width: 100%; }
+  padding: 0.8rem 1.5rem;
+  border-radius: 12px;
 }
 
 /* =========================
@@ -432,7 +475,6 @@ input[readonly] {
   color: var(--text-medium);
   cursor: not-allowed;
 }
-
 body.dark-mode input[readonly] {
   background-color: rgba(255,255,255,0.08);
 }
@@ -467,14 +509,14 @@ body.dark-mode input[readonly] {
 .goal-card {
   border: 1px solid var(--border-color);
   background: var(--card-bg);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 14px;
   margin-bottom: 12px;
   box-shadow: var(--shadow);
 }
 
 .goal-card-title {
-  font-weight: 800;
+  font-weight: 850;
   margin-bottom: 10px;
   font-size: 1.05rem;
   color: var(--text-dark);
@@ -492,34 +534,23 @@ body.dark-mode input[readonly] {
 .progress-container {
   width: 100%;
   background-color: rgba(0, 0, 0, 0.08);
-  border-radius: 8px;
+  border-radius: 10px;
   margin-top: 6px;
   height: 22px;
   overflow: hidden;
 }
-
 body.dark-mode .progress-container {
   background-color: rgba(255, 255, 255, 0.12);
 }
 
 .progress-bar {
   height: 100%;
-  background-color: var(--primary); /* aligns with growth */
+  background-color: var(--primary);
   color: var(--text-dark);
   text-align: center;
   line-height: 22px;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 0.9rem;
-}
-
-.danger-btn {
-  background-color: var(--accent);
-  color: white;
-  border: none;
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  width: 100%;
 }
 
 /* Savings form inside goal card/table actions */
@@ -563,7 +594,6 @@ body.dark-mode .progress-container {
   vertical-align: top;
 }
 
-/* Inputs inside expense table */
 .expense-table input[type="number"],
 .expense-table input[type="text"],
 .expense-table select {
@@ -579,7 +609,7 @@ body.dark-mode .progress-container {
 
 .expense-card {
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 14px;
   background: var(--card-bg);
   margin-bottom: 12px;
@@ -587,7 +617,7 @@ body.dark-mode .progress-container {
 }
 
 .expense-card-title {
-  font-weight: 800;
+  font-weight: 850;
   margin-bottom: 10px;
 }
 
@@ -608,12 +638,13 @@ body.dark-mode .progress-container {
   font-size: 0.95rem;
 }
 
+/* Delete buttons use danger token */
 .removeRow,
 .removeButton {
-  background-color: #c00;
+  background-color: var(--danger);
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   padding: 8px 10px;
 }
@@ -630,4 +661,14 @@ body.dark-mode .progress-container {
   .expense-table { display: none; }
   .expense-cards { display: block; }
   .chart-container { max-width: 100%; }
+}
+
+/* ---------- Mobile tweaks ---------- */
+@media (max-width: 600px) {
+  main.container {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+  h1 { font-size: 1.6rem; }
+  .calc-form button[type="submit"] { width: 100%; }
 }
