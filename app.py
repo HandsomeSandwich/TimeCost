@@ -9,6 +9,7 @@ from sqlalchemy import text
 
 
 
+
 # ----------------------------
 # Helpers
 # ----------------------------
@@ -111,7 +112,7 @@ except Exception as e:
 @app.context_processor
 def inject_globals():
     return {
-        "currency": session.get("currency", "$"),
+        "currency": session.get("currency", "£"),
         "perspective": session.get("perspective", "river"),
     }
 
@@ -584,11 +585,13 @@ def delete_goal(goal_id):
 
 @app.route("/staples", methods=["GET"])
 def staples():
+    currency = session.get("currency", "£")  # define it first, always
     hr = session.get("hourlyRate", "")
+
     if not hr:
         eff = get_effective_hourly_rate()
         hr = f"{eff:.2f}" if eff and eff > 0 else ""
-        currency = session.get("currency", "£")
+
     return render_template("staples.html", hourlyRate=hr, currency=currency)
 
 
@@ -596,8 +599,8 @@ def staples():
 @app.route("/set_currency", methods=["POST"])
 def set_currency():
     allowed = {"$", "£", "€", "¥", "₹", "₩", "₽"}
-    c = request.form.get("currency", "$")
-    session["currency"] = c if c in allowed else "$"
+    c = request.form.get("currency", "£")
+    session["currency"] = c if c in allowed else "£"
     return redirect(request.referrer or url_for("personal"))
 
 
