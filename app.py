@@ -1,4 +1,5 @@
 from __future__ import annotations
+from database import engine, get_db_connection as get_connection, init_db
 
 import os
 from typing import Optional
@@ -6,9 +7,6 @@ from typing import Optional
 from flask import Flask, render_template, request, session, redirect, url_for
 from sqlalchemy import text
 
-# ✅ Updated imports to match the revised database module
-# Expecting database.py to expose: engine, get_connection, init_db
-from database import engine, get_connection, init_db
 
 
 # ----------------------------
