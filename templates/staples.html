@@ -105,18 +105,21 @@
     it takes to earn each item.
   </p>
 
- <div class="field">
-  <label for="stapleHourlyRate">Your Hourly Rate ({{ currency }}):</label>
-  <input
-    type="number"
-    step="0.01"
-    id="stapleHourlyRate"
-    value="{{ hourlyRate or '' }}"
-    placeholder="Enter your hourly rate"
-  >
-  <small class="hint">Pulled from Personal when available. Keep it consistent across pages.</small>
-</div>
+  <div class="field">
+    <label for="stapleHourlyRate">Your Hourly Rate ({{ currency }}):</label>
+    <input
+      type="number"
+      step="0.01"
+      id="stapleHourlyRate"
+      value="{{ hourlyRate or '' }}"
+      placeholder="Enter your hourly rate"
+    >
+    <small class="hint">Pulled from Personal when available. Keep it consistent across pages.</small>
+  </div>
 
+  <div style="margin: 12px 0;">
+    <button type="button" id="addStapleBtn">Add item</button>
+  </div>
 
   <div class="table-wrap">
     <table class="expense-table table-wide">
@@ -137,4 +140,9 @@
           <td><strong id="totalCost">0.00</strong></td>
           <td><strong id="totalTime">0.00</strong></td>
           <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
 {% endblock %}
