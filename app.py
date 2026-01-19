@@ -588,7 +588,8 @@ def staples():
     if not hr:
         eff = get_effective_hourly_rate()
         hr = f"{eff:.2f}" if eff and eff > 0 else ""
-    return render_template("staples.html", hourlyRate=hr)
+        currency = session.get("currency", "£")
+    return render_template("staples.html", hourlyRate=hr, currency=currency)
 
 
 
