@@ -7,7 +7,8 @@ from typing import Optional
 from flask import Flask, render_template, request, session, redirect, url_for
 from sqlalchemy import text
 
-
+DEFAULT_CURRENCY = "£"
+ALLOWED_CURRENCIES = {"$", "£", "€", "¥", "₹", "₩", "₽"}
 
 
 # ----------------------------
@@ -112,7 +113,7 @@ except Exception as e:
 @app.context_processor
 def inject_globals():
     return {
-        "currency": session.get("currency", "£"),
+        "currency": session.get("currency", DEFAULT_CURRENCY),
         "perspective": session.get("perspective", "river"),
     }
 
@@ -284,8 +285,8 @@ def personal():
         session["workHours"] = request.form.get("workHours")
 
         allowed_currencies = {"$", "£", "€", "¥", "₹", "₩", "₽"}
-        c = request.form.get("currency", session.get("currency", "$"))
-        session["currency"] = c if c in allowed_currencies else "$"
+        c = request.form.get("currency", session.get("currency", DEFAULT_CURRENCY))
+        session["currency"] = c if c in allowed_currencies else DEFAULT_CURRENCY
 
         annual_rate = request.form.get("annualRate")
         hourly_rate = request.form.get("hourlyRate")
@@ -322,7 +323,7 @@ def personal():
         expenses=expenses_total,
         paycheckAmount=session.get("paycheckAmount", ""),
         payFrequency=session.get("payFrequency", ""),
-        currency=session.get("currency", "$"),
+        currency=session.get("currency", DEFAULT_CURRENCY),
     )
 
 
@@ -586,21 +587,22 @@ def delete_goal(goal_id):
 @app.route("/staples", methods=["GET"])
 def staples():
     currency = session.get("currency", "£")  # define it first, always
-    hr = session.get("hourlyRate", "")
+    hr_raw = session.get("hourlyRate", "")
+    hr = safe_float(hr_raw, 0.0)
 
-    if not hr:
+    if hr <= 0:
         eff = get_effective_hourly_rate()
-        hr = f"{eff:.2f}" if eff and eff > 0 else ""
+        hr = eff if eff and eff > 0 else 0.0
 
-    return render_template("staples.html", hourlyRate=hr, currency=currency)
-
+    hr_display = f"{hr:.2f}" if hr > 0 else ""
+    return render_template("staples.html", hourlyRate=hr_display, currency=currency)
 
 
 @app.route("/set_currency", methods=["POST"])
 def set_currency():
     allowed = {"$", "£", "€", "¥", "₹", "₩", "₽"}
-    c = request.form.get("currency", "£")
-    session["currency"] = c if c in allowed else "£"
+    c = request.form.get("currency", DEFAULT_CURRENCY)
+    session["currency"] = c if c in allowed else DEFAULT_CURRENCY
     return redirect(request.referrer or url_for("personal"))
 
 

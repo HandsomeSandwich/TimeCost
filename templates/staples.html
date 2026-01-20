@@ -106,20 +106,26 @@
   </p>
 
   <div class="field">
-    <label for="stapleHourlyRate">Your Hourly Rate ({{ currency }}):</label>
-    <input
-      type="number"
-      step="0.01"
-      id="stapleHourlyRate"
-      value="{{ hourlyRate or '' }}"
-      placeholder="Enter your hourly rate"
-    >
-    <small class="hint">Pulled from Personal when available. Keep it consistent across pages.</small>
-  </div>
+  <label for="stapleHourlyRate">Your Hourly Rate ({{ currency }}):</label>
 
-  <div style="margin: 12px 0;">
-    <button type="button" id="addStapleBtn">Add item</button>
-  </div>
+  <input
+    type="number"
+    step="0.01"
+    id="stapleHourlyRate"
+    value="{{ hourlyRate or '' }}"
+    placeholder="Enter your hourly rate"
+  >
+
+  {% if hourlyRate %}
+    <small class="hint">
+      Pulled from Personal. You can override it here if needed.
+    </small>
+  {% else %}
+    <small class="hint">
+      Tip: Set your hourly rate on the Personal page to auto-fill this.
+    </small>
+  {% endif %}
+</div>
 
   <div class="table-wrap">
     <table class="expense-table table-wide">
@@ -145,4 +151,5 @@
     </table>
   </div>
 </div>
+
 {% endblock %}
