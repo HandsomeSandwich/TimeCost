@@ -1,0 +1,17 @@
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">⏱️</span>
+      <span class="brand-name">TimeCost</span>
+    </div>
+
+    <div class="topbar-actions">
+      {% if session.get("is_parent") %}
+        <a class="btn btn-ghost" href="{{ url_for('parent_dashboard') }}">Parent</a>
+        <a class="btn btn-ghost" href="{{ url_for('parent_logout') }}">Lock</a>
+      {% else %}
+        <a class="btn btn-ghost" href="{{ url_for('parent_login') }}">Parent 🔒</a>
+      {% endif %}
+    </div>
+  </div>
+</header>

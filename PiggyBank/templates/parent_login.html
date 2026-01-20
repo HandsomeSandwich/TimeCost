@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Parent Unlock{% endblock %}
+
+{% block content %}
+<div class="panel">
+  <div class="panel-header">
+    <h1 class="panel-title">Parent mode</h1>
+    <p class="panel-subtitle">Enter your PIN to unlock settings.</p>
+  </div>
+
+  <form method="post" action="{{ url_for('parent_login') }}" class="form">
+    <div class="field">
+      <label for="pin">PIN</label>
+      <input id="pin" name="pin" type="password" inputmode="numeric" autocomplete="one-time-code" required>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">Unlock</button>
+      <a class="btn btn-ghost" href="{{ url_for('tap_screen') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

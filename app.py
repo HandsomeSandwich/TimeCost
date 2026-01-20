@@ -4,6 +4,9 @@ from database import engine, get_db_connection as get_connection, init_db
 import os
 from typing import Optional
 
+from PiggyBank import piggybank_bp
+import PiggyBank.routes  # ensures routes are registered
+
 from flask import Flask, render_template, request, session, redirect, url_for
 from sqlalchemy import text
 
@@ -102,6 +105,7 @@ app = Flask(__name__)
 
 # NOTE: In production, set FLASK_SECRET_KEY in env so sessions persist across restarts.
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(32))
+app.register_blueprint(piggybank_bp, url_prefix="/piggybank")
 
 # Initialize DB on startup (useful for gunicorn/Fly/etc.)
 try:

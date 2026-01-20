@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Not enough time{% endblock %}
+{% block body_class %}kiosk{% endblock %}
+
+{% block content %}
+<div class="panel">
+  <div class="panel-header">
+    <h1 class="panel-title">Not enough time</h1>
+    <p class="panel-subtitle">{{ item_name }}</p>
+  </div>
+
+  {% include "partials/_guide_bubble.html" with context %}
+
+  <div class="two-col">
+    <div class="metric">
+      <div class="metric-label">Cost</div>
+      <div class="metric-value">{{ time_cost }} min</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">You have</div>
+      <div class="metric-value">{{ remaining_minutes }} min</div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <a class="btn btn-primary" href="{{ url_for('tap_screen') }}">Okay</a>
+
+    {% if allow_ask_parent %}
+      <form action="{{ url_for('ask_parent') }}" method="post" class="inline">
+        <input type="hidden" name="kid_id" value="{{ kid_id }}">
+        <input type="hidden" name="item_name" value="{{ item_name }}">
+        <button class="btn btn-ghost" type="submit">Ask Parent</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
