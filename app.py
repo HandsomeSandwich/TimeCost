@@ -1,20 +1,25 @@
 from __future__ import annotations
-from database import engine, get_db_connection as get_connection, init_db
 
 import os
 from typing import Optional
 
-from PiggyBank import piggybank_bp
-import PiggyBank.routes  # ensures routes are registered
-
 from flask import Flask, render_template, request, session, redirect, url_for
 from sqlalchemy import text
 
-app.register_blueprint(piggybank_bp, url_prefix="/piggybank")
+from database import engine, get_db_connection as get_connection, init_db
 
 DEFAULT_CURRENCY = "£"
 ALLOWED_CURRENCIES = {"$", "£", "€", "¥", "₹", "₩", "₽"}
 
+# ----------------------------
+# App setup
+# ----------------------------
+app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(32))
+
+# --- PiggyBank ---
+from PiggyBank import piggybank_bp
+import PiggyBank.routes  # ensures routes are registered
 
 # ----------------------------
 # Helpers
