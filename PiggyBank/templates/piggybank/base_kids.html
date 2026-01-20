@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}PiggyBank{% endblock %}</title>
+
+  <link rel="stylesheet" href="{{ url_for('piggybank.static', filename='piggybank.css') }}">
+  <script src="{{ url_for('piggybank.static', filename='piggybank.js') }}" defer></script>
+</head>
+
+<body class="{% block body_class %}kiosk{% endblock %}">
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark">🐷</span>
+        <span class="brand-name">TimeCost PiggyBank</span>
+      </div>
+      <div class="actions">
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('piggybank.parent_home') }}">Parent</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
