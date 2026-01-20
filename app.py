@@ -586,16 +586,15 @@ def delete_goal(goal_id):
 
 @app.route("/staples", methods=["GET"])
 def staples():
-    currency = session.get("currency", "£")  # define it first, always
-    hr_raw = session.get("hourlyRate", "")
-    hr = safe_float(hr_raw, 0.0)
+    currency = session.get("currency", "£")  # always define first
+    hr = session.get("hourlyRate", "")
 
-    if hr <= 0:
+    if not hr:
         eff = get_effective_hourly_rate()
-        hr = eff if eff and eff > 0 else 0.0
+        hr = f"{eff:.2f}" if eff and eff > 0 else ""
 
-    hr_display = f"{hr:.2f}" if hr > 0 else ""
-    return render_template("staples.html", hourlyRate=hr_display, currency=currency)
+    return render_template("staples.html", hourlyRate=hr, currency=currency)
+
 
 
 @app.route("/set_currency", methods=["POST"])

@@ -1,620 +1,5 @@
 {% extends "base.html" %}
-
 {% block title %}TimeCost Calculator{% endblock %}
-
-from __future__ import annotations
-from database import engine, get_db_connection as get_connection, init_db
-
-import os
-from typing import Optional
-
-from flask import Flask, render_template, request, session, redirect, url_for
-from sqlalchemy import text
-
-
-<p class="intro">{{ c.intro }}</p>
-<p class="explain">{{ c.explain }}</p>
-
-
-# ----------------------------
-# Helpers
-# ----------------------------
-
-def safe_float(val, default: float = 0.0) -> float:
-    try:
-        return float(val)
-    except (TypeError, ValueError):
-        return default
-
-
-def money_to_time(cost: float, hourly_rate: float) -> dict:
-    try:
-        cost = float(cost)
-        hourly_rate = float(hourly_rate)
-    except (TypeError, ValueError):
-        return {"ok": False, "error": "Invalid number.", "human": ""}
-
-    if hourly_rate <= 0:
-        return {"ok": False, "error": "Hourly rate must be greater than 0.", "human": ""}
-
-    if cost < 0:
-        return {"ok": False, "error": "Cost can't be negative.", "human": ""}
-
-    total_hours = cost / hourly_rate
-    total_minutes = int(round(total_hours * 60))
-
-    hours = total_minutes // 60
-    minutes = total_minutes % 60
-
-    if hours == 0 and minutes == 0:
-        human = "0m"
-    elif hours == 0:
-        human = f"{minutes}m"
-    elif minutes == 0:
-        human = f"{hours}h"
-    else:
-        human = f"{hours}h {minutes}m"
-
-    return {
-        "ok": True,
-        "error": None,
-        "cost": round(cost, 2),
-        "hourly_rate": round(hourly_rate, 2),
-        "total_hours": round(total_minutes / 60, 2),
-        "hours": hours,
-        "minutes": minutes,
-        "total_minutes": total_minutes,
-        "human": human,
-    }
-
-
-def workday_equivalent(total_hours: float, hours_per_day: float = 8.0) -> str:
-    total_hours = safe_float(total_hours, 0.0)
-    hours_per_day = safe_float(hours_per_day, 8.0)
-
-    if total_hours <= 0 or hours_per_day <= 0:
-        return ""
-
-    days = total_hours / hours_per_day
-
-    if days < 0.25:
-        return "less than a quarter workday"
-    if days < 1:
-        return f"about {round(days, 1)} workday"
-    if days < 2:
-        return "about 1 workday"
-    return f"about {round(days, 1)} workdays"
-
-
-def week_equivalent(total_hours: float, hours_per_week: float = 40.0) -> str:
-    total_hours = safe_float(total_hours, 0.0)
-    hours_per_week = safe_float(hours_per_week, 40.0)
-
-    if total_hours <= 0 or hours_per_week <= 0:
-        return ""
-
-    weeks = total_hours / hours_per_week
-    if weeks < 0.1:
-        return "less than a tenth of a workweek"
-    return f"about {round(weeks, 1)} workweeks"
-
-
-# ----------------------------
-# App setup
-# ----------------------------
-
-app = Flask(__name__)
-
-# NOTE: In production, set FLASK_SECRET_KEY in env so sessions persist across restarts.
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(32))
-
-# Initialize DB on startup (useful for gunicorn/Fly/etc.)
-try:
-    init_db()
-except Exception as e:
-    print("Database init error:", e)
-
-
-@app.context_processor
-def inject_globals():
-    return {
-        "currency": session.get("currency", "$"),
-        "perspective": session.get("perspective", "river"),
-    }
-
-
-# ----------------------------
-# Personal / wage logic
-# ----------------------------
-
-def _get_weekly_hours_default40() -> float:
-    weekly = safe_float(session.get("workHours"), 40.0)
-    return weekly if weekly > 0 else 40.0
-
-
-def get_effective_hourly_rate() -> Optional[float]:
-    """
-    Returns effective hourly rate based on session info.
-    Priority:
-      1) hourlyRate
-      2) annualRate + workHours
-      3) paycheckAmount + payFrequency + workHours
-    """
-    # 1) direct hourly
-    hr = safe_float(session.get("hourlyRate"), 0.0)
-    if hr > 0:
-        return hr
-
-    weekly_hours = _get_weekly_hours_default40()
-    hours_per_year = weekly_hours * 52.0
-
-    # 2) annual salary
-    annual = safe_float(session.get("annualRate"), 0.0)
-    if annual > 0 and hours_per_year > 0:
-        return annual / hours_per_year
-
-    # 3) paycheck conversion
-    paycheck = safe_float(session.get("paycheckAmount"), 0.0)
-    freq = (session.get("payFrequency") or "").lower().strip()
-
-    if paycheck > 0 and freq in {"weekly", "biweekly", "monthly"}:
-        if freq == "weekly":
-            annual_from_pay = paycheck * 52.0
-        elif freq == "biweekly":
-            annual_from_pay = paycheck * 26.0
-        else:
-            annual_from_pay = paycheck * 12.0
-
-        if hours_per_year > 0:
-            return annual_from_pay / hours_per_year
-
-    return None
-
-
-def _hourly_from_wage(wage_amount: float, wage_type: str) -> float:
-    """
-    Convert user-entered wage to hourly, using Personal workHours/week.
-    """
-    weekly_hours = _get_weekly_hours_default40()
-    hours_per_year = weekly_hours * 52.0
-    hours_per_month = hours_per_year / 12.0
-
-    wage_type = (wage_type or "").lower().strip()
-
-    if wage_type == "hourly":
-        return wage_amount
-    if wage_type == "weekly":
-        return wage_amount / weekly_hours if weekly_hours > 0 else 0.0
-    if wage_type == "biweekly":
-        return wage_amount / (weekly_hours * 2.0) if weekly_hours > 0 else 0.0
-    if wage_type == "monthly":
-        return wage_amount / hours_per_month if hours_per_month > 0 else 0.0
-    if wage_type == "annual":
-        return wage_amount / hours_per_year if hours_per_year > 0 else 0.0
-
-    return wage_amount
-
-
-def _prefill_wage_from_personal() -> tuple[str, str]:
-    """
-    Decide what wageType + wageAmount should show on the Calculator
-    based on Personal session values.
-
-    Priority:
-      1) hourlyRate
-      2) annualRate
-      3) paycheckAmount + payFrequency
-    """
-    hourly_rate = (session.get("hourlyRate") or "").strip()
-    annual_rate = (session.get("annualRate") or "").strip()
-    paycheck_amount = (session.get("paycheckAmount") or "").strip()
-    pay_frequency = (session.get("payFrequency") or "").strip().lower()
-
-    if hourly_rate:
-        return "hourly", hourly_rate
-    if annual_rate:
-        return "annual", annual_rate
-    if paycheck_amount and pay_frequency in {"weekly", "biweekly", "monthly"}:
-        return pay_frequency, paycheck_amount
-
-    return "hourly", ""
-
-
-# ----------------------------
-# Routes
-# ----------------------------
-
-@app.route("/", methods=["GET", "POST"])
-def calculator():
-    pre_wage_type, pre_wage_amount = _prefill_wage_from_personal()
-
-    result = None
-    item_name = ""
-    item_cost = ""
-    time_cost = None
-    workday_text = ""
-
-    if request.method == "POST":
-        item_name = request.form.get("itemName", "")
-        item_cost = (request.form.get("itemCost") or "").strip()
-
-        wage_type = (request.form.get("wageType") or pre_wage_type).strip().lower()
-        wage_amount_raw = (request.form.get("wageAmount") or "").strip()
-
-        try:
-            item_cost_f = float(item_cost)
-            if item_cost_f < 0:
-                raise ValueError("Cost can't be negative")
-
-            # If wage left blank, fall back to Personal effective hourly
-            if wage_amount_raw == "":
-                effective_hourly = get_effective_hourly_rate()
-                if effective_hourly is None or effective_hourly <= 0:
-                    raise ValueError("No wage available")
-                hourly_rate = float(effective_hourly)
-            else:
-                wage_amount_f = float(wage_amount_raw)
-                if wage_amount_f <= 0:
-                    raise ValueError("Wage must be > 0")
-
-                hourly_rate = _hourly_from_wage(wage_amount_f, wage_type)
-                if hourly_rate <= 0:
-                    raise ValueError("Converted wage must be > 0")
-
-            result = item_cost_f / hourly_rate
-            time_cost = money_to_time(item_cost_f, hourly_rate)
-
-            if time_cost["ok"]:
-                workday_text = workday_equivalent(time_cost["total_hours"])
-
-        except (ValueError, TypeError, ZeroDivisionError):
-            result = "Invalid input"
-            time_cost = {"ok": False, "error": "Invalid input.", "human": ""}
-
-    return render_template(
-        "calculator.html",
-        result=result,
-        item_name=item_name,
-        item_cost=item_cost,
-        pre_wage_type=pre_wage_type,
-        pre_wage_amount=pre_wage_amount,
-        time_cost=time_cost,
-        workday_text=workday_text,
-    )
-
-
-@app.route("/personal", methods=["GET", "POST"])
-def personal():
-    if request.method == "POST":
-        session["username"] = (request.form.get("username") or "").strip()
-        session["workHours"] = request.form.get("workHours")
-
-        allowed_currencies = {"$", "£", "€", "¥", "₹", "₩", "₽"}
-        c = request.form.get("currency", session.get("currency", "$"))
-        session["currency"] = c if c in allowed_currencies else "$"
-
-        annual_rate = request.form.get("annualRate")
-        hourly_rate = request.form.get("hourlyRate")
-        pay_frequency = request.form.get("payFrequency")
-        paycheck_amount = request.form.get("paycheckAmount")
-
-        if annual_rate is not None:
-            session["annualRate"] = annual_rate
-        if hourly_rate is not None:
-            session["hourlyRate"] = hourly_rate
-        if pay_frequency is not None:
-            session["payFrequency"] = pay_frequency
-        if paycheck_amount is not None:
-            session["paycheckAmount"] = paycheck_amount
-
-        return redirect(url_for("calculator"))
-
-    # Pull expenses total for display (read-only)
-    conn = get_connection()
-    try:
-        rows = conn.execute(text("SELECT COALESCE(SUM(amount), 0) AS total FROM expenses")).mappings().first()
-        expenses_total = float(rows["total"]) if rows and rows["total"] is not None else 0.0
-    except Exception:
-        expenses_total = 0.0
-    finally:
-        conn.close()
-
-    return render_template(
-        "personal.html",
-        username=session.get("username", ""),
-        annualRate=session.get("annualRate", ""),
-        hourlyRate=session.get("hourlyRate", ""),
-        workHours=session.get("workHours", 40),
-        expenses=expenses_total,
-        paycheckAmount=session.get("paycheckAmount", ""),
-        payFrequency=session.get("payFrequency", ""),
-        currency=session.get("currency", "$"),
-    )
-
-
-@app.route("/timebank", methods=["GET", "POST"])
-def timebank():
-    currency = session.get("currency", "$")
-
-    def fetch_savings_total() -> float:
-        conn = get_connection()
-        try:
-            row = conn.execute(
-                text("SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE category = 'Savings'")
-            ).mappings().first()
-            return float(row["total"]) if row and row["total"] is not None else 0.0
-        finally:
-            conn.close()
-
-    def fetch_all_expenses():
-        conn = get_connection()
-        try:
-            return conn.execute(text("SELECT amount, category FROM expenses")).mappings().all()
-        finally:
-            conn.close()
-
-    if request.method == "POST":
-        income = safe_float(request.form.get("income"), 0.0)
-        expenses = safe_float(request.form.get("expenses"), 0.0)
-        hoursWorked = safe_float(request.form.get("hoursWorked"), 0.0)
-
-        savings_value = fetch_savings_total()
-
-        return render_template(
-            "timebank.html",
-            income=income,
-            expenses=expenses,
-            hoursWorked=hoursWorked,
-            savings_value=savings_value,
-            currency=currency,
-        )
-
-    # GET defaults
-    income = safe_float(session.get("annualRate"), 0.0) / 12.0
-
-    all_rows = fetch_all_expenses()
-    expenses_total = sum((row.get("amount") or 0) for row in all_rows)
-    savings_value = sum((row.get("amount") or 0) for row in all_rows if row.get("category") == "Savings")
-
-    hoursWorked = safe_float(session.get("workHours"), 0.0)
-
-    return render_template(
-        "timebank.html",
-        income=income,
-        expenses=expenses_total,
-        hoursWorked=hoursWorked,
-        savings_value=savings_value,
-        currency=currency,
-    )
-
-
-@app.route("/expenses", methods=["GET", "POST"])
-def expenses():
-    if request.method == "POST":
-        expense_names = request.form.getlist("expense_name[]")
-        expense_amounts = request.form.getlist("expense_amount[]")
-        expense_categories = request.form.getlist("expense_category[]")
-
-        # ✅ Use a transaction for writes
-        with engine.begin() as conn:
-            conn.execute(text("DELETE FROM expenses"))
-
-            for name, amount, category in zip(expense_names, expense_amounts, expense_categories):
-                name = (name or "").strip()
-                category = (category or "").strip()
-
-                try:
-                    amt = float(amount)
-                except (TypeError, ValueError):
-                    continue
-
-                if name and category:
-                    conn.execute(
-                        text("INSERT INTO expenses (name, amount, category) VALUES (:name, :amount, :category)"),
-                        {"name": name, "amount": amt, "category": category},
-                    )
-
-        return redirect(url_for("expenses"))
-
-    # Read side
-    conn = get_connection()
-    try:
-        saved_expenses = conn.execute(text("SELECT * FROM expenses")).mappings().all()
-        category_totals = conn.execute(
-            text("SELECT category, COALESCE(SUM(amount), 0) AS total FROM expenses GROUP BY category")
-        ).mappings().all()
-    finally:
-        conn.close()
-
-    return render_template(
-        "expenses.html",
-        saved_expenses=saved_expenses,
-        category_totals=category_totals,
-        currency=session.get("currency", "$"),
-    )
-
-
-@app.route("/update_expense_category", methods=["POST"])
-def update_expense_category():
-    expense_id = request.form.get("expense_id")
-    new_category = request.form.get("new_category")
-    if not expense_id or not new_category:
-        return redirect(url_for("expenses"))
-
-    with engine.begin() as conn:
-        conn.execute(
-            text("UPDATE expenses SET category = :cat WHERE id = :id"),
-            {"cat": new_category, "id": int(expense_id)},
-        )
-
-    return redirect(url_for("expenses"))
-
-
-@app.route("/remove_expense/<int:index>", methods=["POST"])
-def remove_expense(index):
-    with engine.begin() as conn:
-        conn.execute(text("DELETE FROM expenses WHERE id = :id"), {"id": index})
-    return redirect(url_for("expenses"))
-
-
-@app.route("/budget", methods=["GET", "POST"])
-def budget():
-    currency = session.get("currency", "$")
-
-    # Pull expenses total
-    conn = get_connection()
-    try:
-        rows = conn.execute(text("SELECT COALESCE(SUM(amount), 0) AS total FROM expenses")).mappings().first()
-        expenses_total = float(rows["total"]) if rows and rows["total"] is not None else 0.0
-    except Exception:
-        expenses_total = 0.0
-    finally:
-        conn.close()
-
-    def fetch_goals():
-        conn2 = get_connection()
-        try:
-            return conn2.execute(text("SELECT * FROM goals")).mappings().all()
-        except Exception:
-            return []
-        finally:
-            conn2.close()
-
-    if request.method == "POST":
-        income_input = request.form.get("income")
-        hours_input = request.form.get("weeklyHours")
-
-        income = safe_float(income_input, safe_float(session.get("annualRate"), 0.0) / 12.0)
-        weekly_hours = safe_float(hours_input, safe_float(session.get("workHours"), 0.0))
-        monthly_hours = weekly_hours * 4.33 if weekly_hours > 0 else 0.0
-
-        discretionary_income = income - expenses_total
-        hourly_value = (discretionary_income / monthly_hours) if monthly_hours > 0 else 0.0
-
-        savings_goal = safe_float(request.form.get("savingsGoal"), 0.0)
-        current_savings = safe_float(request.form.get("currentSavings"), 0.0)
-
-        remaining_to_save = (savings_goal - current_savings) if savings_goal > 0 else 0.0
-        progress_percent = (current_savings / savings_goal) * 100.0 if savings_goal > 0 else 0.0
-
-        goals_rows = fetch_goals()
-
-        return render_template(
-            "budget.html",
-            income=income,
-            expenses=expenses_total,
-            weekly_hours=weekly_hours,
-            monthly_hours=monthly_hours,
-            discretionary_income=discretionary_income,
-            hourly_value=hourly_value,
-            savings_goal=savings_goal,
-            current_savings=current_savings,
-            remaining_to_save=remaining_to_save,
-            progress_percent=progress_percent,
-            goals=goals_rows,
-            currency=currency,
-        )
-
-    income = safe_float(session.get("annualRate"), 0.0) / 12.0
-    weekly_hours = safe_float(session.get("workHours"), 0.0)
-    monthly_hours = weekly_hours * 4.33 if weekly_hours > 0 else 0.0
-    discretionary_income = income - expenses_total
-    hourly_value = (discretionary_income / monthly_hours) if monthly_hours > 0 else 0.0
-
-    goals_rows = fetch_goals()
-
-    return render_template(
-        "budget.html",
-        income=income,
-        expenses=expenses_total,
-        weekly_hours=weekly_hours,
-        monthly_hours=monthly_hours,
-        discretionary_income=discretionary_income,
-        hourly_value=hourly_value,
-        savings_goal=0,
-        current_savings=0,
-        remaining_to_save=0,
-        progress_percent=0,
-        goals=goals_rows,
-        currency=currency,
-    )
-
-
-@app.route("/goals", methods=["GET", "POST"])
-def goals():
-    if request.method == "POST":
-        with engine.begin() as conn:
-            if "new_goal" in request.form:
-                name = (request.form.get("goal_name") or "").strip()
-                target = safe_float(request.form.get("target_amount"), 0.0)
-                current = safe_float(request.form.get("current_savings"), 0.0)
-
-                if name:
-                    conn.execute(
-                        text("INSERT INTO goals (name, target, current) VALUES (:n,:t,:c)"),
-                        {"n": name, "t": target, "c": current},
-                    )
-
-            elif "update_goal" in request.form:
-                goal_id = int(safe_float(request.form.get("goal_index"), 0))
-                add_amount = safe_float(request.form.get("savings_to_add"), 0.0)
-
-                goal = conn.execute(
-                    text("SELECT current FROM goals WHERE id = :id"),
-                    {"id": goal_id},
-                ).mappings().first()
-
-                if goal:
-                    new_total = safe_float(goal.get("current"), 0.0) + add_amount
-                    conn.execute(
-                        text("UPDATE goals SET current = :c WHERE id = :id"),
-                        {"c": new_total, "id": goal_id},
-                    )
-
-        return redirect(url_for("goals"))
-
-    conn = get_connection()
-    try:
-        goals_rows = conn.execute(text("SELECT * FROM goals")).mappings().all()
-    finally:
-        conn.close()
-
-    return render_template("goals.html", goals=goals_rows, currency=session.get("currency", "$"))
-
-
-@app.route("/delete_goal/<int:goal_id>", methods=["POST"])
-def delete_goal(goal_id):
-    with engine.begin() as conn:
-        conn.execute(text("DELETE FROM goals WHERE id = :id"), {"id": goal_id})
-    return redirect(url_for("goals"))
-
-
-@app.route("/staples", methods=["GET"])
-def staples():
-    hr = session.get("hourlyRate", "")
-    if not hr:
-        eff = get_effective_hourly_rate()
-        hr = f"{eff:.2f}" if eff and eff > 0 else ""
-        currency = session.get("currency", "£")
-    return render_template("staples.html", hourlyRate=hr, currency=currency)
-
-
-
-@app.route("/set_currency", methods=["POST"])
-def set_currency():
-    allowed = {"$", "£", "€", "¥", "₹", "₩", "₽"}
-    c = request.form.get("currency", "$")
-    session["currency"] = c if c in allowed else "$"
-    return redirect(request.referrer or url_for("personal"))
-
-
-@app.route("/set_perspective", methods=["POST"])
-def set_perspective():
-    allowed = {"river", "leslie", "eddie"}
-    p = request.form.get("perspective", "river")
-    session["perspective"] = p if p in allowed else "river"
-    return redirect(request.referrer or url_for("calculator"))
-
 
 {% block content %}
 
@@ -630,12 +15,10 @@ def set_perspective():
     "thats": "Which is",
     "invalid": "Something here hasn’t settled yet.",
     "live_title": "Live result",
-
     "err_cost": "I need the item price first.",
     "err_wage": "I need your pay amount to translate this.",
     "err_convert": "These numbers don’t resolve into an hourly rhythm yet."
   },
-
   "leslie": {
     "title": "What did this cost in work time?",
     "intro": "Let’s turn a price into hours so you can make a powerful, informed decision.",
@@ -645,12 +28,10 @@ def set_perspective():
     "thats": "Which equals",
     "invalid": "Totally fine! One of the inputs just needs a quick fix.",
     "live_title": "Live result",
-
     "err_cost": "Pop in the item price and we’re golden.",
     "err_wage": "Add your pay amount and we’ll do the time-math.",
     "err_convert": "These numbers need a moment to cooperate. They will."
   },
-
   "eddie": {
     "title": "What did this cost in work time?",
     "intro": "Tell me the price and your pay. I’ll tell you what it costs in hours of your life.",
@@ -660,28 +41,22 @@ def set_perspective():
     "thats": "Which is",
     "invalid": "Darling. No. These numbers are a shambles.",
     "live_title": "Live result",
-
     "err_cost": "That needs an actual price.",
     "err_wage": "That wage won’t do. Try again, properly.",
     "err_convert": "This conversion is having a nervous breakdown. Adjust accordingly."
   }
 } %}
 
-{{% set c = copy.get(perspective, copy["river"]) %}
-
-<h1>{{ c.title }}</h1>
-<p>{{ c.intro }}</p>
-
-<div class="hint" style="margin: 10px 0 18px 0;">
-  <strong>{{ c.promise }}</strong>
-</div>
-}
-
+{% set c = copy.get(perspective, copy["river"]) %}
 
 <div class="form-container">
-  <h1>TimeCost Calculator</h1>
-  <p>{{ c.intro }}</p>
+  <h1>{{ c.title }}</h1>
+  <p class="intro">{{ c.intro }}</p>
+  <p class="explain">{{ c.explain }}</p>
 
+  <div class="hint" style="margin: 10px 0 18px 0;">
+    <strong>{{ c.promise }}</strong>
+  </div>
 
   <form action="{{ url_for('calculator') }}" method="post" class="calc-form" id="calcForm">
     <div class="field">
@@ -702,39 +77,38 @@ def set_perspective():
     </div>
 
     <fieldset class="radio-group field">
-  <legend>Salary Type:</legend>
+      <legend>Salary Type:</legend>
 
-  <label>
-    <input type="radio" name="wageType" value="hourly"
-           {% if pre_wage_type == "hourly" %}checked{% endif %}>
-    Hourly
-  </label>
+      <label>
+        <input type="radio" name="wageType" value="hourly"
+               {% if pre_wage_type == "hourly" %}checked{% endif %}>
+        Hourly
+      </label>
 
-  <label>
-    <input type="radio" name="wageType" value="weekly"
-           {% if pre_wage_type == "weekly" %}checked{% endif %}>
-    Weekly
-  </label>
+      <label>
+        <input type="radio" name="wageType" value="weekly"
+               {% if pre_wage_type == "weekly" %}checked{% endif %}>
+        Weekly
+      </label>
 
-  <label>
-    <input type="radio" name="wageType" value="biweekly"
-           {% if pre_wage_type == "biweekly" %}checked{% endif %}>
-    Biweekly
-  </label>
+      <label>
+        <input type="radio" name="wageType" value="biweekly"
+               {% if pre_wage_type == "biweekly" %}checked{% endif %}>
+        Biweekly
+      </label>
 
-  <label>
-    <input type="radio" name="wageType" value="monthly"
-           {% if pre_wage_type == "monthly" %}checked{% endif %}>
-    Monthly
-  </label>
+      <label>
+        <input type="radio" name="wageType" value="monthly"
+               {% if pre_wage_type == "monthly" %}checked{% endif %}>
+        Monthly
+      </label>
 
-  <label>
-    <input type="radio" name="wageType" value="annual"
-           {% if pre_wage_type == "annual" %}checked{% endif %}>
-    Annual
-  </label>
-</fieldset>
-
+      <label>
+        <input type="radio" name="wageType" value="annual"
+               {% if pre_wage_type == "annual" %}checked{% endif %}>
+        Annual
+      </label>
+    </fieldset>
 
     <div class="field">
       <label for="wageAmount">Your Wage Amount ({{ currency }}):</label>
@@ -745,22 +119,12 @@ def set_perspective():
         name="wageAmount"
         value="{{ pre_wage_amount or '' }}"
       >
-      <small id="rateHint"></small>
+      <small class="hint">Leave blank to use your Personal page rate.</small>
     </div>
 
     <button type="submit">Calculate Time Cost</button>
   </form>
 
-  <!-- LIVE result card (always in DOM, updated by JS) -->
-  <div class="result-card" id="liveResult" role="status" aria-live="polite" style="display:none;">
-    <h2 id="resultTitle">Result</h2>
-
-    <p id="resultHoursLine"></p>
-    <p id="resultHumanLine"></p>
-    <p class="error-text" id="resultError" style="display:none;"></p>
-  </div>
-
-  <!-- Server result (still works after submit) -->
   {% if result == "Invalid input" %}
     <div class="result-card" role="status">
       <h2>Result</h2>
@@ -775,142 +139,16 @@ def set_perspective():
         {{ c.hours_line }} <strong>{{ result|round(2) }}</strong> hours of work.
       </p>
 
-
       {% if time_cost and time_cost.ok %}
         <p>
           {{ c.thats }} <strong>{{ time_cost.human }}</strong>
-          {% if workday_text %}({{ workday_text }}){% endif %}.
+          {% if workday_text %} ({{ workday_text }}){% endif %}.
         </p>
-
-      {% elif time_cost and not time_cost.ok %}
+      {% else %}
         <p class="error-text">{{ c.invalid }}</p>
       {% endif %}
     </div>
   {% endif %}
 </div>
 
-<script>
-(function () {
-  const itemCostEl = document.getElementById("itemCost");
-  const wageAmountEl = document.getElementById("wageAmount");
-  const wageTypeEls = () => document.querySelectorAll('input[name="wageType"]');
-
-  const liveResult = document.getElementById("liveResult");
-  const resultTitle = document.getElementById("resultTitle");
-  const resultHoursLine = document.getElementById("resultHoursLine");
-  const resultHumanLine = document.getElementById("resultHumanLine");
-  const resultError = document.getElementById("resultError");
-  const rateHint = document.getElementById("rateHint");
-
-  const COPY = {
-    liveTitle: {{ c.live_title|tojson }},
-    hoursLine: {{ c.hours_line|tojson }},
-    thats: {{ c.thats|tojson }},
-    errCost: {{ c.err_cost|tojson }},
-    errWage: {{ c.err_wage|tojson }},
-    errConvert: {{ c.err_convert|tojson }}
-  };
-
-  function getWageType() {
-    const checked = document.querySelector('input[name="wageType"]:checked');
-    return checked ? checked.value : "hourly";
-  }
-
-  function hourlyFromWage(amount, type) {
-    if (!Number.isFinite(amount) || amount <= 0) return 0;
-    if (type === "annual") return amount / 2080;     // 52w * 40h
-    if (type === "monthly") return amount / 173.33;  // 40h * 52 / 12
-    return amount; // hourly
-  }
-
-  function toHumanHours(hours) {
-    if (!Number.isFinite(hours) || hours < 0) return "";
-    const totalMinutes = Math.round(hours * 60);
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
-
-    if (h === 0 && m === 0) return "0m";
-    if (h === 0) return `${m}m`;
-    if (m === 0) return `${h}h`;
-    return `${h}h ${m}m`;
-  }
-
-  function workdayEquivalent(hours, hoursPerDay = 8) {
-    if (!Number.isFinite(hours) || hours <= 0) return "";
-    const days = hours / hoursPerDay;
-
-    if (days < 0.25) return "less than a quarter workday";
-    if (days < 1) return `about ${Math.round(days * 10) / 10} workday`;
-    if (days < 2) return "about 1 workday";
-    return `about ${Math.round(days * 10) / 10} workdays`;
-  }
-
-  function showError(msg) {
-    liveResult.style.display = "block";
-    resultTitle.textContent = COPY.liveTitle;
-
-    resultError.style.display = "block";
-    resultError.textContent = msg;
-
-    resultHoursLine.textContent = "";
-    resultHumanLine.textContent = "";
-  }
-
-  function clearError() {
-    resultError.style.display = "none";
-    resultError.textContent = "";
-  }
-
-  function updateHint(type) {
-    if (!rateHint) return;
-    if (type === "annual") rateHint.textContent = "Converted using 2080 working hours/year.";
-    else if (type === "monthly") rateHint.textContent = "Converted using ~173.33 working hours/month.";
-    else rateHint.textContent = "";
-  }
-
-  function recalc() {
-    const wageType = getWageType();
-    updateHint(wageType);
-
-    const costRaw = (itemCostEl?.value ?? "").trim();
-    const wageRaw = (wageAmountEl?.value ?? "").trim();
-
-    // Hide until user starts typing something meaningful
-    const hasAnything = costRaw !== "" || wageRaw !== "";
-    if (!hasAnything) {
-      liveResult.style.display = "none";
-      return;
-    }
-
-    const cost = parseFloat(costRaw);
-    const wageAmount = parseFloat(wageRaw);
-    const hourly = hourlyFromWage(wageAmount, wageType);
-
-    if (!Number.isFinite(cost) || cost < 0) return showError(COPY.errCost);
-    if (!Number.isFinite(wageAmount) || wageAmount <= 0) return showError(COPY.errWage);
-    if (!Number.isFinite(hourly) || hourly <= 0) return showError(COPY.errConvert);
-
-    clearError();
-
-    const hours = cost / hourly;
-    const human = toHumanHours(hours);
-    const workday = workdayEquivalent(hours);
-
-    liveResult.style.display = "block";
-    resultTitle.textContent = COPY.liveTitle;
-
-    resultHoursLine.innerHTML =
-      `${COPY.hoursLine} <strong>${hours.toFixed(2)}</strong> hours of work.`;
-
-    resultHumanLine.innerHTML =
-      `${COPY.thats} <strong>${human}</strong>${workday ? ` (${workday})` : ""}.`;
-  }
-
-  itemCostEl?.addEventListener("input", recalc);
-  wageAmountEl?.addEventListener("input", recalc);
-  wageTypeEls().forEach(r => r.addEventListener("change", recalc));
-
-  recalc();
-})();
-</script>
 {% endblock %}
