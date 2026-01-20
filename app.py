@@ -10,6 +10,8 @@ import PiggyBank.routes  # ensures routes are registered
 from flask import Flask, render_template, request, session, redirect, url_for
 from sqlalchemy import text
 
+app.register_blueprint(piggybank_bp, url_prefix="/piggybank")
+
 DEFAULT_CURRENCY = "£"
 ALLOWED_CURRENCIES = {"$", "£", "€", "¥", "₹", "₩", "₽"}
 
@@ -119,8 +121,9 @@ def inject_globals():
     return {
         "currency": session.get("currency", DEFAULT_CURRENCY),
         "perspective": session.get("perspective", "river"),
+        "is_parent": session.get("piggy_parent", False),
+        "guide": session.get("guide", "lorelai"),
     }
-
 
 # ----------------------------
 # Personal / wage logic
