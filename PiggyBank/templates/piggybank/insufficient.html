@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Not enough information{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Not enough information yet</h1>
+    <p class="muted">
+      That’s okay. A few details just haven’t been set.
+    </p>
+  </header>
+
+  <section class="panel">
+    <div class="callout" role="status" aria-live="polite">
+      <strong>What’s missing</strong>
+
+      {% if missing %}
+        <ul style="margin:8px 0 0; padding-left:18px;">
+          {% for item in missing %}
+            <li class="muted">{{ item }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted" style="margin:6px 0 0;">
+          We need a little more information before we can do this calculation.
+        </p>
+      {% endif %}
+    </div>
+
+    {% if hint %}
+      <p class="muted" style="margin-top:10px;">
+        {{ hint }}
+      </p>
+    {% endif %}
+
+    <div class="actions">
+      <a class="btn btn-primary" href="{{ url_for('personal') }}">
+        Add personal info
+      </a>
+      <a class="btn" href="{{ url_for('calculator') }}">
+        Back to calculator
+      </a>
+    </div>
+
+    <p class="muted" style="margin-top:14px;">
+      You can always come back later. Nothing here is required all at once.
+    </p>
+  </section>
+</div>
+{% endblock %}

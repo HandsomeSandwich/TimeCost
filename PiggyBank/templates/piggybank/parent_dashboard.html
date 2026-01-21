@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Parent Mode{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Parent Mode</h1>
+    <p class="muted">
+      A calm place for settings and resets. Nothing here is a judgment.
+    </p>
+  </header>
+
+  <section class="panel">
+    {% if not is_parent %}
+      <div class="callout" role="status" aria-live="polite">
+        <strong>Parent Mode is off.</strong>
+        <p class="muted" style="margin:6px 0 0;">
+          This page is only available when Parent Mode is on.
+        </p>
+      </div>
+
+      <div class="actions">
+        <a class="btn btn-primary" href="{{ url_for('calculator') }}">Back</a>
+      </div>
+
+    {% else %}
+      <div class="callout" role="status" aria-live="polite">
+        <strong>Parent Mode is on.</strong>
+        <p class="muted" style="margin:6px 0 0;">
+          Make changes slowly. You can always undo by leaving this mode.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Quick actions</div>
+
+        <div class="row-actions">
+          <a class="btn" href="{{ url_for('personal') }}">Edit Personal info</a>
+          <a class="btn" href="{{ url_for('expenses') }}">Edit Expenses</a>
+          <a class="btn" href="{{ url_for('goals') }}">Edit Goals</a>
+        </div>
+
+        <p class="muted" style="margin:10px 0 0;">
+          These are the places where changes affect multiple pages.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Session controls</div>
+
+        <p class="muted" style="margin:0 0 10px;">
+          Parent Mode is stored in this browser session only.
+        </p>
+
+        <div class="actions">
+          <form method="POST" action="{{ url_for('parent_logout') }}" class="inline">
+            <button type="submit" class="btn btn-primary">Exit Parent Mode</button>
+          </form>
+          <a class="btn" href="{{ url_for('calculator') }}">Return to app</a>
+        </div>
+      </div>
+
+      <details style="margin-top:14px;">
+        <summary>Careful: reset actions</summary>
+
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">Reset stored data</div>
+          <p class="muted" style="margin:0 0 12px;">
+            Use these only if you want a clean slate. This can’t be undone.
+          </p>
+
+          <div class="row-actions">
+            {# Optional: only include these if you actually have routes #}
+            {% if can_reset_session %}
+              <form method="POST" action="{{ url_for('reset_session') }}" class="inline">
+                <button type="submit" class="btn btn-danger"
+                  onclick="return confirm('Clear saved Personal info and preferences for this session?');">
+                  Clear session preferences
+                </button>
+              </form>
+            {% endif %}
+
+            {% if can_clear_expenses %}
+              <form method="POST" action="{{ url_for('clear_expenses') }}" class="inline">
+                <button type="submit" class="btn btn-danger"
+                  onclick="return confirm('Delete all saved expenses?');">
+                  Delete all expenses
+                </button>
+              </form>
+            {% endif %}
+
+            {% if can_clear_goals %}
+              <form method="POST" action="{{ url_for('clear_goals') }}" class="inline">
+                <button type="submit" class="btn btn-danger"
+                  onclick="return confirm('Delete all goals?');">
+                  Delete all goals
+                </button>
+              </form>
+            {% endif %}
+          </div>
+
+          {% if not (can_reset_session or can_clear_expenses or can_clear_goals) %}
+            <p class="muted" style="margin:0;">
+              No reset actions are enabled in this build.
+            </p>
+          {% endif %}
+        </div>
+      </details>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

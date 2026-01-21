@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Parent Mode{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Parent Mode</h1>
+    <p class="muted">
+      This mode is for grown-up settings and changes.
+      Nothing here is permanent.
+    </p>
+  </header>
+
+  <section class="panel">
+    <form method="POST" action="{{ url_for('parent_login') }}" class="stack">
+
+      <div class="callout">
+        <strong>What this does</strong>
+        <p class="muted" style="margin:6px 0 0;">
+          Parent Mode unlocks settings that affect structure and limits.
+          It’s meant to reduce accidental changes, not to lock anyone out.
+        </p>
+      </div>
+
+      <div class="field">
+        <label for="pin">Optional PIN</label>
+        <input
+          id="pin"
+          name="pin"
+          type="password"
+          inputmode="numeric"
+          placeholder="Leave blank if you don’t use one"
+          autocomplete="off"
+        >
+        <p class="help">
+          If you’ve set a PIN, enter it here.
+          If not, you can continue without one.
+        </p>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary">
+          Enter Parent Mode
+        </button>
+        <a href="{{ url_for('calculator') }}" class="btn">
+          Cancel
+        </a>
+      </div>
+
+      {% if error %}
+        <div class="callout" role="alert" style="margin-top:12px;">
+          <strong>That didn’t work.</strong>
+          <p class="muted" style="margin:6px 0 0;">
+            {{ error }}
+          </p>
+        </div>
+      {% endif %}
+    </form>
+  </section>
+
+  <p class="muted" style="margin-top:14px;">
+    You can exit Parent Mode at any time.
+  </p>
+</div>
+{% endblock %}

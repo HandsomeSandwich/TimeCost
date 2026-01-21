@@ -10,20 +10,27 @@
 </head>
 
 <body class="{% block body_class %}kiosk{% endblock %}">
+  <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">
-        <span class="brand-mark">🐷</span>
+        <span class="brand-mark" aria-hidden="true">🐷</span>
         <span class="brand-name">TimeCost PiggyBank</span>
       </div>
       <div class="actions">
-        <a class="btn btn-sm btn-ghost" href="{{ url_for('piggybank.parent_home') }}">Parent</a>
+        <a
+          class="btn btn-sm btn-ghost"
+          href="{{ url_for('piggybank.parent_home') }}"
+          aria-label="Parent mode"
+        >
+          Parent
+        </a>
       </div>
     </div>
   </header>
 
-  <main class="container">
+  <main id="main" class="container">
     {% block content %}{% endblock %}
   </main>
 </body>
