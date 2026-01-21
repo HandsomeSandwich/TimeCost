@@ -1,15 +1,19 @@
-
 {% extends "base.html" %}
 {% block title %}Expenses{% endblock %}
 
 {% block head %}
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  {% if category_totals %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  {% endif %}
+
   <script>
 document.addEventListener("DOMContentLoaded", function () {
   const expenseTableBody = document.getElementById("expenseTableBody");
   const cardsWrap = document.getElementById("expenseCards");
   const hourlyWageInput = document.getElementById("userHourlyRate");
   const addBtn = document.getElementById("addExpenseBtn");
+
+  if (!expenseTableBody || !hourlyWageInput || !addBtn) return;
 
   function escapeAttr(s) {
     return String(s ?? "")
@@ -32,8 +36,8 @@ document.addEventListener("DOMContentLoaded", function () {
   function recalcRow(row) {
     const amountInput = row.querySelector(".expenseAmount");
     const hourlyCostSpan = row.querySelector(".expenseHourly");
-    const amount = parseFloat(amountInput.value) || 0;
-    hourlyCostSpan.textContent = calcHours(amount).toFixed(2);
+    const amount = parseFloat(amountInput?.value) || 0;
+    if (hourlyCostSpan) hourlyCostSpan.textContent = calcHours(amount).toFixed(2);
   }
 
   function recalcTotals() {
@@ -42,17 +46,29 @@ document.addEventListener("DOMContentLoaded", function () {
     const rate = hourlyRate();
 
     document.querySelectorAll("#expenseTableBody tr").forEach(function (row) {
-      const amount = parseFloat(row.querySelector(".expenseAmount").value) || 0;
+      const amount = parseFloat(row.querySelector(".expenseAmount")?.value) || 0;
       totalAmount += amount;
       if (rate > 0) totalHourly += (amount / rate);
     });
 
-    document.getElementById("totalAmount").textContent = totalAmount.toFixed(2);
-    document.getElementById("totalHourly").textContent = totalHourly.toFixed(2);
-    document.getElementById("expensesTotalInput").value = totalAmount.toFixed(2);
+    const tA = totalAmount.toFixed(2);
+    const tH = totalHourly.toFixed(2);
+
+    const totalAmountEl = document.getElementById("totalAmount");
+    const totalHourlyEl = document.getElementById("totalHourly");
+    const totalAmountInlineEl = document.getElementById("totalAmountInline");
+    const totalHourlyInlineEl = document.getElementById("totalHourlyInline");
+    const totalInput = document.getElementById("expensesTotalInput");
+
+    if (totalAmountEl) totalAmountEl.textContent = tA;
+    if (totalHourlyEl) totalHourlyEl.textContent = tH;
+    if (totalAmountInlineEl) totalAmountInlineEl.textContent = tA;
+    if (totalHourlyInlineEl) totalHourlyInlineEl.textContent = tH;
+    if (totalInput) totalInput.value = tA;
   }
 
   function syncCardsFromTable() {
+    if (!cardsWrap) return;
     cardsWrap.innerHTML = "";
 
     document.querySelectorAll("#expenseTableBody tr").forEach((row, idx) => {
@@ -60,28 +76,27 @@ document.addEventListener("DOMContentLoaded", function () {
       const amountEl = row.querySelector(".expenseAmount");
       const catEl = row.querySelector(".expenseCategory");
 
-      const name = nameEl.value || "";
-      const amount = amountEl.value || "";
-      const category = catEl.value || "Other";
+      const name = nameEl?.value || "";
+      const amount = amountEl?.value || "";
+      const category = catEl?.value || "Other";
 
       const hours = calcHours(parseFloat(amount) || 0).toFixed(2);
-
       const safeName = escapeAttr(name);
 
       const card = document.createElement("div");
       card.className = "expense-card";
       card.innerHTML = `
-        <div class="expense-card-title">Expense #${idx + 1}</div>
+        <div class="expense-card-title">Expense ${idx + 1}</div>
 
         <div class="expense-card-grid">
           <div class="full">
-            <label>Expense Item</label>
+            <label>Expense</label>
             <input type="text" class="cardName" value="${safeName}" required>
           </div>
 
           <div>
             <label>Amount ({{ currency }})</label>
-            <input type="number" step="0.01" class="cardAmount" value="${escapeAttr(amount)}" required>
+            <input type="number" step="0.01" class="cardAmount" value="${escapeAttr(amount)}" required inputmode="decimal">
           </div>
 
           <div>
@@ -96,7 +111,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         <div class="expense-meta">
           <span><strong>Hours:</strong> <span class="cardHours">${hours}</span></span>
-          <button type="button" class="removeButton">Remove</button>
+          <button type="button" class="btn btn-sm btn-ghost removeButton">Remove</button>
         </div>
       `;
 
@@ -105,20 +120,16 @@ document.addEventListener("DOMContentLoaded", function () {
       const cardCategory = card.querySelector(".cardCategory");
       const cardHours = card.querySelector(".cardHours");
 
-      cardName.addEventListener("input", () => {
-        nameEl.value = cardName.value;
-      });
+      cardName.addEventListener("input", () => { if (nameEl) nameEl.value = cardName.value; });
 
       cardAmount.addEventListener("input", () => {
-        amountEl.value = cardAmount.value;
+        if (amountEl) amountEl.value = cardAmount.value;
         recalcRow(row);
         recalcTotals();
         cardHours.textContent = calcHours(parseFloat(cardAmount.value) || 0).toFixed(2);
       });
 
-      cardCategory.addEventListener("change", () => {
-        catEl.value = cardCategory.value;
-      });
+      cardCategory.addEventListener("change", () => { if (catEl) catEl.value = cardCategory.value; });
 
       card.querySelector(".removeButton").addEventListener("click", () => {
         row.remove();
@@ -141,11 +152,11 @@ document.addEventListener("DOMContentLoaded", function () {
       syncCardsFromTable();
     }
 
-    amountInput.addEventListener("input", onRowEdit);
-    nameInput.addEventListener("input", onRowEdit);
-    catSelect.addEventListener("change", onRowEdit);
+    amountInput?.addEventListener("input", onRowEdit);
+    nameInput?.addEventListener("input", onRowEdit);
+    catSelect?.addEventListener("change", onRowEdit);
 
-    row.querySelector(".removeRow").addEventListener("click", function () {
+    row.querySelector(".removeRow")?.addEventListener("click", function () {
       row.remove();
       recalcTotals();
       syncCardsFromTable();
@@ -154,13 +165,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function addExpenseRow(name = "", amount = "", category = "Other") {
     const row = document.createElement("tr");
-
     const safeName = escapeAttr(name);
     const safeAmount = escapeAttr(amount);
 
     row.innerHTML = `
       <td><input type="text" name="expense_name[]" class="expenseName" value="${safeName}" required></td>
-      <td><input type="number" step="0.01" name="expense_amount[]" class="expenseAmount" value="${safeAmount}" required></td>
+      <td><input type="number" step="0.01" name="expense_amount[]" class="expenseAmount num" value="${safeAmount}" required inputmode="decimal"></td>
       <td>
         <select name="expense_category[]" class="expenseCategory" required>
           <option value="Rent" ${category === "Rent" ? "selected" : ""}>Rent</option>
@@ -170,8 +180,8 @@ document.addEventListener("DOMContentLoaded", function () {
           <option value="Other" ${category === "Other" ? "selected" : ""}>Other</option>
         </select>
       </td>
-      <td><span class="expenseHourly">0.00</span></td>
-      <td><button type="button" class="removeRow">Remove</button></td>
+      <td class="num"><span class="expenseHourly">0.00</span></td>
+      <td><button type="button" class="btn btn-sm btn-ghost removeRow">Remove</button></td>
     `;
 
     expenseTableBody.appendChild(row);
@@ -181,104 +191,34 @@ document.addEventListener("DOMContentLoaded", function () {
     syncCardsFromTable();
   }
 
-  // Add button
   addBtn.addEventListener("click", () => addExpenseRow());
 
-  // Hourly rate changes
   hourlyWageInput.addEventListener("input", () => {
     document.querySelectorAll("#expenseTableBody tr").forEach(recalcRow);
     recalcTotals();
     syncCardsFromTable();
   });
 
-  // Prefill from saved_expenses
   const existing = [
     {% for e in saved_expenses %}
       { name: {{ e.name|tojson }}, amount: {{ e.amount|tojson }}, category: {{ e.category|tojson }} }{% if not loop.last %},{% endif %}
     {% endfor %}
   ];
 
-  if (existing.length) {
-    existing.forEach(e => addExpenseRow(e.name, e.amount, e.category));
-  } else {
-    addExpenseRow();
-  }
-});
-</script>
+  if (existing.length) existing.forEach(e => addExpenseRow(e.name, e.amount, e.category));
+  else addExpenseRow();
 
-{% endblock %}
-
-{% block content %}
-<div class="form-container">
-  <h1>Expenses</h1>
-  <p>Add, remove, or modify expense items below. The hourly expense is computed by dividing the cost by your hourly rate.</p>
-
-  <form action="{{ url_for('expenses') }}" method="post">
-    <div>
-      <label for="userHourlyRate">Your Hourly Rate ({{ currency }}):</label>
-      <input type="number" step="0.01" id="userHourlyRate" name="user_hourly_rate"
-             value="{{ session.get('hourlyRate', '') }}" required>
-      <small>This can be auto-filled from Personal Information or manually adjusted.</small>
-    </div>
-
-    <!-- Desktop table -->
-    <table class="expense-table">
-      <thead>
-        <tr>
-          <th>Expense Item</th>
-          <th>Expense ({{ currency }})</th>
-          <th>Category</th>
-          <th>Expense (Hours)</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="expenseTableBody">
-        <!-- Rows injected by JS -->
-      </tbody>
-      <tfoot>
-        <tr>
-          <td><strong>Total</strong></td>
-          <td><strong id="totalAmount">0.00</strong></td>
-          <td></td>
-          <td><strong id="totalHourly">0.00</strong></td>
-          <td></td>
-        </tr>
-      </tfoot>
-    </table>
-
-    <!-- Mobile cards -->
-    <div id="expenseCards" class="expense-cards"></div>
-
-    <input type="hidden" name="expensesTotal" id="expensesTotalInput" value="0.00">
-
-    <button type="button" id="addExpenseBtn">Add Expense</button>
-
-    <div>
-      <button type="submit">Save Expenses</button>
-    </div>
-  </form>
-</div>
-
-{% if category_totals %}
-  <div class="chart-container">
-    <canvas id="categoryChart"></canvas>
-  </div>
-  <script>
-    const ctx = document.getElementById("categoryChart").getContext("2d");
-
-    // Optional: pull theme vars for a cohesive chart palette
-    const styles = getComputedStyle(document.documentElement);
-    const primary = styles.getPropertyValue("--primary").trim() || "#A3B18A";
-    const accent = styles.getPropertyValue("--accent").trim() || "#E07A5F";
-    const secondary = styles.getPropertyValue("--secondary-accent").trim() || "#FFD37F";
-
+  // Chart (only if present)
+  {% if category_totals %}
+  const chartEl = document.getElementById("categoryChart");
+  if (chartEl && window.Chart) {
+    const ctx = chartEl.getContext("2d");
     new Chart(ctx, {
       type: "pie",
       data: {
         labels: [{% for row in category_totals %}"{{ row.category }}"{% if not loop.last %},{% endif %}{% endfor %}],
         datasets: [{
-          data: [{% for row in category_totals %}{{ row.total }}{% if not loop.last %},{% endif %}{% endfor %}],
-          backgroundColor: [primary, accent, secondary, "#4bc0c0"]
+          data: [{% for row in category_totals %}{{ row.total }}{% if not loop.last %},{% endif %}{% endfor %}]
         }]
       },
       options: {
@@ -288,7 +228,87 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
     });
+  }
+  {% endif %}
+});
   </script>
-{% endif %}
 {% endblock %}
-```
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Expenses</h1>
+    <p class="muted">
+      Add your recurring costs. We’ll translate each one into work hours using your hourly rate.
+    </p>
+  </header>
+
+  <form action="{{ url_for('expenses') }}" method="post" class="stack">
+    <section class="panel">
+      <div class="field">
+        <label for="userHourlyRate">Hourly rate ({{ currency }})</label>
+        <input
+          type="number" step="0.01"
+          id="userHourlyRate" name="user_hourly_rate"
+          value="{{ session.get('hourlyRate', '') }}" required
+          inputmode="decimal"
+        >
+        <p class="help">Auto-fills from Personal if available. You can change it here any time.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="desktop-only">
+        <table class="expense-table">
+          <thead>
+            <tr>
+              <th>Expense</th>
+              <th class="num">Amount ({{ currency }})</th>
+              <th>Category</th>
+              <th class="num">Hours</th>
+              <th class="action">Action</th>
+            </tr>
+          </thead>
+          <tbody id="expenseTableBody"></tbody>
+          <tfoot>
+            <tr>
+              <td><strong>Total</strong></td>
+              <td class="num"><strong id="totalAmount">0.00</strong></td>
+              <td></td>
+              <td class="num"><strong id="totalHourly">0.00</strong></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="mobile-only">
+        <div id="expenseCards" class="expense-cards"></div>
+      </div>
+
+      <input type="hidden" name="expensesTotal" id="expensesTotalInput" value="0.00">
+
+      <div class="actions">
+        <button type="button" id="addExpenseBtn" class="btn">Add expense</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+
+      <div class="summary muted">
+        <span>Total: <strong id="totalAmountInline">0.00</strong> {{ currency }}</span>
+        <span>Hours: <strong id="totalHourlyInline">0.00</strong></span>
+      </div>
+    </section>
+
+    {% if category_totals %}
+      <section class="panel">
+        <details>
+          <summary>Show breakdown</summary>
+          <div class="chart-container">
+            <canvas id="categoryChart"></canvas>
+          </div>
+        </details>
+      </section>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

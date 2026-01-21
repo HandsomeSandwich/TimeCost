@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Budget Calculator{% endblock %}
+{% block title %}Budget{% endblock %}
 
 {% macro goal_progress(goal) -%}
   {% set raw = (goal.current / goal.target * 100) if goal.target > 0 else 0 %}
@@ -8,100 +8,169 @@
 
 {% block head %}
   {{ super() }}
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  {% if hourly_value is not none %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  {% endif %}
 {% endblock %}
 
 {% block content %}
-<div class="form-container">
-  <h1>Budget Calculator</h1>
+<div class="page">
+  <header class="page-header">
+    <h1>Budget</h1>
+    <p class="muted">A simple monthly view. No judgment. Just numbers translated into clarity.</p>
+  </header>
 
-  <form method="POST" action="{{ url_for('budget') }}">
-    <div class="field">
-      <label for="income">Monthly Income ({{ currency }}):</label>
-      <input type="number" step="0.01" id="income" name="income" value="{{ income or '' }}" required>
-    </div>
+  <form method="POST" action="{{ url_for('budget') }}" class="stack">
 
-    <div class="field">
-      <label for="expenses">Monthly Expenses ({{ currency }}):</label>
-      <input type="number" step="0.01" id="expenses" name="expenses" value="{{ expenses or '' }}" readonly>
-      <div class="hint">This total is pulled from your Expenses page.</div>
-    </div>
+    <section class="panel">
+      <div class="grid-2">
+        <div class="field">
+          <label for="income">Monthly income ({{ currency }})</label>
+          <input type="number" step="0.01" inputmode="decimal"
+                 id="income" name="income" value="{{ income or '' }}" required>
+        </div>
 
-    <div class="field">
-      <label for="weeklyHours">Weekly Hours:</label>
-      <input type="number" step="0.1" id="weeklyHours" name="weeklyHours" value="{{ weekly_hours or '' }}" required>
-    </div>
+        <div class="field">
+          <label for="expenses">Monthly expenses ({{ currency }})</label>
+          <input type="number" step="0.01" inputmode="decimal"
+                 id="expenses" name="expenses" value="{{ expenses or '' }}" readonly class="readonly">
+          <p class="help">Pulled from your Expenses page.</p>
+        </div>
+      </div>
 
-    <div class="field">
-      <label for="savingsGoal">Long Term Savings Goal ({{ currency }}):</label>
-      <input type="number" step="0.01" id="savingsGoal" name="savingsGoal" value="{{ savings_goal or '' }}">
-    </div>
+      <div class="grid-2">
+        <div class="field">
+          <label for="weeklyHours">Weekly work hours</label>
+          <input type="number" step="0.1" inputmode="decimal"
+                 id="weeklyHours" name="weeklyHours" value="{{ weekly_hours or '' }}" required>
+        </div>
 
-    <div class="field">
-      <label for="currentSavings">Amount Already Saved ({{ currency }}):</label>
-      <input type="number" step="0.01" id="currentSavings" name="currentSavings" value="{{ current_savings or '' }}">
-    </div>
+        <div class="field">
+          <label for="savingsGoal">Long-term savings goal ({{ currency }})</label>
+          <input type="number" step="0.01" inputmode="decimal"
+                 id="savingsGoal" name="savingsGoal" value="{{ savings_goal or '' }}">
+          <p class="help">Optional. Used only for projections.</p>
+        </div>
+      </div>
 
-    <button type="submit">Calculate</button>
+      <div class="grid-2">
+        <div class="field">
+          <label for="currentSavings">Already saved ({{ currency }})</label>
+          <input type="number" step="0.01" inputmode="decimal"
+                 id="currentSavings" name="currentSavings" value="{{ current_savings or '' }}">
+        </div>
+
+        <div class="field">
+          <label>&nbsp;</label>
+          <p class="help">If you leave optional fields blank, we’ll just calculate the basics.</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary">Calculate</button>
+      </div>
+    </section>
+
+    {% if hourly_value is not none %}
+      <section class="panel">
+        <h2 class="card-title">Results</h2>
+
+        <div class="grid-2">
+          <div class="card">
+            <p class="muted" style="margin:0 0 6px;">Monthly discretionary</p>
+            <p style="margin:0; font-size:22px; font-weight:700;">
+              {{ currency }}{{ discretionary_income|round(2) }}
+            </p>
+          </div>
+
+          <div class="card">
+            <p class="muted" style="margin:0 0 6px;">Hourly value (discretionary)</p>
+            <p style="margin:0; font-size:22px; font-weight:700;">
+              {{ currency }}{{ hourly_value|round(2) }}/hr
+            </p>
+          </div>
+        </div>
+
+        <details style="margin-top:14px;">
+          <summary>Show chart</summary>
+          <div class="chart-container" style="height:280px;">
+            <canvas id="budgetChart"></canvas>
+          </div>
+        </details>
+
+        <script>
+          const canvas = document.getElementById("budgetChart");
+          if (canvas && window.Chart) {
+            const ctx = canvas.getContext("2d");
+            const styles = getComputedStyle(document.documentElement);
+
+            // Use your actual theme vars
+            const accent = styles.getPropertyValue("--accent").trim() || "#3f6f5a";
+            const soft = styles.getPropertyValue("--accent-soft").trim() || "#e6f0ea";
+            const border = styles.getPropertyValue("--border").trim() || "#dde4dc";
+            const text = styles.getPropertyValue("--text").trim() || "#1f2a22";
+
+            new Chart(ctx, {
+              type: "bar",
+              data: {
+                labels: ["Income", "Expenses", "Discretionary"],
+                datasets: [{
+                  label: "Monthly Budget",
+                  data: {{ [income|default(0), expenses|default(0), discretionary_income|default(0)] | tojson }},
+                  borderWidth: 1
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  title: { display: true, text: "Monthly overview", color: text },
+                  legend: { display: false }
+                },
+                scales: {
+                  x: {
+                    ticks: { color: text },
+                    grid: { color: border }
+                  },
+                  y: {
+                    beginAtZero: true,
+                    ticks: { color: text },
+                    grid: { color: border }
+                  }
+                }
+              }
+            });
+
+            // Calm palette without hardcoding specific colors per bar:
+            // apply a subtle two-tone using dataset scriptable option
+            Chart.defaults.color = text;
+            Chart.defaults.borderColor = border;
+
+            // Set dataset background after create (simple + readable)
+            const chart = Chart.getChart(ctx);
+            if (chart) {
+              chart.data.datasets[0].backgroundColor = [soft, border, accent];
+              chart.data.datasets[0].borderColor = [border, border, accent];
+              chart.update();
+            }
+          }
+        </script>
+      </section>
+    {% endif %}
+
   </form>
 
-  {% if hourly_value is not none %}
-    <div class="result-card">
-      <h2>Budget Results</h2>
-      <p><strong>Monthly Discretionary Income:</strong> {{ currency }}{{ discretionary_income|round(2) }}</p>
-      <p><strong>Estimated Hourly Value (of discretionary income):</strong> {{ currency }}{{ hourly_value|round(2) }}/hr</p>
-    </div>
-
-    <div class="chart-container">
-      <canvas id="budgetChart"></canvas>
-    </div>
-
-    <script>
-      const ctx = document.getElementById("budgetChart").getContext("2d");
-
-      // Theme-aware chart colors from CSS vars
-      const styles = getComputedStyle(document.documentElement);
-      const primary = styles.getPropertyValue("--primary").trim() || "#A3B18A";
-      const accent = styles.getPropertyValue("--accent").trim() || "#E07A5F";
-      const secondary = styles.getPropertyValue("--secondary-accent").trim() || "#FFD37F";
-      const textDark = styles.getPropertyValue("--text-dark").trim() || "#2F3E46";
-
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['Income', 'Expenses', 'Discretionary'],
-          datasets: [{
-            label: 'Monthly Budget',
-            data: {{ [income|default(0), expenses|default(0), discretionary_income|default(0)] | tojson }},
-            backgroundColor: [primary, accent, secondary],
-            borderWidth: 1,
-            borderColor: textDark
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            title: { display: true, text: 'Monthly Budget Overview' },
-            legend: { display: false }
-          },
-          scales: { y: { beginAtZero: true } }
-        }
-      });
-    </script>
-  {% endif %}
-
-  <div class="goals-section">
-    <h2>Long Term Savings Goals</h2>
+  <section class="panel" style="margin-top:16px;">
+    <h2 class="card-title">Long-term savings goals</h2>
 
     {% if goals %}
       <div class="table-wrap">
-        <table class="goal-table">
+        <table class="expense-table">
           <thead>
             <tr>
-              <th>Goal Name</th>
-              <th>Target ({{ currency }})</th>
-              <th>Saved ({{ currency }})</th>
+              <th>Goal</th>
+              <th class="num">Target ({{ currency }})</th>
+              <th class="num">Saved ({{ currency }})</th>
               <th>Progress</th>
             </tr>
           </thead>
@@ -111,8 +180,8 @@
               {% set progress = goal_progress(goal)|float %}
               <tr>
                 <td>{{ goal.name }}</td>
-                <td>{{ currency }}{{ goal.target|round(2) }}</td>
-                <td>{{ currency }}{{ goal.current|round(2) }}</td>
+                <td class="num">{{ currency }}{{ goal.target|round(2) }}</td>
+                <td class="num">{{ currency }}{{ goal.current|round(2) }}</td>
                 <td>
                   <div class="progress-container">
                     <div class="progress-bar" style="width: {{ progress }}%;">
@@ -126,8 +195,8 @@
         </table>
       </div>
     {% else %}
-      <p>No goals added yet.</p>
+      <p class="muted" style="margin:0;">No goals added yet.</p>
     {% endif %}
-  </div>
+  </section>
 </div>
 {% endblock %}

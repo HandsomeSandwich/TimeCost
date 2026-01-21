@@ -1,155 +1,198 @@
 {% extends "base.html" %}
-{% block title %}Staples - Time Cost{% endblock %}
+{% block title %}Staples{% endblock %}
 
 {% block head %}
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const stapleTableBody = document.getElementById("stapleTableBody");
-      const hourlyRateInput = document.getElementById("stapleHourlyRate");
-      const addBtn = document.getElementById("addStapleBtn");
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const stapleTableBody = document.getElementById("stapleTableBody");
+  const hourlyRateInput = document.getElementById("stapleHourlyRate");
+  const addBtn = document.getElementById("addStapleBtn");
 
-      function escapeAttr(s) {
-        return String(s ?? "")
-          .replace(/&/g, "&amp;")
-          .replace(/"/g, "&quot;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/'/g, "&#039;");
-      }
+  if (!stapleTableBody || !hourlyRateInput || !addBtn) return;
 
-      function hourlyRate() {
-        return parseFloat(hourlyRateInput.value) || 0;
-      }
+  function escapeAttr(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/'/g, "&#039;");
+  }
 
-      function calcHours(cost) {
-        const rate = hourlyRate();
-        return rate > 0 ? (cost / rate) : 0;
-      }
+  function hourlyRate() {
+    return parseFloat(hourlyRateInput.value) || 0;
+  }
 
-      function recalcRow(row) {
-        const costInput = row.querySelector(".stapleCost");
-        const timeSpan = row.querySelector(".stapleTime");
-        const cost = parseFloat(costInput.value) || 0;
-        timeSpan.textContent = calcHours(cost).toFixed(2);
-      }
+  function calcHours(cost) {
+    const rate = hourlyRate();
+    return rate > 0 ? (cost / rate) : 0;
+  }
 
-      function recalcTotals() {
-        let totalCost = 0;
-        let totalTime = 0;
+  function recalcRow(row) {
+    const costInput = row.querySelector(".stapleCost");
+    const timeSpan = row.querySelector(".stapleTime");
+    const cost = parseFloat(costInput?.value) || 0;
+    if (timeSpan) timeSpan.textContent = calcHours(cost).toFixed(2);
+  }
 
-        document.querySelectorAll("#stapleTableBody tr").forEach((row) => {
-          const cost = parseFloat(row.querySelector(".stapleCost").value) || 0;
-          totalCost += cost;
-          totalTime += calcHours(cost);
-        });
+  function recalcTotals() {
+    let totalCost = 0;
+    let totalTime = 0;
 
-        document.getElementById("totalCost").textContent = totalCost.toFixed(2);
-        document.getElementById("totalTime").textContent = totalTime.toFixed(2);
-      }
-
-      function addRowListeners(row) {
-        const nameInput = row.querySelector(".stapleName");
-        const costInput = row.querySelector(".stapleCost");
-
-        function onEdit() {
-          recalcRow(row);
-          recalcTotals();
-        }
-
-        nameInput.addEventListener("input", onEdit);
-        costInput.addEventListener("input", onEdit);
-
-        row.querySelector(".removeStaple").addEventListener("click", () => {
-          row.remove();
-          recalcTotals();
-        });
-      }
-
-      function addStapleRow(itemName = "", costValue = "") {
-        const row = document.createElement("tr");
-
-        const safeName = escapeAttr(itemName);
-        const safeCost = escapeAttr(costValue);
-
-        row.innerHTML = `
-          <td><input type="text" class="stapleName" value="${safeName}" placeholder="e.g. Milk" required></td>
-          <td><input type="number" step="0.01" class="stapleCost" value="${safeCost}" placeholder="0.00" required></td>
-          <td><span class="stapleTime">0.00</span></td>
-          <td><button type="button" class="removeStaple removeButton">Remove</button></td>
-        `;
-
-        stapleTableBody.appendChild(row);
-        addRowListeners(row);
-        recalcRow(row);
-        recalcTotals();
-      }
-
-      hourlyRateInput.addEventListener("input", () => {
-        document.querySelectorAll("#stapleTableBody tr").forEach(recalcRow);
-        recalcTotals();
-      });
-
-      addBtn.addEventListener("click", () => addStapleRow());
-
-      // Start with one row
-      addStapleRow();
+    document.querySelectorAll("#stapleTableBody tr").forEach((row) => {
+      const cost = parseFloat(row.querySelector(".stapleCost")?.value) || 0;
+      totalCost += cost;
+      totalTime += calcHours(cost);
     });
-  </script>
+
+    const tC = totalCost.toFixed(2);
+    const tT = totalTime.toFixed(2);
+
+    const totalCostEl = document.getElementById("totalCost");
+    const totalTimeEl = document.getElementById("totalTime");
+    const totalCostInlineEl = document.getElementById("totalCostInline");
+    const totalTimeInlineEl = document.getElementById("totalTimeInline");
+    const totalHidden = document.getElementById("staplesTotalInput");
+
+    if (totalCostEl) totalCostEl.textContent = tC;
+    if (totalTimeEl) totalTimeEl.textContent = tT;
+    if (totalCostInlineEl) totalCostInlineEl.textContent = tC;
+    if (totalTimeInlineEl) totalTimeInlineEl.textContent = tT;
+    if (totalHidden) totalHidden.value = tC;
+  }
+
+  function addRowListeners(row) {
+    const nameInput = row.querySelector(".stapleName");
+    const costInput = row.querySelector(".stapleCost");
+
+    function onEdit() {
+      recalcRow(row);
+      recalcTotals();
+    }
+
+    nameInput?.addEventListener("input", onEdit);
+    costInput?.addEventListener("input", onEdit);
+
+    row.querySelector(".removeStaple")?.addEventListener("click", () => {
+      row.remove();
+      recalcTotals();
+    });
+  }
+
+  function addStapleRow(itemName = "", costValue = "") {
+    const row = document.createElement("tr");
+    const safeName = escapeAttr(itemName);
+    const safeCost = escapeAttr(costValue);
+
+    row.innerHTML = `
+      <td>
+        <input type="text" name="staple_name[]" class="stapleName" value="${safeName}" placeholder="e.g. Milk" required>
+      </td>
+      <td class="num">
+        <input type="number" step="0.01" inputmode="decimal"
+               name="staple_cost[]" class="stapleCost" value="${safeCost}" placeholder="0.00" required>
+      </td>
+      <td class="num"><span class="stapleTime">0.00</span></td>
+      <td><button type="button" class="btn btn-sm btn-ghost removeStaple">Remove</button></td>
+    `;
+
+    stapleTableBody.appendChild(row);
+    addRowListeners(row);
+    recalcRow(row);
+    recalcTotals();
+  }
+
+  hourlyRateInput.addEventListener("input", () => {
+    document.querySelectorAll("#stapleTableBody tr").forEach(recalcRow);
+    recalcTotals();
+  });
+
+  addBtn.addEventListener("click", () => addStapleRow());
+
+  // Prefill existing staples if provided (optional)
+  const existing = [
+    {% if saved_staples %}
+      {% for s in saved_staples %}
+        { name: {{ s.name|tojson }}, cost: {{ s.cost|tojson }} }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    {% endif %}
+  ];
+
+  if (existing.length) existing.forEach(s => addStapleRow(s.name, s.cost));
+  else addStapleRow();
+});
+</script>
 {% endblock %}
 
 {% block content %}
-<div class="form-container">
-  <h1>Staples - Time Cost</h1>
-  <p>
-    Add staple items and their costs. Using your hourly rate, this page estimates how many work hours
-    it takes to earn each item.
-  </p>
+<div class="page">
+  <header class="page-header">
+    <h1>Staples</h1>
+    <p class="muted">
+      Add common items and their cost. We’ll translate each one into work hours using your hourly rate.
+    </p>
+  </header>
 
-  <div class="field">
-  <label for="stapleHourlyRate">Your Hourly Rate ({{ currency }}):</label>
+  <form action="{{ url_for('staples') }}" method="post" class="stack">
 
-  <input
-    type="number"
-    step="0.01"
-    id="stapleHourlyRate"
-    value="{{ hourlyRate or '' }}"
-    placeholder="Enter your hourly rate"
-  >
+    <section class="panel">
+      <div class="field">
+        <label for="stapleHourlyRate">Hourly rate ({{ currency }})</label>
+        <input
+          type="number"
+          step="0.01"
+          inputmode="decimal"
+          id="stapleHourlyRate"
+          name="staple_hourly_rate"
+          value="{{ hourlyRate or '' }}"
+          placeholder="e.g. 18.50"
+        >
+        {% if hourlyRate %}
+          <p class="help">Pulled from Personal. You can override it here.</p>
+        {% else %}
+          <p class="help">Tip: set your hourly rate on the Personal page to auto-fill this.</p>
+        {% endif %}
+      </div>
+    </section>
 
-  {% if hourlyRate %}
-    <small class="hint">
-      Pulled from Personal. You can override it here if needed.
-    </small>
-  {% else %}
-    <small class="hint">
-      Tip: Set your hourly rate on the Personal page to auto-fill this.
-    </small>
-  {% endif %}
+    <section class="panel">
+      <div class="desktop-only">
+        <table class="expense-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th class="num">Cost ({{ currency }})</th>
+              <th class="num">Hours</th>
+              <th class="action">Action</th>
+            </tr>
+          </thead>
+
+          <tbody id="stapleTableBody"></tbody>
+
+          <tfoot>
+            <tr>
+              <td><strong>Total</strong></td>
+              <td class="num"><strong id="totalCost">0.00</strong></td>
+              <td class="num"><strong id="totalTime">0.00</strong></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <input type="hidden" id="staplesTotalInput" name="staplesTotal" value="0.00">
+
+      <div class="actions">
+        <button type="button" id="addStapleBtn" class="btn">Add item</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+
+      <div class="summary">
+        <span>Total: <strong id="totalCostInline">0.00</strong> {{ currency }}</span>
+        <span>Hours: <strong id="totalTimeInline">0.00</strong></span>
+      </div>
+    </section>
+
+  </form>
 </div>
-
-  <div class="table-wrap">
-    <table class="expense-table table-wide">
-      <thead>
-        <tr>
-          <th>Item</th>
-          <th>Cost ({{ currency }})</th>
-          <th>Time to Earn (hrs)</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-
-      <tbody id="stapleTableBody"></tbody>
-
-      <tfoot>
-        <tr>
-          <td><strong>Total</strong></td>
-          <td><strong id="totalCost">0.00</strong></td>
-          <td><strong id="totalTime">0.00</strong></td>
-          <td></td>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
-</div>
-
 {% endblock %}

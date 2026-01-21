@@ -2,100 +2,171 @@
 {% block title %}Time Bank{% endblock %}
 
 {% block head %}
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  {{ super() }}
+  {% set income_value = (income|default(0))|float %}
+  {% set hours_value = (hoursWorked|default(0))|float %}
+  {% if income_value > 0 and hours_value > 0 %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  {% endif %}
 {% endblock %}
 
 {% block content %}
-<div class="form-container">
-  <h1>Time Bank</h1>
-  <p>
-    Enter your Monthly Income, Expense Total, and Hours Worked per Month.
-    Values will be pre-filled if available.
-  </p>
+<div class="page">
+  <header class="page-header">
+    <h1>Time Bank</h1>
+    <p class="muted">
+      Translate your month into hours: what’s required, what’s reserved, and what’s left.
+    </p>
+  </header>
 
-  <form method="POST" action="{{ url_for('timebank') }}">
-    <div class="field">
-      <label for="income">Monthly Income ({{ currency }}):</label>
-      <input type="number" step="0.01" id="income" name="income" value="{{ income or '' }}" required>
-    </div>
+  <form method="POST" action="{{ url_for('timebank') }}" class="stack">
+    <section class="panel">
+      <div class="grid-2">
+        <div class="field">
+          <label for="income">Monthly income ({{ currency }})</label>
+          <input type="number" step="0.01" inputmode="decimal"
+                 id="income" name="income" value="{{ income or '' }}" required>
+        </div>
 
-    <div class="field">
-      <label for="expenses">Expenses Total ({{ currency }}):</label>
-      <input type="number" step="0.01" id="expenses" name="expenses" value="{{ expenses or '' }}" required>
-      <div class="hint">Tip: Use your Expenses page total for consistency.</div>
-    </div>
+        <div class="field">
+          <label for="expenses">Monthly expenses total ({{ currency }})</label>
+          <input type="number" step="0.01" inputmode="decimal"
+                 id="expenses" name="expenses" value="{{ expenses or '' }}" required>
+          <p class="help">Tip: use your Expenses page total for consistency.</p>
+        </div>
+      </div>
 
-    <div class="field">
-      <label for="hoursWorked">Hours Worked per Month:</label>
-      <input type="number" step="0.1" id="hoursWorked" name="hoursWorked" value="{{ hoursWorked or '' }}" required>
-    </div>
+      <div class="grid-2">
+        <div class="field">
+          <label for="hoursWorked">Hours worked per month</label>
+          <input type="number" step="0.1" inputmode="decimal"
+                 id="hoursWorked" name="hoursWorked" value="{{ hoursWorked or '' }}" required>
+        </div>
 
-    <button type="submit">Calculate Time Bank</button>
-  </form>
+        <div class="field">
+          <label for="savingsValue">Monthly savings (optional) ({{ currency }})</label>
+          <input type="number" step="0.01" inputmode="decimal"
+                 id="savingsValue" name="savingsValue" value="{{ savings_value or '' }}"
+                 placeholder="0.00">
+          <p class="help">Optional. If blank, savings is treated as 0.</p>
+        </div>
+      </div>
 
-  {% set income_value = (income|default(0))|float %}
-  {% set expenses_value = (expenses|default(0))|float %}
-  {% set hours_value = (hoursWorked|default(0))|float %}
-  {% set savings_value_num = (savings_value|default(0))|float %}
+      <div class="actions">
+        <button type="submit" class="btn btn-primary">Calculate</button>
+      </div>
+    </section>
 
-  {% if income_value > 0 and hours_value > 0 %}
-    {% set hourly_wage = income_value / hours_value %}
-    {% set savings_hours = (savings_value_num / hourly_wage) if hourly_wage > 0 else 0 %}
-    {% set expense_hours = ((expenses_value - savings_value_num) / hourly_wage) if hourly_wage > 0 else 0 %}
-    {% set discretionary_hours = hours_value - expense_hours - savings_hours %}
+    {# --- Calculations (same logic as your original) --- #}
+    {% set income_value = (income|default(0))|float %}
+    {% set expenses_value = (expenses|default(0))|float %}
+    {% set hours_value = (hoursWorked|default(0))|float %}
+    {% set savings_value_num = (savings_value|default(0))|float %}
 
-    {# Clamp at 0 to avoid negatives #}
-    {% if expense_hours < 0 %}{% set expense_hours = 0 %}{% endif %}
-    {% if savings_hours < 0 %}{% set savings_hours = 0 %}{% endif %}
-    {% if discretionary_hours < 0 %}{% set discretionary_hours = 0 %}{% endif %}
+    {% if income_value > 0 and hours_value > 0 %}
+      {% set hourly_wage = income_value / hours_value %}
+      {% set savings_hours = (savings_value_num / hourly_wage) if hourly_wage > 0 else 0 %}
+      {% set expense_hours = ((expenses_value - savings_value_num) / hourly_wage) if hourly_wage > 0 else 0 %}
+      {% set discretionary_hours = hours_value - expense_hours - savings_hours %}
 
-    <div class="result-card">
-      <h2>Results</h2>
-      <p><strong>Hourly Wage:</strong> {{ currency }}{{ hourly_wage|round(2) }}/hr</p>
-      <p><strong>Savings ({{ currency }}):</strong> {{ currency }}{{ savings_value_num|round(2) }}</p>
-      <p><strong>Savings Hours:</strong> {{ savings_hours|round(2) }} hours</p>
-      <p><strong>Expense Hours Required:</strong> {{ expense_hours|round(2) }} hours</p>
-      <p><strong>Discretionary Hours Left:</strong> {{ discretionary_hours|round(2) }} hours</p>
-    </div>
+      {# Clamp at 0 to avoid negatives #}
+      {% if expense_hours < 0 %}{% set expense_hours = 0 %}{% endif %}
+      {% if savings_hours < 0 %}{% set savings_hours = 0 %}{% endif %}
+      {% if discretionary_hours < 0 %}{% set discretionary_hours = 0 %}{% endif %}
 
-    <div class="chart-container">
-      <canvas id="timeBankChart"></canvas>
-    </div>
+      <section class="panel">
+        <h2 class="card-title">Results</h2>
 
-    <script>
-      const ctx = document.getElementById('timeBankChart').getContext('2d');
+        <div class="grid-2">
+          <div class="card">
+            <p class="muted" style="margin:0 0 6px;">Hourly wage</p>
+            <p style="margin:0; font-size:22px; font-weight:700;">
+              {{ currency }}{{ hourly_wage|round(2) }}/hr
+            </p>
+          </div>
 
-      // Theme-aware chart colors from CSS vars
-      const styles = getComputedStyle(document.documentElement);
-      const primary = styles.getPropertyValue("--primary").trim() || "#A3B18A";
-      const accent = styles.getPropertyValue("--accent").trim() || "#E07A5F";
-      const secondary = styles.getPropertyValue("--secondary-accent").trim() || "#FFD37F";
-      const textDark = styles.getPropertyValue("--text-dark").trim() || "#2F3E46";
+          <div class="card">
+            <p class="muted" style="margin:0 0 6px;">Total hours this month</p>
+            <p style="margin:0; font-size:22px; font-weight:700;">
+              {{ hours_value|round(2) }} hrs
+            </p>
+          </div>
+        </div>
 
-      new Chart(ctx, {
-        type: 'pie',
-        data: {
-          labels: ['Expenses', 'Savings', 'Discretionary'],
-          datasets: [{
-            data: {{ [expense_hours|round(2), savings_hours|round(2), discretionary_hours|round(2)] | tojson }},
-            backgroundColor: [accent, primary, secondary],
-            borderWidth: 1,
-            borderColor: textDark
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'bottom' },
-            title: {
-              display: true,
-              text: 'Time Bank Breakdown (Total Hours: {{ hours_value|round(2) }} hrs)'
-            }
+        <div class="grid-2">
+          <div class="card">
+            <p class="muted" style="margin:0 0 6px;">Expenses hours required</p>
+            <p style="margin:0; font-size:22px; font-weight:700;">
+              {{ expense_hours|round(2) }} hrs
+            </p>
+          </div>
+
+          <div class="card">
+            <p class="muted" style="margin:0 0 6px;">Savings hours</p>
+            <p style="margin:0; font-size:22px; font-weight:700;">
+              {{ savings_hours|round(2) }} hrs
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="muted" style="margin:0 0 6px;">Discretionary hours left</p>
+          <p style="margin:0; font-size:22px; font-weight:700;">
+            {{ discretionary_hours|round(2) }} hrs
+          </p>
+          <p class="help" style="margin-top:10px;">
+            This is what remains after required expenses and savings.
+          </p>
+        </div>
+
+        <details style="margin-top:14px;">
+          <summary>Show chart</summary>
+          <div class="chart-container" style="height:280px;">
+            <canvas id="timeBankChart"></canvas>
+          </div>
+        </details>
+
+        <script>
+          const canvas = document.getElementById("timeBankChart");
+          if (canvas && window.Chart) {
+            const ctx = canvas.getContext("2d");
+            const styles = getComputedStyle(document.documentElement);
+
+            const accent = styles.getPropertyValue("--accent").trim() || "#3f6f5a";
+            const soft = styles.getPropertyValue("--accent-soft").trim() || "#e6f0ea";
+            const border = styles.getPropertyValue("--border").trim() || "#dde4dc";
+            const text = styles.getPropertyValue("--text").trim() || "#1f2a22";
+
+            Chart.defaults.color = text;
+            Chart.defaults.borderColor = border;
+
+            new Chart(ctx, {
+              type: "pie",
+              data: {
+                labels: ["Expenses", "Savings", "Discretionary"],
+                datasets: [{
+                  data: {{ [expense_hours|round(2), savings_hours|round(2), discretionary_hours|round(2)] | tojson }},
+                  backgroundColor: [border, accent, soft],
+                  borderWidth: 1
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { position: "bottom" },
+                  title: {
+                    display: true,
+                    text: "Time Bank Breakdown (Total: {{ hours_value|round(2) }} hrs)"
+                  }
+                }
+              }
+            });
           }
-        }
-      });
-    </script>
-  {% endif %}
+        </script>
+      </section>
+    {% endif %}
+
+  </form>
 </div>
 {% endblock %}
