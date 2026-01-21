@@ -139,7 +139,7 @@
         <h2 class="card-title">Result{% if item_name %} for “{{ item_name }}”{% endif %}</h2>
 
         <p style="margin:0 0 10px;">
-          {{ c.hours_line }} <strong>{{ result|round(2) }}</strong> hours of work.
+          {{ c.hours_line }} <strong>{{ (result or 0)|round(2) }}</strong> hours of work.
         </p>
 
         {% if time_cost and time_cost.ok %}
