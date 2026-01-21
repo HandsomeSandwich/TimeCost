@@ -2,21 +2,17 @@
   <!-- Currency -->
   <form action="{{ url_for('set_currency') }}" method="post" class="nav-control">
     <label class="sr-only" for="currencySelect">Currency</label>
-    <select id="currencySelect" name="currency" onchange="this.form.submit()">
-      <option value="£" {% if currency == "£" %}selected{% endif %}>£</option>
-      <option value="$" {% if currency == "$" %}selected{% endif %}>$</option>
-      <option value="€" {% if currency == "€" %}selected{% endif %}>€</option>
-      <option value="¥" {% if currency == "¥" %}selected{% endif %}>¥</option>
-      <option value="₹" {% if currency == "₹" %}selected{% endif %}>₹</option>
-      <option value="₩" {% if currency == "₩" %}selected{% endif %}>₩</option>
-      <option value="₽" {% if currency == "₽" %}selected{% endif %}>₽</option>
+    <select class="select" id="currencySelect" name="currency" onchange="this.form.submit()">
+      {% for sym in ["£","$","€","¥","₹","₩","₽"] %}
+        <option value="{{ sym }}" {% if currency == sym %}selected{% endif %}>{{ sym }}</option>
+      {% endfor %}
     </select>
   </form>
 
   <!-- Perspective -->
   <form action="{{ url_for('set_perspective') }}" method="post" class="nav-control">
     <label class="sr-only" for="perspectiveSelect">Tone</label>
-    <select id="perspectiveSelect" name="perspective" onchange="this.form.submit()">
+    <select class="select" id="perspectiveSelect" name="perspective" onchange="this.form.submit()">
       <option value="river" {% if perspective == "river" %}selected{% endif %}>River</option>
       <option value="leslie" {% if perspective == "leslie" %}selected{% endif %}>Leslie</option>
       <option value="eddie" {% if perspective == "eddie" %}selected{% endif %}>Eddie</option>

@@ -6,111 +6,81 @@
   <title>{% block title %}TimeCost{% endblock %}</title>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='timecost.css') }}">
-
   {% block head %}{% endblock %}
 </head>
 
 <body>
-  <header>
-    <h1>TimeCost</h1>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <a class="brand-name" href="{{ url_for('calculator') }}">TimeCost</a>
+      </div>
+
+      <nav class="nav" aria-label="Primary">
+        <a href="{{ url_for('calculator') }}">Calculator</a>
+
+        <details class="nav-details">
+          <summary>Tools</summary>
+          <div class="nav-popover" aria-label="Tools">
+            <a href="{{ url_for('personal') }}">Personal</a>
+            <a href="{{ url_for('expenses') }}">Expenses</a>
+            <a href="{{ url_for('timebank') }}">Time Bank</a>
+            <a href="{{ url_for('budget') }}">Budget</a>
+            <a href="{{ url_for('goals') }}">Goals</a>
+            <a href="{{ url_for('staples') }}">Staples</a>
+          </div>
+        </details>
+      </nav>
+
+      <div class="topbar-controls">
+        <button class="menu-btn" type="button" id="menuBtn" aria-expanded="false" aria-controls="navDrawer">
+          ☰ <span class="sr-only">Menu</span>
+        </button>
+
+        <form class="inline" action="{{ url_for('set_currency') }}" method="post">
+          <select class="select" name="currency" onchange="this.form.submit()">
+            {% for sym in ["£","$","€","¥","₹","₩","₽"] %}
+              <option value="{{ sym }}" {% if currency==sym %}selected{% endif %}>{{ sym }}</option>
+            {% endfor %}
+          </select>
+        </form>
+
+        <form class="inline" action="{{ url_for('set_perspective') }}" method="post">
+          <select class="select" name="perspective" onchange="this.form.submit()">
+            <option value="river" {% if perspective=="river" %}selected{% endif %}>River</option>
+            <option value="leslie" {% if perspective=="leslie" %}selected{% endif %}>Leslie</option>
+            <option value="eddie" {% if perspective=="eddie" %}selected{% endif %}>Eddie</option>
+          </select>
+        </form>
+      </div>
+    </div>
+
+    <!-- Mobile drawer -->
+    <div class="nav-drawer" id="navDrawer">
+      <a href="{{ url_for('calculator') }}">Calculator</a>
+
+      <div class="drawer-section">
+        <div class="drawer-title">Tools</div>
+        <a href="{{ url_for('personal') }}">Personal</a>
+        <a href="{{ url_for('expenses') }}">Expenses</a>
+        <a href="{{ url_for('timebank') }}">Time Bank</a>
+        <a href="{{ url_for('budget') }}">Budget</a>
+        <a href="{{ url_for('goals') }}">Goals</a>
+        <a href="{{ url_for('staples') }}">Staples</a>
+      </div>
+    </div>
   </header>
 
-  <nav class="navbar">
-    <button
-      class="nav-toggle"
-      aria-label="Open menu"
-      aria-controls="mobile-drawer"
-      aria-expanded="false">
-      ☰
-    </button>
-
-    <div class="nav-links">
-      {% include "partials/_nav_links.html" %}
-    </div>
-
-    <div class="nav-right">
-      {% include "partials/_nav_controls.html" %}
-      {% block nav_right %}{% endblock %}
-    </div>
-  </nav>
-
-  <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
-
-  <aside id="mobile-drawer" class="drawer" hidden>
-    <div class="drawer-header">
-      <strong>Menu</strong>
-      <button class="drawer-close" aria-label="Close menu" type="button">✕</button>
-    </div>
-
-    {% include "partials/_nav_links.html" %}
-    {% include "partials/_nav_controls.html" %}
-  </aside>
-
-  <main class="container">
+  <main id="main" class="container">
     {% block content %}{% endblock %}
   </main>
 
-  <footer>
-    <p>&copy; TimeCost</p>
+  <footer class="footer">
+    <p>TimeCost</p>
   </footer>
 
-  <script>
-    (function () {
-      const toggle = document.querySelector(".nav-toggle");
-      const drawer = document.getElementById("mobile-drawer");
-      const backdrop = document.getElementById("drawer-backdrop");
-      const closeBtn = drawer?.querySelector(".drawer-close");
-
-      if (!toggle || !drawer || !backdrop) return;
-
-      function openDrawer() {
-        if (!drawer.hidden) return;
-        drawer.hidden = false;
-        backdrop.hidden = false;
-        toggle.setAttribute("aria-expanded", "true");
-        document.body.classList.add("drawer-open");
-        closeBtn?.focus();
-      }
-
-      function closeDrawer() {
-        if (drawer.hidden) return;
-        drawer.hidden = true;
-        backdrop.hidden = true;
-        toggle.setAttribute("aria-expanded", "false");
-        document.body.classList.remove("drawer-open");
-        toggle.focus();
-      }
-
-      toggle.addEventListener("click", () => {
-        toggle.getAttribute("aria-expanded") === "true"
-          ? closeDrawer()
-          : openDrawer();
-      });
-
-      closeBtn?.addEventListener("click", closeDrawer);
-      backdrop.addEventListener("click", closeDrawer);
-
-      // ✅ Close drawer when navigating (links), but NOT when clicking inside forms
-      drawer.querySelectorAll("a").forEach(a =>
-        a.addEventListener("click", closeDrawer)
-      );
-
-      // Optional: close when a drawer form is submitted (currency/tone)
-      drawer.querySelectorAll("form").forEach(f =>
-        f.addEventListener("submit", closeDrawer)
-      );
-
-      document.addEventListener("keydown", e => {
-        if (e.key === "Escape") closeDrawer();
-      });
-
-      function closeIfDesktop() {
-        if (window.matchMedia("(min-width: 721px)").matches) closeDrawer();
-      }
-
-      window.addEventListener("resize", closeIfDesktop);
-      closeIfDesktop();
-    })();
-  </script>
+  <script src="{{ url_for('static', filename='timecost.js') }}" defer></script>
 </body>
 </html>
