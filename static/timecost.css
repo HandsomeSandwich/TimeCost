@@ -547,3 +547,24 @@ details[open] > summary::after{ content:"▴"; }
   color:var(--muted);
   font-size:.95rem;
 }
+
+.badge{
+  display:inline-block;
+  margin-left:8px;
+  padding:3px 8px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--accent-soft);
+  color:var(--text);
+  font-size:12px;
+  font-weight:700;
+  vertical-align:middle;
+}
+
+.calc-form fieldset {
+  opacity: .85;
+}
+
+.calc-form fieldset:focus-within {
+  opacity: 1;
+}

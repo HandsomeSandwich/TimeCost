@@ -200,29 +200,24 @@ def _hourly_from_wage(wage_amount: float, wage_type: str) -> float:
     return wage_amount
 
 
-def _prefill_wage_from_personal() -> Tuple[str, str]:
+def _prefill_wage_from_personal() -> tuple[str, str, str]:
     """
-    Decide what wageType + wageAmount should show on the Calculator
-    based on Personal session values.
-
-    Priority:
-      1) hourlyRate
-      2) annualRate
-      3) paycheckAmount + payFrequency
+    Returns (wageType, wageAmount, source)
+    source is "personal" when it came from session data, else "default"
     """
-    hourly_rate = str(session.get("hourlyRate") or "").strip()
-    annual_rate = str(session.get("annualRate") or "").strip()
-    paycheck_amount = str(session.get("paycheckAmount") or "").strip()
+    hourly_rate = (session.get("hourlyRate") or "").strip()
+    annual_rate = (session.get("annualRate") or "").strip()
+    paycheck_amount = (session.get("paycheckAmount") or "").strip()
     pay_frequency = (session.get("payFrequency") or "").strip().lower()
 
     if hourly_rate:
-        return "hourly", hourly_rate
+        return "hourly", hourly_rate, "personal"
     if annual_rate:
-        return "annual", annual_rate
+        return "annual", annual_rate, "personal"
     if paycheck_amount and pay_frequency in {"weekly", "biweekly", "monthly"}:
-        return pay_frequency, paycheck_amount
+        return pay_frequency, paycheck_amount, "personal"
 
-    return "hourly", ""
+    return "hourly", "", "default"
 
 
 # ----------------------------
@@ -230,7 +225,7 @@ def _prefill_wage_from_personal() -> Tuple[str, str]:
 # ----------------------------
 @app.route("/", methods=["GET", "POST"])
 def calculator():
-    pre_wage_type, pre_wage_amount = _prefill_wage_from_personal()
+    pre_wage_type, pre_wage_amount, prefill_source = _prefill_wage_from_personal()
 
     result = None
     item_name = ""
@@ -238,12 +233,22 @@ def calculator():
     time_cost = None
     workday_text = ""
 
+    # Defaults for what the form should SHOW
+    display_wage_type = pre_wage_type
+    display_wage_amount = pre_wage_amount
+    prefill_source = "personal" if (pre_wage_amount or "").strip() else None
+
     if request.method == "POST":
         item_name = request.form.get("itemName", "")
         item_cost = (request.form.get("itemCost") or "").strip()
 
         wage_type = (request.form.get("wageType") or pre_wage_type).strip().lower()
         wage_amount_raw = (request.form.get("wageAmount") or "").strip()
+
+        # Preserve what user chose/typed in the form after submit
+        display_wage_type = wage_type
+        display_wage_amount = wage_amount_raw if wage_amount_raw != "" else pre_wage_amount
+        prefill_source = "personal" if wage_amount_raw == "" and (pre_wage_amount or "").strip() else None
 
         try:
             item_cost_f = float(item_cost)
@@ -282,6 +287,7 @@ def calculator():
         item_cost=item_cost,
         pre_wage_type=pre_wage_type,
         pre_wage_amount=pre_wage_amount,
+        prefill_source=prefill_source,  # ✅ add this
         time_cost=time_cost,
         workday_text=workday_text,
     )
@@ -291,26 +297,15 @@ def calculator():
 def personal():
     if request.method == "POST":
         session["username"] = (request.form.get("username") or "").strip()
-
-        # store as a numeric value (avoid later math pain)
         session["workHours"] = safe_float(request.form.get("workHours"), 40.0)
 
         c = request.form.get("currency", session.get("currency", DEFAULT_CURRENCY))
         session["currency"] = c if c in ALLOWED_CURRENCIES else DEFAULT_CURRENCY
 
-        annual_rate = request.form.get("annualRate")
-        hourly_rate = request.form.get("hourlyRate")
-        pay_frequency = request.form.get("payFrequency")
-        paycheck_amount = request.form.get("paycheckAmount")
-
-        if annual_rate is not None:
-            session["annualRate"] = annual_rate
-        if hourly_rate is not None:
-            session["hourlyRate"] = hourly_rate
-        if pay_frequency is not None:
-            session["payFrequency"] = pay_frequency
-        if paycheck_amount is not None:
-            session["paycheckAmount"] = paycheck_amount
+        session["annualRate"] = (request.form.get("annualRate") or "").strip()
+        session["hourlyRate"] = (request.form.get("hourlyRate") or "").strip()
+        session["payFrequency"] = (request.form.get("payFrequency") or "").strip().lower()
+        session["paycheckAmount"] = (request.form.get("paycheckAmount") or "").strip()
 
         return redirect(url_for("calculator"))
 

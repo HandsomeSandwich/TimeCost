@@ -39,3 +39,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+const cost = document.getElementById("itemCost");
+if (cost) {
+  cost.addEventListener("focus", () => cost.select());
+}
+

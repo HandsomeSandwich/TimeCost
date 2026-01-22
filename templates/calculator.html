@@ -117,11 +117,22 @@
       </div>
 
       <div class="field">
-        <label for="wageAmount">Your wage amount ({{ currency }})</label>
+        <label for="wageAmount">
+          Your Wage Amount ({{ currency }})
+          {% if prefill_source == "personal" %}
+            <span class="badge">from Personal</span>
+          {% endif %}
+        </label>
+
         <input type="number" step="0.01" inputmode="decimal"
-               id="wageAmount" name="wageAmount" value="{{ pre_wage_amount or '' }}">
+               id="wageAmount" name="wageAmount" value="{{ pre_wage_amount }}">
         <p class="help">Leave blank to use your Personal page rate (if set).</p>
       </div>
+
+      <small class="hint">
+        Using your Personal settings. Change it here if needed.
+      </small>
+
 
       <div class="actions">
         <button type="submit" class="btn btn-primary">Calculate</button>
@@ -144,7 +155,9 @@
 
         {% if time_cost and time_cost.ok %}
           <p style="margin:0;">
-            {{ c.thats }} <strong>{{ time_cost.human }}</strong>
+            {{ c.thats }} <strong>{{ time_cost.human }}</strong><br>
+            <span class="muted">{{ workday_text }}</span>
+
             {% if workday_text %} <span class="muted">({{ workday_text }})</span>{% endif %}.
           </p>
         {% else %}
