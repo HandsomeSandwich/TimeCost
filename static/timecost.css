@@ -289,6 +289,15 @@ body.nav-open{ overflow:hidden; }
   border-color:transparent;
   color:#fff;
 }
+.btn-secondary{
+  background: var(--btn2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover{
+  filter: brightness(0.98);
+}
+
 .btn-ghost{ background:transparent; }
 .btn-sm{ padding:8px 12px; border-radius:12px; font-size:14px; }
 

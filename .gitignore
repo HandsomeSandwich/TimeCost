@@ -18,3 +18,4 @@ venv/
 *.db
 *.sqlite
 instance/
+timecost.db

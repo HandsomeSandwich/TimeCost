@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Freelance Ledger{% endblock %}
+
+{% block content %}
+<div class="form-container">
+  <h1>Freelance Ledger</h1>
+  <p>Track hours + changing rates, then use the blended hourly rate in TimeCost.</p>
+
+  <div class="pill-row" style="display:flex; gap:10px; flex-wrap:wrap; margin:14px 0;">
+    <a class="pill" href="{{ url_for('freelance', range='month') }}">This month</a>
+    <a class="pill" href="{{ url_for('freelance', range='7') }}">Last 7</a>
+    <a class="pill" href="{{ url_for('freelance', range='30') }}">Last 30</a>
+    <a class="pill" href="{{ url_for('freelance', range='90') }}">Last 90</a>
+  </div>
+
+  <div class="summary" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin: 14px 0;">
+    <div class="card" style="padding:12px; border:1px solid var(--border); border-radius: var(--radius); background: var(--panel);">
+      <div style="color:var(--muted); font-size: 0.9rem;">Total hours</div>
+      <div style="font-size:1.4rem; font-weight:600;">{{ total_hours }}</div>
+    </div>
+
+    <div class="card" style="padding:12px; border:1px solid var(--border); border-radius: var(--radius); background: var(--panel);">
+      <div style="color:var(--muted); font-size: 0.9rem;">Total earned</div>
+      <div style="font-size:1.4rem; font-weight:600;">{{ currency }}{{ total_earned }}</div>
+    </div>
+
+    <div class="card" style="padding:12px; border:1px solid var(--border); border-radius: var(--radius); background: var(--panel);">
+      <div style="color:var(--muted); font-size: 0.9rem;">Effective hourly</div>
+      <div style="font-size:1.4rem; font-weight:600;">{{ currency }}{{ effective_rate }}/hr</div>
+      {% if using_freelance and freelance_hourly %}
+        <div style="color:var(--muted); font-size: 0.85rem; margin-top:6px;">
+          Currently used in calculator: {{ currency }}{{ freelance_hourly }}/hr
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('freelance', range=range_key) }}" style="margin: 10px 0 20px;">
+    <input type="hidden" name="action" value="use_effective_rate" />
+    <button class="btn" type="submit">Use this effective rate in TimeCost</button>
+  </form>
+
+  <hr style="border:none; border-top:1px solid var(--border); margin: 18px 0;" />
+
+  <h2 style="margin-top: 0;">Add job</h2>
+  <form method="post" action="{{ url_for('freelance_add_job') }}" style="display:grid; gap:10px; grid-template-columns: 1fr 1fr auto; align-items:end;">
+    <div>
+      <label>Job name</label>
+      <input type="text" name="name" placeholder="e.g., Acme Retainer" required />
+    </div>
+    <div>
+      <label>Client (optional)</label>
+      <input type="text" name="client" placeholder="e.g., Acme Ltd" />
+    </div>
+    <button class="btn" type="submit">Add</button>
+  </form>
+
+  <hr style="border:none; border-top:1px solid var(--border); margin: 18px 0;" />
+
+  <h2>Add entry</h2>
+<form method="post" action="{{ url_for('freelance_add_entry') }}"
+      style="display:grid; gap:10px; grid-template-columns: 1.2fr 0.9fr 0.8fr 0.8fr 1.5fr auto; align-items:end;">
+
+  <div>
+    <label>Client</label>
+    <input type="text" name="client" placeholder="e.g., Acme Ltd" required />
+  </div>
+
+  <div>
+    <label>Date</label>
+    <input type="date" name="work_date" required value="{{ date.today().isoformat() }}" />
+  </div>
+
+  <div>
+    <label>Hours</label>
+    <input type="number" name="hours" step="0.25" min="0.25" placeholder="e.g., 2.5" required />
+  </div>
+
+  <div>
+    <label>Rate</label>
+    <input type="number" name="rate" step="0.01" min="0.01" placeholder="e.g., 45" required />
+  </div>
+
+  <div>
+    <label>Notes (optional)</label>
+    <input type="text" name="notes" placeholder="What was it?" />
+  </div>
+
+  <button class="btn" type="submit">Add</button>
+</form>
+
+<hr style="border:none; border-top:1px solid var(--border); margin: 18px 0;" />
+
+  <h2>Entries</h2>
+
+  {% if entries|length == 0 %}
+    <p style="color:var(--muted);">No entries in this range yet.</p>
+  {% else %}
+    <div style="overflow:auto;">
+      <table style="width:100%; border-collapse: collapse; min-width: 780px;">
+        <thead>
+          <tr style="text-align:left; border-bottom:1px solid var(--border);">
+            <th style="padding:10px 8px;">Date</th>
+            <th style="padding:10px 8px;">Job</th>
+            <th style="padding:10px 8px;">Hours</th>
+            <th style="padding:10px 8px;">Rate</th>
+            <th style="padding:10px 8px;">Total</th>
+            <th style="padding:10px 8px;">Notes</th>
+            <th style="padding:10px 8px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in entries %}
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 8px; white-space:nowrap;">{{ e.work_date }}</td>
+            <td style="padding:10px 8px;">
+              <div style="font-weight:600;">{{ e.job_name }}</div>
+              {% if e.client %}<div style="color:var(--muted); font-size:0.9rem;">{{ e.client }}</div>{% endif %}
+            </td>
+            <td style="padding:10px 8px;">{{ "%.2f"|format(e.hours) }}</td>
+            <td style="padding:10px 8px;">{{ currency }}{{ "%.2f"|format(e.rate) }}</td>
+            <td style="padding:10px 8px; font-weight:600;">{{ currency }}{{ "%.2f"|format(e.total) }}</td>
+            <td style="padding:10px 8px; color:var(--muted); max-width: 260px;">
+              {{ e.notes }}
+            </td>
+            <td style="padding:10px 8px; text-align:right;">
+              <form method="post" action="{{ url_for('freelance_delete_entry', entry_id=e.id) }}" onsubmit="return confirm('Delete this entry?');">
+                <button class="btn" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

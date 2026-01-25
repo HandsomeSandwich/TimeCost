@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, Tuple
+from datetime import date, datetime, timedelta
+from typing import Optional
 
 from flask import Flask, render_template, request, session, redirect, url_for
 from sqlalchemy import text
@@ -65,6 +66,34 @@ def _weekly_to_monthly_hours(weekly_hours: float) -> float:
     return weekly_hours * 4.33
 
 
+def _parse_date(val: str) -> str:
+    """Return ISO date string YYYY-MM-DD (defaults to today)."""
+    if not val:
+        return date.today().isoformat()
+    try:
+        return datetime.strptime(val, "%Y-%m-%d").date().isoformat()
+    except ValueError:
+        return date.today().isoformat()
+
+
+def _freelance_range_to_start(range_key: str) -> str:
+    """
+    Returns YYYY-MM-DD lower bound for filtering.
+    range_key: "month" | "7" | "30" | "90"
+    """
+    today = date.today()
+    key = (range_key or "month").strip().lower()
+
+    if key == "month":
+        start = today.replace(day=1)
+    elif key in {"7", "30", "90"}:
+        start = today - timedelta(days=int(key))
+    else:
+        start = today.replace(day=1)
+
+    return start.isoformat()
+
+
 def money_to_time(cost: float, hourly_rate: float) -> dict:
     try:
         cost = float(cost)
@@ -124,27 +153,13 @@ def workday_equivalent(total_hours: float, hours_per_day: float = 8.0) -> str:
     return f"about {round(days, 1)} workdays"
 
 
-def week_equivalent(total_hours: float, hours_per_week: float = 40.0) -> str:
-    total_hours = safe_float(total_hours, 0.0)
-    hours_per_week = safe_float(hours_per_week, 40.0)
-
-    if total_hours <= 0 or hours_per_week <= 0:
-        return ""
-
-    weeks = total_hours / hours_per_week
-    if weeks < 0.1:
-        return "less than a tenth of a workweek"
-    return f"about {round(weeks, 1)} workweeks"
-
-
 def get_effective_hourly_rate() -> Optional[float]:
-    """
-    Returns effective hourly rate based on session info.
-    Priority:
-      1) hourlyRate
-      2) annualRate + workHours
-      3) paycheckAmount + payFrequency + workHours
-    """
+    # 0) freelance override if selected
+    if session.get("wageSource") == "freelance":
+        fr = safe_float(session.get("freelanceHourlyRate"), 0.0)
+        if fr > 0:
+            return fr
+
     # 1) direct hourly
     hr = safe_float(session.get("hourlyRate"), 0.0)
     if hr > 0:
@@ -221,11 +236,11 @@ def _prefill_wage_from_personal() -> tuple[str, str, str]:
 
 
 # ----------------------------
-# Routes
+# Routes: Calculator
 # ----------------------------
 @app.route("/", methods=["GET", "POST"])
 def calculator():
-    pre_wage_type, pre_wage_amount, prefill_source = _prefill_wage_from_personal()
+    pre_wage_type, pre_wage_amount, _source = _prefill_wage_from_personal()
 
     result = None
     item_name = ""
@@ -287,12 +302,17 @@ def calculator():
         item_cost=item_cost,
         pre_wage_type=pre_wage_type,
         pre_wage_amount=pre_wage_amount,
-        prefill_source=prefill_source,  # ✅ add this
+        prefill_source=prefill_source,
         time_cost=time_cost,
         workday_text=workday_text,
+        display_wage_type=display_wage_type,
+        display_wage_amount=display_wage_amount,
     )
 
 
+# ----------------------------
+# Routes: Personal
+# ----------------------------
 @app.route("/personal", methods=["GET", "POST"])
 def personal():
     if request.method == "POST":
@@ -334,6 +354,9 @@ def personal():
     )
 
 
+# ----------------------------
+# Routes: Timebank
+# ----------------------------
 @app.route("/timebank", methods=["GET", "POST"])
 def timebank():
     currency = _currency()
@@ -391,6 +414,9 @@ def timebank():
     )
 
 
+# ----------------------------
+# Routes: Expenses
+# ----------------------------
 @app.route("/expenses", methods=["GET", "POST"])
 def expenses():
     if request.method == "POST":
@@ -459,6 +485,9 @@ def remove_expense(index):
     return redirect(url_for("expenses"))
 
 
+# ----------------------------
+# Routes: Budget
+# ----------------------------
 @app.route("/budget", methods=["GET", "POST"])
 def budget():
     currency = _currency()
@@ -542,6 +571,9 @@ def budget():
     )
 
 
+# ----------------------------
+# Routes: Goals
+# ----------------------------
 @app.route("/goals", methods=["GET", "POST"])
 def goals():
     if request.method == "POST":
@@ -561,13 +593,13 @@ def goals():
                 goal_id = int(safe_float(request.form.get("goal_index"), 0))
                 add_amount = safe_float(request.form.get("savings_to_add"), 0.0)
 
-                goal = conn.execute(
+                goal_row = conn.execute(
                     text("SELECT current FROM goals WHERE id = :id"),
                     {"id": goal_id},
                 ).mappings().first()
 
-                if goal:
-                    new_total = safe_float(goal.get("current"), 0.0) + add_amount
+                if goal_row:
+                    new_total = safe_float(goal_row.get("current"), 0.0) + add_amount
                     conn.execute(
                         text("UPDATE goals SET current = :c WHERE id = :id"),
                         {"c": new_total, "id": goal_id},
@@ -591,6 +623,9 @@ def delete_goal(goal_id):
     return redirect(url_for("goals"))
 
 
+# ----------------------------
+# Routes: Staples
+# ----------------------------
 @app.route("/staples", methods=["GET"])
 def staples():
     currency = _currency()
@@ -603,6 +638,152 @@ def staples():
     return render_template("staples.html", hourlyRate=hr, currency=currency)
 
 
+# ----------------------------
+# Routes: Freelance (matches YOUR current DB schema)
+# freelance_entries columns:
+# id, entry_date, client, hours, hourly_rate, notes, work_date (extra)
+# ----------------------------
+@app.route("/freelance", methods=["GET", "POST"])
+def freelance():
+    range_key = (request.args.get("range") or "month").strip().lower()
+    start_date = _freelance_range_to_start(range_key)
+
+    date_col = "entry_date"  # this is what your table has
+
+    # POST: Use this effective rate in TimeCost
+    if request.method == "POST":
+        action = (request.form.get("action") or "").strip().lower()
+        if action == "use_effective_rate":
+            conn = get_connection()
+            try:
+                rows = conn.execute(
+                    text(
+                        f"""
+                        SELECT hours, hourly_rate
+                        FROM freelance_entries
+                        WHERE {date_col} >= :start
+                        """
+                    ),
+                    {"start": start_date},
+                ).mappings().all()
+            finally:
+                conn.close()
+
+            total_hours = sum(safe_float(r.get("hours"), 0.0) for r in rows)
+            total_earned = sum(
+                safe_float(r.get("hours"), 0.0) * safe_float(r.get("hourly_rate"), 0.0)
+                for r in rows
+            )
+            effective = (total_earned / total_hours) if total_hours > 0 else 0.0
+
+            if effective > 0:
+                session["wageSource"] = "freelance"
+                session["freelanceHourlyRate"] = f"{effective:.2f}"
+
+        return redirect(url_for("freelance", range=range_key))
+
+    # GET view
+    conn = get_connection()
+    try:
+        entries = conn.execute(
+            text(
+                f"""
+                SELECT
+                  id,
+                  work_date,
+                  hours,
+                  hourly_rate AS rate,
+                  (hours * hourly_rate) AS total,
+                  notes,
+                  client AS job_name
+                FROM freelance_entries
+                WHERE work_date >= :start
+                ORDER BY work_date DESC, id DESC
+
+                """
+            ),
+            {"start": start_date},
+        ).mappings().all()
+    finally:
+        conn.close()
+
+    total_hours = round(sum(safe_float(e.get("hours"), 0.0) for e in entries), 2)
+    total_earned = round(sum(safe_float(e.get("total"), 0.0) for e in entries), 2)
+    effective_rate = round((total_earned / total_hours) if total_hours > 0 else 0.0, 2)
+
+    using_freelance = session.get("wageSource") == "freelance"
+    freelance_hourly = session.get("freelanceHourlyRate", "")
+
+    return render_template(
+        "freelance.html",
+        currency=_currency(),
+        range_key=range_key,
+        jobs=[],  # template expects this; keep it harmlessly empty
+        entries=entries,
+        total_hours=total_hours,
+        total_earned=total_earned,
+        effective_rate=effective_rate,
+        using_freelance=using_freelance,
+        freelance_hourly=freelance_hourly,
+    )
+
+
+@app.post("/freelance/add_job")
+def freelance_add_job():
+    """
+    Your current DB schema does not have freelance_jobs.
+    Your template has an "Add job" form; to avoid breaking it,
+    we just redirect back. (Next step: update template to remove jobs.)
+    """
+    return redirect(url_for("freelance"))
+
+
+@app.post("/freelance/add_entry")
+def freelance_add_entry():
+    # Your schema wants client; template might submit job_id instead.
+    client = (request.form.get("client") or "").strip()
+    if not client:
+        job_id = (request.form.get("job_id") or "").strip()
+        client = f"Job {job_id}" if job_id else "Unknown"
+
+    work_date = _parse_date((request.form.get("work_date") or "").strip())
+    hours = safe_float(request.form.get("hours"), 0.0)
+    rate = safe_float(request.form.get("rate"), 0.0)
+    notes = (request.form.get("notes") or "").strip()
+
+    if hours <= 0 or rate <= 0:
+        return redirect(url_for("freelance"))
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO freelance_entries (entry_date, client, hours, hourly_rate, notes)
+                VALUES (:entry_date, :client, :hours, :hourly_rate, :notes)
+                """
+            ),
+            {
+                "entry_date": work_date,
+                "client": client,
+                "hours": hours,
+                "hourly_rate": rate,
+                "notes": notes or None,
+            },
+        )
+
+    return redirect(url_for("freelance"))
+
+
+@app.post("/freelance/delete_entry/<int:entry_id>")
+def freelance_delete_entry(entry_id: int):
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM freelance_entries WHERE id = :id"), {"id": entry_id})
+    return redirect(url_for("freelance"))
+
+
+# ----------------------------
+# UI toggles
+# ----------------------------
 @app.route("/set_currency", methods=["POST"])
 def set_currency():
     c = request.form.get("currency", DEFAULT_CURRENCY)

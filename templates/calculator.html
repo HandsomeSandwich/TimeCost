@@ -78,66 +78,82 @@
     </section>
 
     <section class="panel">
-      <div class="field">
-        <label>Salary type</label>
+  <div class="field">
+    <label>Salary type</label>
 
-        <div class="radio-group">
-          <div class="radio">
-            <input id="wt-hourly" type="radio" name="wageType" value="hourly"
-              {% if pre_wage_type == "hourly" %}checked{% endif %}>
-            <label for="wt-hourly">Hourly</label>
-          </div>
-
-          <div class="radio">
-            <input id="wt-weekly" type="radio" name="wageType" value="weekly"
-              {% if pre_wage_type == "weekly" %}checked{% endif %}>
-            <label for="wt-weekly">Weekly</label>
-          </div>
-
-          <div class="radio">
-            <input id="wt-biweekly" type="radio" name="wageType" value="biweekly"
-              {% if pre_wage_type == "biweekly" %}checked{% endif %}>
-            <label for="wt-biweekly">Biweekly</label>
-          </div>
-
-          <div class="radio">
-            <input id="wt-monthly" type="radio" name="wageType" value="monthly"
-              {% if pre_wage_type == "monthly" %}checked{% endif %}>
-            <label for="wt-monthly">Monthly</label>
-          </div>
-
-          <div class="radio">
-            <input id="wt-annual" type="radio" name="wageType" value="annual"
-              {% if pre_wage_type == "annual" %}checked{% endif %}>
-            <label for="wt-annual">Annual</label>
-          </div>
-        </div>
-
-        <p class="help">This tells us how to translate your pay into an hourly rhythm.</p>
+    <div class="radio-group">
+      <div class="radio">
+        <input id="wt-hourly" type="radio" name="wageType" value="hourly"
+          {% if display_wage_type == "hourly" %}checked{% endif %}>
+        <label for="wt-hourly">Hourly</label>
       </div>
 
-      <div class="field">
-        <label for="wageAmount">
-          Your Wage Amount ({{ currency }})
-          {% if prefill_source == "personal" %}
-            <span class="badge">from Personal</span>
-          {% endif %}
-        </label>
-
-        <input type="number" step="0.01" inputmode="decimal"
-               id="wageAmount" name="wageAmount" value="{{ pre_wage_amount }}">
-        <p class="help">Leave blank to use your Personal page rate (if set).</p>
+      <div class="radio">
+        <input id="wt-weekly" type="radio" name="wageType" value="weekly"
+          {% if display_wage_type == "weekly" %}checked{% endif %}>
+        <label for="wt-weekly">Weekly</label>
       </div>
 
-      <small class="hint">
-        Using your Personal settings. Change it here if needed.
-      </small>
-
-
-      <div class="actions">
-        <button type="submit" class="btn btn-primary">Calculate</button>
+      <div class="radio">
+        <input id="wt-biweekly" type="radio" name="wageType" value="biweekly"
+          {% if display_wage_type == "biweekly" %}checked{% endif %}>
+        <label for="wt-biweekly">Biweekly</label>
       </div>
-    </section>
+
+      <div class="radio">
+        <input id="wt-monthly" type="radio" name="wageType" value="monthly"
+          {% if display_wage_type == "monthly" %}checked{% endif %}>
+        <label for="wt-monthly">Monthly</label>
+      </div>
+
+      <div class="radio">
+        <input id="wt-annual" type="radio" name="wageType" value="annual"
+          {% if display_wage_type == "annual" %}checked{% endif %}>
+        <label for="wt-annual">Annual</label>
+      </div>
+    </div>
+
+    <p class="help">This tells us how to translate your pay into an hourly rhythm.</p>
+  </div>
+
+  <div class="field">
+    <label for="wageAmount">
+      Your Wage Amount ({{ currency }})
+      {% if prefill_source == "personal" %}
+        <span class="badge">from Personal</span>
+      {% endif %}
+    </label>
+
+    <input type="number" step="0.01" inputmode="decimal"
+           id="wageAmount" name="wageAmount" value="{{ display_wage_amount }}">
+    <p class="help">Leave blank to use your Personal page rate (if set).</p>
+  </div>
+
+  <small class="hint">
+    {% if session.get("wageSource") == "freelance" %}
+      Using your Freelance blended rate{% if session.get("freelanceHourlyRate") %} ({{ currency }}{{ session.get("freelanceHourlyRate") }}/hr){% endif %}.
+    {% elif display_wage_amount %}
+      Using the wage entered above.
+    {% else %}
+      Leave blank to use your Personal page rate (if set).
+    {% endif %}
+  </small>
+
+  <div class="actions">
+    <a href="{{ url_for('freelance') }}" class="btn btn-secondary" role="button">
+      {% if session.get("wageSource") == "freelance" %}
+        Freelance rate active ✓
+      {% elif display_wage_amount %}
+        Edit freelance rate
+      {% else %}
+        Set freelance rate
+      {% endif %}
+    </a>
+
+    <button type="submit" class="btn btn-primary">Calculate</button>
+  </div>
+</section>
+
 
     {% if result == "Invalid input" %}
       <section class="panel" aria-live="polite">

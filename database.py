@@ -58,3 +58,53 @@ def init_db() -> None:
     with engine.begin() as conn:
         conn.execute(text(expenses_sql))
         conn.execute(text(goals_sql))
+
+def ensure_freelance_tables() -> None:
+    """
+    Creates freelance tables if missing + performs a tiny migration:
+    ensure freelance_entries.work_date exists.
+    """
+    id_col = _id_column_sql()
+    money_col = "DOUBLE PRECISION" if _is_postgres() else "REAL"
+
+    jobs_sql = f"""
+    CREATE TABLE IF NOT EXISTS freelance_jobs (
+        id {id_col},
+        name TEXT NOT NULL,
+        client TEXT
+    )
+    """
+
+    entries_sql = f"""
+    CREATE TABLE IF NOT EXISTS freelance_entries (
+        id {id_col},
+        job_id INTEGER NOT NULL,
+        work_date TEXT NOT NULL,
+        hours {money_col} NOT NULL,
+        rate {money_col} NOT NULL,
+        notes TEXT,
+        FOREIGN KEY(job_id) REFERENCES freelance_jobs(id)
+    )
+    """
+
+    with engine.begin() as conn:
+        # Create tables (safe no-ops if they exist)
+        conn.execute(text(jobs_sql))
+        conn.execute(text(entries_sql))
+
+        # ---- Tiny migration for older sqlite tables that are missing work_date ----
+        if engine.dialect.name == "sqlite":
+            cols = conn.execute(text("PRAGMA table_info(freelance_entries)")).mappings().all()
+            col_names = {c["name"] for c in cols}
+
+            if "work_date" not in col_names:
+                # Add column (SQLite only supports ADD COLUMN at end)
+                conn.execute(text("ALTER TABLE freelance_entries ADD COLUMN work_date TEXT"))
+                # Backfill to today's date so queries don't explode
+                conn.execute(
+                    text(
+                        "UPDATE freelance_entries "
+                        "SET work_date = date('now') "
+                        "WHERE work_date IS NULL OR work_date = ''"
+                    )
+                )
