@@ -31,15 +31,14 @@ def _id_column_sql() -> str:
 
 def init_db() -> None:
     id_col = _id_column_sql()
+    num_col = "DOUBLE PRECISION" if _is_postgres() else "REAL"
 
     expenses_sql = f"""
     CREATE TABLE IF NOT EXISTS expenses (
         id {id_col},
         name TEXT NOT NULL,
-        amount {"DOUBLE PRECISION" if _is_postgres() else "REAL"} NOT NULL,
+        amount {num_col} NOT NULL,
         category TEXT NOT NULL
-        -- Optional guardrails:
-        -- , CHECK (amount >= 0)
     )
     """
 
@@ -47,17 +46,28 @@ def init_db() -> None:
     CREATE TABLE IF NOT EXISTS goals (
         id {id_col},
         name TEXT NOT NULL,
-        target {"DOUBLE PRECISION" if _is_postgres() else "REAL"} NOT NULL,
-        current {"DOUBLE PRECISION" if _is_postgres() else "REAL"} NOT NULL DEFAULT 0
-        -- Optional guardrails:
-        -- , CHECK (target >= 0)
-        -- , CHECK (current >= 0)
+        target {num_col} NOT NULL,
+        current {num_col} NOT NULL DEFAULT 0
+    )
+    """
+
+    # Freelance tables (simple, "client-based" model)
+    freelance_entries_sql = f"""
+    CREATE TABLE IF NOT EXISTS freelance_entries (
+        id {id_col},
+        work_date DATE NOT NULL,
+        client TEXT NOT NULL,
+        hours {num_col} NOT NULL,
+        hourly_rate {num_col} NOT NULL,
+        notes TEXT
     )
     """
 
     with engine.begin() as conn:
         conn.execute(text(expenses_sql))
         conn.execute(text(goals_sql))
+        conn.execute(text(freelance_entries_sql))
+
 
 def ensure_freelance_tables() -> None:
     """
