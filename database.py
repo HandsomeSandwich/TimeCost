@@ -51,7 +51,7 @@ def init_db() -> None:
     )
     """
 
-    # Freelance tables (simple, "client-based" model)
+    # ✅ Freelance entries table (matches your Fly query)
     freelance_entries_sql = f"""
     CREATE TABLE IF NOT EXISTS freelance_entries (
         id {id_col},
