@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from datetime import date, datetime, timedelta
 from typing import Optional
+from collections import defaultdict
 
 from flask import Flask, render_template, request, session, redirect, url_for
 from sqlalchemy import text
@@ -29,6 +30,23 @@ try:
     init_db()
 except Exception as e:
     print("Database init error:", e)
+
+
+# ----------------------------
+# View mode: Dawn / Dusk
+# ----------------------------
+@app.post("/set-view")
+def set_view():
+    view = request.form.get("view")
+    if view in ("dawn", "dusk"):
+        session["view"] = view
+    return redirect(request.referrer or url_for("calculator"))
+
+
+@app.before_request
+def ensure_view():
+    if "view" not in session:
+        session["view"] = "dawn"
 
 
 @app.context_processor
@@ -248,7 +266,6 @@ def calculator():
     time_cost = None
     workday_text = ""
 
-    # Defaults for what the form should SHOW
     display_wage_type = pre_wage_type
     display_wage_amount = pre_wage_amount
     prefill_source = "personal" if (pre_wage_amount or "").strip() else None
@@ -260,7 +277,6 @@ def calculator():
         wage_type = (request.form.get("wageType") or pre_wage_type).strip().lower()
         wage_amount_raw = (request.form.get("wageAmount") or "").strip()
 
-        # Preserve what user chose/typed in the form after submit
         display_wage_type = wage_type
         display_wage_amount = wage_amount_raw if wage_amount_raw != "" else pre_wage_amount
         prefill_source = "personal" if wage_amount_raw == "" and (pre_wage_amount or "").strip() else None
@@ -270,7 +286,6 @@ def calculator():
             if item_cost_f < 0:
                 raise ValueError("Cost can't be negative")
 
-            # If wage left blank, fall back to Personal effective hourly
             if wage_amount_raw == "":
                 effective_hourly = get_effective_hourly_rate()
                 if effective_hourly is None or effective_hourly <= 0:
@@ -329,12 +344,9 @@ def personal():
 
         return redirect(url_for("calculator"))
 
-    # Pull expenses total for display (read-only)
     conn = get_connection()
     try:
-        row = conn.execute(
-            text("SELECT COALESCE(SUM(amount), 0) AS total FROM expenses")
-        ).mappings().first()
+        row = conn.execute(text("SELECT COALESCE(SUM(amount), 0) AS total FROM expenses")).mappings().first()
         expenses_total = float(row["total"]) if row and row["total"] is not None else 0.0
     except Exception:
         expenses_total = 0.0
@@ -394,7 +406,6 @@ def timebank():
             currency=currency,
         )
 
-    # GET defaults
     income = safe_float(session.get("annualRate"), 0.0) / 12.0
 
     all_rows = fetch_all_expenses()
@@ -424,7 +435,6 @@ def expenses():
         expense_amounts = request.form.getlist("expense_amount[]")
         expense_categories = request.form.getlist("expense_category[]")
 
-        # writes in a transaction
         with engine.begin() as conn:
             conn.execute(text("DELETE FROM expenses"))
 
@@ -492,7 +502,6 @@ def remove_expense(index):
 def budget():
     currency = _currency()
 
-    # Pull expenses total
     conn = get_connection()
     try:
         row = conn.execute(text("SELECT COALESCE(SUM(amount), 0) AS total FROM expenses")).mappings().first()
@@ -639,16 +648,16 @@ def staples():
 
 
 # ----------------------------
-# Routes: Freelance (matches YOUR current DB schema)
-# freelance_entries columns:
-# id, entry_date, client, hours, hourly_rate, notes, work_date (extra)
+# Routes: Freelance
+# Table columns assumed:
+# id, entry_date, client, hours, hourly_rate, notes
 # ----------------------------
 @app.route("/freelance", methods=["GET", "POST"])
 def freelance():
     range_key = (request.args.get("range") or "month").strip().lower()
     start_date = _freelance_range_to_start(range_key)
 
-    date_col = "entry_date"  # this is what your table has
+    date_col = "entry_date"
 
     # POST: Use this effective rate in TimeCost
     if request.method == "POST":
@@ -690,20 +699,20 @@ def freelance():
                 f"""
                 SELECT
                   id,
-                  work_date,
+                  entry_date AS work_date,
                   hours,
                   hourly_rate AS rate,
                   (hours * hourly_rate) AS total,
                   notes,
                   client AS job_name
                 FROM freelance_entries
-                WHERE work_date >= :start
-                ORDER BY work_date DESC, id DESC
-
+                WHERE {date_col} >= :start
+                ORDER BY entry_date DESC, id DESC
                 """
             ),
             {"start": start_date},
         ).mappings().all()
+
     finally:
         conn.close()
 
@@ -714,17 +723,52 @@ def freelance():
     using_freelance = session.get("wageSource") == "freelance"
     freelance_hourly = session.get("freelanceHourlyRate", "")
 
+    # Breakdown: how much time/earned per "job/client"
+    by_client = defaultdict(lambda: {"hours": 0.0, "earned": 0.0})
+
+    for e in entries:
+        client = (e.get("job_name") or "Private").strip()
+        hours = float(e.get("hours") or 0)
+        rate = float(e.get("rate") or 0)
+        earned = float(e.get("total") or (hours * rate) or 0)
+
+        by_client[client]["hours"] += hours
+        by_client[client]["earned"] += earned
+
+    client_rows = []
+    for client, v in by_client.items():
+        h = v["hours"]
+        earned = v["earned"]
+        avg_rate = (earned / h) if h > 0 else 0.0
+        equiv_hours = (earned / effective_rate) if effective_rate > 0 else 0.0
+
+        client_rows.append(
+            {
+                "client": client,
+                "hours": round(h, 2),
+                "earned": round(earned, 2),
+                "avg_rate": round(avg_rate, 2),
+                "equiv_hours": round(equiv_hours, 2),
+            }
+        )
+
+    client_rows.sort(key=lambda r: r["earned"], reverse=True)
+
+    equiv_total_hours = round((total_earned / effective_rate) if effective_rate > 0 else 0.0, 2)
+
     return render_template(
         "freelance.html",
         currency=_currency(),
         range_key=range_key,
-        jobs=[],  # template expects this; keep it harmlessly empty
+        jobs=[],  # template expects this; keep harmlessly empty for now
         entries=entries,
         total_hours=total_hours,
         total_earned=total_earned,
         effective_rate=effective_rate,
         using_freelance=using_freelance,
         freelance_hourly=freelance_hourly,
+        client_rows=client_rows,
+        equiv_total_hours=equiv_total_hours,
     )
 
 
@@ -732,19 +776,19 @@ def freelance():
 def freelance_add_job():
     """
     Your current DB schema does not have freelance_jobs.
-    Your template has an "Add job" form; to avoid breaking it,
-    we just redirect back. (Next step: update template to remove jobs.)
+    Template has an "Add job" form; to avoid breaking it,
+    we just redirect back. (Next step: remove job form or add jobs table.)
     """
     return redirect(url_for("freelance"))
 
 
 @app.post("/freelance/add_entry")
 def freelance_add_entry():
-    # Your schema wants client; template might submit job_id instead.
     client = (request.form.get("client") or "").strip()
+
+    # Respect privacy: empty means private
     if not client:
-        job_id = (request.form.get("job_id") or "").strip()
-        client = f"Job {job_id}" if job_id else "Unknown"
+        client = "Private"
 
     work_date = _parse_date((request.form.get("work_date") or "").strip())
     hours = safe_float(request.form.get("hours"), 0.0)
@@ -758,8 +802,10 @@ def freelance_add_entry():
         conn.execute(
             text(
                 """
-                INSERT INTO freelance_entries (entry_date, client, hours, hourly_rate, notes)
-                VALUES (:entry_date, :client, :hours, :hourly_rate, :notes)
+                INSERT INTO freelance_entries
+                  (entry_date, client, hours, hourly_rate, notes)
+                VALUES
+                  (:entry_date, :client, :hours, :hourly_rate, :notes)
                 """
             ),
             {
@@ -797,3 +843,7 @@ def set_perspective():
     p = request.form.get("perspective", "river")
     session["perspective"] = p if p in allowed else "river"
     return redirect(request.referrer or url_for("calculator"))
+
+
+if __name__ == "__main__":
+    app.run(debug=True)

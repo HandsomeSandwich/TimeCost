@@ -45,3 +45,16 @@ if (cost) {
   cost.addEventListener("focus", () => cost.select());
 }
 
+body[data-view="dusk"] {
+  --bg: #0f1a14;
+  --panel: #1e1f1c;
+  --border: #2a332d;
+
+  --text: #e6e9e5;
+  --muted: #9aa59a;
+
+  --accent: #4a7a66;
+  --accent-soft: rgba(74, 122, 102, 0.18);
+
+  --btn2: #202623;
+}

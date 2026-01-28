@@ -5,12 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}TimeCost{% endblock %}</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?
+  family=Inter:wght@400;500;600
+  &family=Fraunces:opsz,wght@9..144,400;500;600
+  &display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="{{ url_for('static', filename='timecost.css') }}">
   {% block head %}{% endblock %}
 </head>
 
-<body>
+<body data-view="{{ session.get('view', 'dawn') }}">
   <a class="skip-link" href="#main">Skip to content</a>
+
+
 
   <header class="topbar">
     <div class="topbar-inner">
@@ -54,6 +64,17 @@
             <option value="leslie" {% if perspective=="leslie" %}selected{% endif %}>Leslie</option>
             <option value="eddie" {% if perspective=="eddie" %}selected{% endif %}>Eddie</option>
           </select>
+        </form>
+
+        <form method="post" action="{{ url_for('set_view') }}" class="inline">
+          <input
+            type="hidden"
+            name="view"
+            value="{{ 'dusk' if session.get('view') == 'dawn' else 'dawn' }}"
+          >
+          <button class="btn btn-sm" type="submit">
+            {{ 'Dusk' if session.get('view') == 'dawn' else 'Dawn' }}
+          </button>
         </form>
       </div>
     </div>
