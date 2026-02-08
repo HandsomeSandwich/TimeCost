@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import hashlib
 from datetime import date, datetime, timedelta
 from itertools import zip_longest
 from typing import Optional
@@ -89,7 +90,7 @@ def _currency() -> str:
 
 
 def _get_weekly_hours_default40() -> float:
-    weekly = safe_float(session.get("workHours"), 40.0)
+    weekly = safe_float(_personal_value("work_hours", session.get("workHours")), 40.0)
     return weekly if weekly > 0 else 40.0
 
 
@@ -184,6 +185,43 @@ def workday_equivalent(total_hours: float, hours_per_day: float = 8.0) -> str:
         return "about 1 workday"
     return f"about {round(days, 1)} workdays"
 
+
+def _get_personal_profile() -> Optional[dict]:
+    profile_id = session.get("personal_profile_id")
+    if not profile_id:
+        return None
+
+    conn = get_connection()
+    try:
+        return conn.execute(
+            text("SELECT * FROM personal_profiles WHERE id = :id"),
+            {"id": profile_id},
+        ).mappings().first()
+    finally:
+        conn.close()
+
+
+def _personal_value(key: str, default=None):
+    profile = _get_personal_profile()
+    if profile and key in profile and profile[key] not in (None, ""):
+        return profile[key]
+    return session.get(key, default)
+
+
+def _blank_to_none(value: str):
+    v = (value or "").strip()
+    return v if v else None
+
+
+def _parse_optional_number(value):
+    v = (value or "").strip()
+    if not v:
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
 def clamp(x: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, x))
 
@@ -223,6 +261,96 @@ def equal_hours_including_personal(
     }
 
 
+def _pin_hash(pin: str, salt: str) -> str:
+    return hashlib.sha256((salt + pin).encode("utf-8")).hexdigest()
+
+
+def _make_pin(pin: str) -> tuple[str, str]:
+    salt = secrets.token_hex(8)
+    return _pin_hash(pin, salt), salt
+
+
+def _verify_pin(pin: str, pin_hash: str, salt: str) -> bool:
+    return _pin_hash(pin, salt) == pin_hash
+
+
+def _dinaro_now() -> str:
+    return datetime.utcnow().isoformat(timespec="seconds")
+
+
+def _dinaro_rate_for_family(family_id: int) -> float:
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            text("SELECT rate_per_hour FROM dinaro_families WHERE id = :id"),
+            {"id": family_id},
+        ).mappings().first()
+        return float(row["rate_per_hour"]) if row else 4.0
+    finally:
+        conn.close()
+
+
+def _dinaro_add_ledger(child_id: int, delta: float, reason: str, request_id=None, log_id=None) -> None:
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO dinaro_ledger (child_id, delta, reason, created_at, request_id, log_id)
+                VALUES (:child_id, :delta, :reason, :created_at, :request_id, :log_id)
+                """
+            ),
+            {
+                "child_id": child_id,
+                "delta": delta,
+                "reason": reason,
+                "created_at": _dinaro_now(),
+                "request_id": request_id,
+                "log_id": log_id,
+            },
+        )
+        conn.execute(
+            text("UPDATE dinaro_children SET balance = balance + :delta WHERE id = :id"),
+            {"delta": delta, "id": child_id},
+        )
+
+
+def _dinaro_require_parent() -> int:
+    parent_id = session.get("dinaro_parent_id")
+    if not parent_id:
+        return 0
+    return int(parent_id)
+
+
+def _dinaro_require_child() -> int:
+    child_id = session.get("dinaro_child_id")
+    if not child_id:
+        return 0
+    return int(child_id)
+
+
+def _dinaro_parent_family_id(parent_id: int) -> int:
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            text("SELECT family_id FROM dinaro_parents WHERE id = :id"),
+            {"id": parent_id},
+        ).mappings().first()
+        return int(row["family_id"]) if row else 0
+    finally:
+        conn.close()
+
+
+def _dinaro_child_family_id(child_id: int) -> int:
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            text("SELECT family_id FROM dinaro_children WHERE id = :id"),
+            {"id": child_id},
+        ).mappings().first()
+        return int(row["family_id"]) if row else 0
+    finally:
+        conn.close()
+
 
 def get_effective_hourly_rate() -> Optional[float]:
     # 0) freelance override if selected
@@ -232,7 +360,7 @@ def get_effective_hourly_rate() -> Optional[float]:
             return fr
 
     # 1) direct hourly
-    hr = safe_float(session.get("hourlyRate"), 0.0)
+    hr = safe_float(_personal_value("hourly_rate", session.get("hourlyRate")), 0.0)
     if hr > 0:
         return hr
 
@@ -240,13 +368,13 @@ def get_effective_hourly_rate() -> Optional[float]:
     hours_per_year = weekly_hours * 52.0
 
     # 2) annual salary
-    annual = safe_float(session.get("annualRate"), 0.0)
+    annual = safe_float(_personal_value("annual_rate", session.get("annualRate")), 0.0)
     if annual > 0 and hours_per_year > 0:
         return annual / hours_per_year
 
     # 3) paycheck conversion
-    paycheck = safe_float(session.get("paycheckAmount"), 0.0)
-    freq = (session.get("payFrequency") or "").lower().strip()
+    paycheck = safe_float(_personal_value("paycheck_amount", session.get("paycheckAmount")), 0.0)
+    freq = (_personal_value("pay_frequency", session.get("payFrequency")) or "").lower().strip()
 
     if paycheck > 0 and freq in {"weekly", "biweekly", "monthly"}:
         if freq == "weekly":
@@ -291,10 +419,10 @@ def _prefill_wage_from_personal() -> tuple[str, str, str]:
     Returns (wageType, wageAmount, source)
     source is "personal" when it came from session data, else "default"
     """
-    hourly_rate = (session.get("hourlyRate") or "").strip()
-    annual_rate = (session.get("annualRate") or "").strip()
-    paycheck_amount = (session.get("paycheckAmount") or "").strip()
-    pay_frequency = (session.get("payFrequency") or "").strip().lower()
+    hourly_rate = str(_personal_value("hourly_rate", session.get("hourlyRate")) or "").strip()
+    annual_rate = str(_personal_value("annual_rate", session.get("annualRate")) or "").strip()
+    paycheck_amount = str(_personal_value("paycheck_amount", session.get("paycheckAmount")) or "").strip()
+    pay_frequency = str(_personal_value("pay_frequency", session.get("payFrequency")) or "").strip().lower()
 
     if hourly_rate:
         return "hourly", hourly_rate, "personal"
@@ -383,19 +511,123 @@ def calculator():
 # ----------------------------
 @app.route("/personal", methods=["GET", "POST"])
 def personal():
+    error = None
+    profile = _get_personal_profile()
+
     if request.method == "POST":
-        session["username"] = (request.form.get("username") or "").strip()
-        session["workHours"] = safe_float(request.form.get("workHours"), 40.0)
+        action = (request.form.get("action") or "save").strip().lower()
+        profile_name = (request.form.get("profile_name") or "").strip()
+        profile_pin = (request.form.get("profile_pin") or "").strip()
 
-        c = request.form.get("currency", session.get("currency", DEFAULT_CURRENCY))
-        session["currency"] = c if c in ALLOWED_CURRENCIES else DEFAULT_CURRENCY
+        if not profile_name or not profile_pin:
+            error = "Profile name and PIN are required."
+        else:
+            conn = get_connection()
+            try:
+                existing = conn.execute(
+                    text("SELECT * FROM personal_profiles WHERE profile_name = :name"),
+                    {"name": profile_name},
+                ).mappings().first()
+            finally:
+                conn.close()
 
-        session["annualRate"] = (request.form.get("annualRate") or "").strip()
-        session["hourlyRate"] = (request.form.get("hourlyRate") or "").strip()
-        session["payFrequency"] = (request.form.get("payFrequency") or "").strip().lower()
-        session["paycheckAmount"] = (request.form.get("paycheckAmount") or "").strip()
+            if action == "load":
+                if not existing or not _verify_pin(profile_pin, existing["pin_hash"], existing["pin_salt"]):
+                    error = "Wrong profile name or PIN."
+                else:
+                    session["personal_profile_id"] = int(existing["id"])
+                    if existing.get("currency"):
+                        session["currency"] = existing["currency"]
+                    session["username"] = existing.get("display_name") or ""
+                    return redirect(url_for("personal"))
+            else:
+                if existing and not _verify_pin(profile_pin, existing["pin_hash"], existing["pin_salt"]):
+                    error = "Wrong profile name or PIN."
+                else:
+                    pin_hash = existing["pin_hash"] if existing else None
+                    pin_salt = existing["pin_salt"] if existing else None
+                    if not existing:
+                        pin_hash, pin_salt = _make_pin(profile_pin)
 
-        return redirect(url_for("calculator"))
+                    display_name = _blank_to_none(request.form.get("username"))
+                    work_hours = safe_float(request.form.get("workHours"), 40.0)
+
+                    c = request.form.get("currency", session.get("currency", DEFAULT_CURRENCY))
+                    currency = c if c in ALLOWED_CURRENCIES else DEFAULT_CURRENCY
+
+                    annual_rate = _parse_optional_number(request.form.get("annualRate"))
+                    hourly_rate = _parse_optional_number(request.form.get("hourlyRate"))
+                    pay_frequency = _blank_to_none(request.form.get("payFrequency"))
+                    paycheck_amount = _parse_optional_number(request.form.get("paycheckAmount"))
+
+                    now = _dinaro_now()
+
+                    with engine.begin() as conn:
+                        if existing:
+                            conn.execute(
+                                text(
+                                    """
+                                    UPDATE personal_profiles
+                                    SET display_name = :display_name,
+                                        currency = :currency,
+                                        work_hours = :work_hours,
+                                        annual_rate = :annual_rate,
+                                        hourly_rate = :hourly_rate,
+                                        pay_frequency = :pay_frequency,
+                                        paycheck_amount = :paycheck_amount,
+                                        updated_at = :updated_at
+                                    WHERE id = :id
+                                    """
+                                ),
+                                {
+                                    "display_name": display_name,
+                                    "currency": currency,
+                                    "work_hours": work_hours,
+                                    "annual_rate": annual_rate,
+                                    "hourly_rate": hourly_rate,
+                                    "pay_frequency": (pay_frequency or "").lower() or None,
+                                    "paycheck_amount": paycheck_amount,
+                                    "updated_at": now,
+                                    "id": existing["id"],
+                                },
+                            )
+                            profile_id = existing["id"]
+                        else:
+                            row = conn.execute(
+                                text(
+                                    """
+                                    INSERT INTO personal_profiles
+                                    (profile_name, pin_hash, pin_salt, display_name, currency, work_hours,
+                                     annual_rate, hourly_rate, pay_frequency, paycheck_amount, created_at, updated_at)
+                                    VALUES
+                                    (:profile_name, :pin_hash, :pin_salt, :display_name, :currency, :work_hours,
+                                     :annual_rate, :hourly_rate, :pay_frequency, :paycheck_amount, :created_at, :updated_at)
+                                    RETURNING id
+                                    """
+                                ),
+                                {
+                                    "profile_name": profile_name,
+                                    "pin_hash": pin_hash,
+                                    "pin_salt": pin_salt,
+                                    "display_name": display_name,
+                                    "currency": currency,
+                                    "work_hours": work_hours,
+                                    "annual_rate": annual_rate,
+                                    "hourly_rate": hourly_rate,
+                                    "pay_frequency": (pay_frequency or "").lower() or None,
+                                    "paycheck_amount": paycheck_amount,
+                                    "created_at": now,
+                                    "updated_at": now,
+                                },
+                            ).mappings().first()
+                            profile_id = row["id"] if row else None
+                            if profile_id is None:
+                                profile_id = conn.execute(text("SELECT last_insert_rowid() AS id")).mappings().first()["id"]
+
+                    session["personal_profile_id"] = int(profile_id)
+                    session["currency"] = currency
+                    session["username"] = display_name or ""
+                    return redirect(url_for("calculator"))
 
     conn = get_connection()
     try:
@@ -406,15 +638,20 @@ def personal():
     finally:
         conn.close()
 
+    profile_name = profile["profile_name"] if profile else ""
+    if error:
+        profile_name = (request.form.get("profile_name") or "").strip()
     return render_template(
         "personal.html",
-        username=session.get("username", ""),
-        annualRate=session.get("annualRate", ""),
-        hourlyRate=session.get("hourlyRate", ""),
-        workHours=session.get("workHours", 40),
+        error=error,
+        profile_name=profile_name,
+        username=profile.get("display_name") if profile else session.get("username", ""),
+        annualRate=profile.get("annual_rate") if profile else session.get("annualRate", ""),
+        hourlyRate=profile.get("hourly_rate") if profile else session.get("hourlyRate", ""),
+        workHours=profile.get("work_hours") if profile else session.get("workHours", 40),
         expenses=expenses_total,
-        paycheckAmount=session.get("paycheckAmount", ""),
-        payFrequency=session.get("payFrequency", ""),
+        paycheckAmount=profile.get("paycheck_amount") if profile else session.get("paycheckAmount", ""),
+        payFrequency=profile.get("pay_frequency") if profile else session.get("payFrequency", ""),
         currency=_currency(),
     )
 
@@ -459,14 +696,14 @@ def timebank():
             currency=currency,
         )
 
-    income = safe_float(session.get("annualRate"), 0.0) / 12.0
+    income = safe_float(_personal_value("annual_rate", session.get("annualRate")), 0.0) / 12.0
 
     all_rows = fetch_all_expenses()
     expenses_total = sum((row.get("amount") or 0) for row in all_rows)
     savings_value = sum((row.get("amount") or 0) for row in all_rows if row.get("category") in ("Nest Egg", "Savings")
 )
 
-    weekly_hours = safe_float(session.get("workHours"), 0.0)
+    weekly_hours = safe_float(_personal_value("work_hours", session.get("workHours")), 0.0)
     hoursWorked = _weekly_to_monthly_hours(weekly_hours) if weekly_hours > 0 else 0.0
 
     return render_template(
@@ -677,8 +914,14 @@ def budget():
         income_input = request.form.get("income")
         hours_input = request.form.get("weeklyHours")
 
-        income = safe_float(income_input, safe_float(session.get("annualRate"), 0.0) / 12.0)
-        weekly_hours = safe_float(hours_input, safe_float(session.get("workHours"), 0.0))
+        income = safe_float(
+            income_input,
+            safe_float(_personal_value("annual_rate", session.get("annualRate")), 0.0) / 12.0,
+        )
+        weekly_hours = safe_float(
+            hours_input,
+            safe_float(_personal_value("work_hours", session.get("workHours")), 0.0),
+        )
         monthly_hours = weekly_hours * 4.33 if weekly_hours > 0 else 0.0
 
         discretionary_income = income - expenses_total
@@ -708,8 +951,8 @@ def budget():
             currency=currency,
         )
 
-    income = safe_float(session.get("annualRate"), 0.0) / 12.0
-    weekly_hours = safe_float(session.get("workHours"), 0.0)
+    income = safe_float(_personal_value("annual_rate", session.get("annualRate")), 0.0) / 12.0
+    weekly_hours = safe_float(_personal_value("work_hours", session.get("workHours")), 0.0)
     monthly_hours = weekly_hours * 4.33 if weekly_hours > 0 else 0.0
     discretionary_income = income - expenses_total
     hourly_value = (discretionary_income / monthly_hours) if monthly_hours > 0 else 0.0
@@ -791,7 +1034,7 @@ def delete_goal(goal_id):
 @app.route("/staples", methods=["GET"])
 def staples():
     currency = _currency()
-    hr = session.get("hourlyRate", "")
+    hr = _personal_value("hourly_rate", session.get("hourlyRate")) or ""
 
     if not hr:
         eff = get_effective_hourly_rate()
@@ -1024,7 +1267,7 @@ def household():
                         INSERT OR IGNORE INTO household_members (household_id, user_key, display_name)
                         VALUES (:hid, :uk, :dn)
                     """),
-                    {"hid": household_id, "uk": user_key, "dn": (session.get("username") or "Me")},
+                    {"hid": household_id, "uk": user_key, "dn": (_personal_value("display_name", session.get("username")) or "Me")},
                 )
 
             session["household_id"] = int(household_id)
@@ -1052,7 +1295,7 @@ def household():
                         INSERT OR IGNORE INTO household_members (household_id, user_key, display_name)
                         VALUES (:hid, :uk, :dn)
                     """),
-                    {"hid": household_id, "uk": user_key, "dn": (session.get("username") or "Me")},
+                    {"hid": household_id, "uk": user_key, "dn": (_personal_value("display_name", session.get("username")) or "Me")},
                 )
 
             session["household_id"] = household_id
@@ -1062,6 +1305,632 @@ def household():
     # GET: show current state (template later)
     invite_code = session.get("household_invite_code")
     return render_template("household.html", household_id=_current_household_id(), invite_code=invite_code)
+
+
+# ----------------------------
+# Dinaro (family responsibility)
+# ----------------------------
+@app.get("/dinaro")
+def dinaro_landing():
+    if session.get("dinaro_parent_id"):
+        return redirect(url_for("dinaro_parent_dashboard"))
+    if session.get("dinaro_child_id"):
+        return redirect(url_for("dinaro_child_dashboard"))
+    return render_template("dinaro_landing.html")
+
+
+@app.route("/dinaro/setup", methods=["GET", "POST"])
+def dinaro_setup():
+    conn = get_connection()
+    try:
+        existing = conn.execute(text("SELECT COUNT(*) AS c FROM dinaro_parents")).mappings().first()
+        if existing and existing["c"] > 0:
+            return redirect(url_for("dinaro_parent_login"))
+    finally:
+        conn.close()
+
+    if request.method == "POST":
+        family_name = (request.form.get("family_name") or "").strip()
+        parent_name = (request.form.get("parent_name") or "").strip()
+        pin = (request.form.get("parent_pin") or "").strip()
+        pin_confirm = (request.form.get("parent_pin_confirm") or "").strip()
+
+        if not parent_name or not pin or pin != pin_confirm:
+            return render_template("dinaro_setup.html", error="Please check name and matching PIN.")
+
+        pin_hash, pin_salt = _make_pin(pin)
+
+        with engine.begin() as conn:
+            row = conn.execute(
+                text(
+                    "INSERT INTO dinaro_families (name, rate_per_hour) "
+                    "VALUES (:name, :rate) RETURNING id"
+                ),
+                {"name": family_name or None, "rate": 4},
+            ).mappings().first()
+            family_id = row["id"] if row else None
+            if family_id is None:
+                family_id = conn.execute(text("SELECT last_insert_rowid() AS id")).mappings().first()["id"]
+            conn.execute(
+                text(
+                    "INSERT INTO dinaro_parents (family_id, name, pin_hash, pin_salt) "
+                    "VALUES (:family_id, :name, :pin_hash, :pin_salt)"
+                ),
+                {
+                    "family_id": family_id,
+                    "name": parent_name,
+                    "pin_hash": pin_hash,
+                    "pin_salt": pin_salt,
+                },
+            )
+
+        return redirect(url_for("dinaro_parent_login"))
+
+    return render_template("dinaro_setup.html")
+
+
+@app.route("/dinaro/parent/login", methods=["GET", "POST"])
+def dinaro_parent_login():
+    conn = get_connection()
+    try:
+        parents = conn.execute(
+            text("SELECT id, name FROM dinaro_parents ORDER BY name ASC")
+        ).mappings().all()
+    finally:
+        conn.close()
+
+    if not parents:
+        return redirect(url_for("dinaro_setup"))
+
+    if request.method == "POST":
+        parent_id = request.form.get("parent_id")
+        pin = (request.form.get("parent_pin") or "").strip()
+        if not parent_id or not pin:
+            return render_template("dinaro_parent_login.html", parents=parents, error="Enter your PIN.")
+
+        conn = get_connection()
+        try:
+            row = conn.execute(
+                text("SELECT id, pin_hash, pin_salt FROM dinaro_parents WHERE id = :id"),
+                {"id": parent_id},
+            ).mappings().first()
+        finally:
+            conn.close()
+
+        if not row or not _verify_pin(pin, row["pin_hash"], row["pin_salt"]):
+            return render_template("dinaro_parent_login.html", parents=parents, error="Wrong PIN.")
+
+        session["dinaro_parent_id"] = int(row["id"])
+        session.pop("dinaro_child_id", None)
+        return redirect(url_for("dinaro_parent_dashboard"))
+
+    return render_template("dinaro_parent_login.html", parents=parents)
+
+
+@app.post("/dinaro/parent/logout")
+def dinaro_parent_logout():
+    session.pop("dinaro_parent_id", None)
+    return redirect(url_for("dinaro_landing"))
+
+
+@app.get("/dinaro/parent")
+def dinaro_parent_dashboard():
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro_parent_login"))
+
+    family_id = _dinaro_parent_family_id(parent_id)
+    conn = get_connection()
+    try:
+        family = conn.execute(
+            text("SELECT id, name, rate_per_hour FROM dinaro_families WHERE id = :id"),
+            {"id": family_id},
+        ).mappings().first()
+        kids = conn.execute(
+            text("SELECT id, name, balance FROM dinaro_children WHERE family_id = :id ORDER BY name ASC"),
+            {"id": family_id},
+        ).mappings().all()
+        chores = conn.execute(
+            text(
+                "SELECT id, title, default_hours FROM dinaro_chores "
+                "WHERE family_id = :id AND active = 1 ORDER BY title ASC"
+            ),
+            {"id": family_id},
+        ).mappings().all()
+        pending_logs = conn.execute(
+            text(
+                """
+                SELECT l.id, l.child_id, l.chore_id, l.work_date, l.overtime_hours,
+                       l.requested_hours, l.status, c.title AS chore_title, ch.name AS child_name
+                FROM dinaro_chore_logs l
+                LEFT JOIN dinaro_chores c ON c.id = l.chore_id
+                LEFT JOIN dinaro_children ch ON ch.id = l.child_id
+                WHERE l.status = 'pending' AND ch.family_id = :id
+                ORDER BY l.created_at DESC
+                """
+            ),
+            {"id": family_id},
+        ).mappings().all()
+        requests = conn.execute(
+            text(
+                """
+                SELECT r.*, ch.name AS child_name
+                FROM dinaro_requests r
+                JOIN dinaro_children ch ON ch.id = r.child_id
+                WHERE ch.family_id = :id
+                ORDER BY r.created_at DESC
+                """
+            ),
+            {"id": family_id},
+        ).mappings().all()
+        goals = conn.execute(
+            text(
+                """
+                SELECT g.*, ch.name AS child_name, ch.balance
+                FROM dinaro_goals g
+                JOIN dinaro_children ch ON ch.id = g.child_id
+                WHERE ch.family_id = :id
+                ORDER BY g.id DESC
+                """
+            ),
+            {"id": family_id},
+        ).mappings().all()
+    finally:
+        conn.close()
+
+    return render_template(
+        "dinaro_parent_dashboard.html",
+        family=family,
+        kids=kids,
+        chores=chores,
+        pending_logs=pending_logs,
+        requests=requests,
+        goals=goals,
+        rate_per_hour=family["rate_per_hour"] if family else 4,
+    )
+
+
+@app.post("/dinaro/parent/settings")
+def dinaro_parent_settings():
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro_parent_login"))
+
+    family_id = _dinaro_parent_family_id(parent_id)
+    name = (request.form.get("family_name") or "").strip() or None
+    rate = safe_float(request.form.get("rate_per_hour"), 4.0)
+    if rate <= 0:
+        rate = 4.0
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE dinaro_families SET name = :name, rate_per_hour = :rate WHERE id = :id"),
+            {"name": name, "rate": rate, "id": family_id},
+        )
+    return redirect(url_for("dinaro_parent_dashboard"))
+
+
+@app.post("/dinaro/parent/child/add")
+def dinaro_parent_add_child():
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro_parent_login"))
+
+    family_id = _dinaro_parent_family_id(parent_id)
+    name = (request.form.get("child_name") or "").strip()
+    pin = (request.form.get("child_pin") or "").strip()
+    if not name or not pin:
+        return redirect(url_for("dinaro_parent_dashboard"))
+
+    pin_hash, pin_salt = _make_pin(pin)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO dinaro_children (family_id, name, pin_hash, pin_salt) "
+                "VALUES (:family_id, :name, :pin_hash, :pin_salt)"
+            ),
+            {"family_id": family_id, "name": name, "pin_hash": pin_hash, "pin_salt": pin_salt},
+        )
+    return redirect(url_for("dinaro_parent_dashboard"))
+
+
+@app.post("/dinaro/parent/parent/add")
+def dinaro_parent_add_parent():
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro_parent_login"))
+
+    family_id = _dinaro_parent_family_id(parent_id)
+    name = (request.form.get("parent_name") or "").strip()
+    pin = (request.form.get("parent_pin") or "").strip()
+    if not name or not pin:
+        return redirect(url_for("dinaro_parent_dashboard"))
+
+    pin_hash, pin_salt = _make_pin(pin)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO dinaro_parents (family_id, name, pin_hash, pin_salt) "
+                "VALUES (:family_id, :name, :pin_hash, :pin_salt)"
+            ),
+            {"family_id": family_id, "name": name, "pin_hash": pin_hash, "pin_salt": pin_salt},
+        )
+    return redirect(url_for("dinaro_parent_dashboard"))
+
+
+@app.post("/dinaro/parent/chore/add")
+def dinaro_parent_add_chore():
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro_parent_login"))
+
+    family_id = _dinaro_parent_family_id(parent_id)
+    title = (request.form.get("chore_title") or "").strip()
+    default_hours = safe_float(request.form.get("default_hours"), 0.0)
+    if not title or default_hours <= 0:
+        return redirect(url_for("dinaro_parent_dashboard"))
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO dinaro_chores (family_id, title, default_hours) "
+                "VALUES (:family_id, :title, :default_hours)"
+            ),
+            {"family_id": family_id, "title": title, "default_hours": default_hours},
+        )
+    return redirect(url_for("dinaro_parent_dashboard"))
+
+
+@app.post("/dinaro/parent/log/<int:log_id>/approve")
+def dinaro_parent_approve_log(log_id: int):
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro_parent_login"))
+
+    approved_hours = safe_float(request.form.get("approved_hours"), 0.0)
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            text(
+                """
+                SELECT l.child_id, l.requested_hours, ch.family_id
+                FROM dinaro_chore_logs l
+                JOIN dinaro_children ch ON ch.id = l.child_id
+                WHERE l.id = :id
+                """
+            ),
+            {"id": log_id},
+        ).mappings().first()
+    finally:
+        conn.close()
+
+    if not row:
+        return redirect(url_for("dinaro_parent_dashboard"))
+
+    if approved_hours <= 0:
+        approved_hours = float(row["requested_hours"])
+
+    rate = _dinaro_rate_for_family(int(row["family_id"]))
+    earned = round(approved_hours * rate, 2)
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE dinaro_chore_logs SET status = 'approved', approved_hours = :hours WHERE id = :id"
+            ),
+            {"hours": approved_hours, "id": log_id},
+        )
+
+    _dinaro_add_ledger(int(row["child_id"]), earned, "Chore approved", log_id=log_id)
+    return redirect(url_for("dinaro_parent_dashboard"))
+
+
+@app.post("/dinaro/parent/log/<int:log_id>/deny")
+def dinaro_parent_deny_log(log_id: int):
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro_parent_login"))
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE dinaro_chore_logs SET status = 'denied', approved_hours = 0 WHERE id = :id"),
+            {"id": log_id},
+        )
+    return redirect(url_for("dinaro_parent_dashboard"))
+
+
+@app.post("/dinaro/parent/request/<int:request_id>/counter")
+def dinaro_parent_counter_request(request_id: int):
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro_parent_login"))
+
+    counter = safe_float(request.form.get("counter_dinaro"), 0.0)
+    note = (request.form.get("parent_note") or "").strip()
+    if counter <= 0:
+        return redirect(url_for("dinaro_parent_dashboard"))
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE dinaro_requests
+                SET parent_counter_dinaro = :counter, parent_note = :note, status = 'countered'
+                WHERE id = :id
+                """
+            ),
+            {"counter": counter, "note": note or None, "id": request_id},
+        )
+    return redirect(url_for("dinaro_parent_dashboard"))
+
+
+@app.post("/dinaro/parent/request/<int:request_id>/accept")
+def dinaro_parent_accept_request(request_id: int):
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro_parent_login"))
+
+    final_dinaro = safe_float(request.form.get("final_dinaro"), 0.0)
+    note = (request.form.get("parent_note") or "").strip()
+
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            text("SELECT child_id, offer_dinaro, parent_counter_dinaro FROM dinaro_requests WHERE id = :id"),
+            {"id": request_id},
+        ).mappings().first()
+    finally:
+        conn.close()
+
+    if not row:
+        return redirect(url_for("dinaro_parent_dashboard"))
+
+    if final_dinaro <= 0:
+        final_dinaro = float(row["parent_counter_dinaro"] or row["offer_dinaro"] or 0)
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE dinaro_requests
+                SET status = 'accepted', final_dinaro = :final, parent_note = :note, closed_at = :closed_at
+                WHERE id = :id
+                """
+            ),
+            {"final": final_dinaro, "note": note or None, "closed_at": _dinaro_now(), "id": request_id},
+        )
+
+    if final_dinaro > 0:
+        _dinaro_add_ledger(int(row["child_id"]), -final_dinaro, "Request accepted", request_id=request_id)
+
+    return redirect(url_for("dinaro_parent_dashboard"))
+
+
+@app.post("/dinaro/parent/request/<int:request_id>/decline")
+def dinaro_parent_decline_request(request_id: int):
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro_parent_login"))
+
+    note = (request.form.get("parent_note") or "").strip()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE dinaro_requests
+                SET status = 'declined', parent_note = :note, closed_at = :closed_at
+                WHERE id = :id
+                """
+            ),
+            {"note": note or None, "closed_at": _dinaro_now(), "id": request_id},
+        )
+    return redirect(url_for("dinaro_parent_dashboard"))
+
+
+@app.route("/dinaro/child/login", methods=["GET", "POST"])
+def dinaro_child_login():
+    conn = get_connection()
+    try:
+        kids = conn.execute(
+            text("SELECT id, name FROM dinaro_children ORDER BY name ASC")
+        ).mappings().all()
+    finally:
+        conn.close()
+
+    if request.method == "POST":
+        child_id = request.form.get("child_id")
+        pin = (request.form.get("child_pin") or "").strip()
+        if not child_id or not pin:
+            return render_template("dinaro_child_login.html", kids=kids, error="Enter your PIN.")
+
+        conn = get_connection()
+        try:
+            row = conn.execute(
+                text("SELECT id, pin_hash, pin_salt FROM dinaro_children WHERE id = :id"),
+                {"id": child_id},
+            ).mappings().first()
+        finally:
+            conn.close()
+
+        if not row or not _verify_pin(pin, row["pin_hash"], row["pin_salt"]):
+            return render_template("dinaro_child_login.html", kids=kids, error="Wrong PIN.")
+
+        session["dinaro_child_id"] = int(row["id"])
+        session.pop("dinaro_parent_id", None)
+        return redirect(url_for("dinaro_child_dashboard"))
+
+    return render_template("dinaro_child_login.html", kids=kids)
+
+
+@app.post("/dinaro/child/logout")
+def dinaro_child_logout():
+    session.pop("dinaro_child_id", None)
+    return redirect(url_for("dinaro_landing"))
+
+
+@app.get("/dinaro/child")
+def dinaro_child_dashboard():
+    child_id = _dinaro_require_child()
+    if not child_id:
+        return redirect(url_for("dinaro_child_login"))
+
+    family_id = _dinaro_child_family_id(child_id)
+    rate = _dinaro_rate_for_family(family_id)
+
+    conn = get_connection()
+    try:
+        child = conn.execute(
+            text("SELECT id, name, balance FROM dinaro_children WHERE id = :id"),
+            {"id": child_id},
+        ).mappings().first()
+        chores = conn.execute(
+            text(
+                "SELECT id, title, default_hours FROM dinaro_chores "
+                "WHERE family_id = :id AND active = 1 ORDER BY title ASC"
+            ),
+            {"id": family_id},
+        ).mappings().all()
+        goals = conn.execute(
+            text("SELECT id, title, target_dinaro FROM dinaro_goals WHERE child_id = :id ORDER BY id DESC"),
+            {"id": child_id},
+        ).mappings().all()
+        requests = conn.execute(
+            text("SELECT * FROM dinaro_requests WHERE child_id = :id ORDER BY created_at DESC"),
+            {"id": child_id},
+        ).mappings().all()
+    finally:
+        conn.close()
+
+    return render_template(
+        "dinaro_child_dashboard.html",
+        child=child,
+        chores=chores,
+        goals=goals,
+        requests=requests,
+        rate_per_hour=rate,
+    )
+
+
+@app.post("/dinaro/child/chore/log")
+def dinaro_child_log_chore():
+    child_id = _dinaro_require_child()
+    if not child_id:
+        return redirect(url_for("dinaro_child_login"))
+
+    chore_id = request.form.get("chore_id")
+    overtime_hours = safe_float(request.form.get("overtime_hours"), 0.0)
+
+    conn = get_connection()
+    try:
+        chore = conn.execute(
+            text("SELECT id, default_hours FROM dinaro_chores WHERE id = :id"),
+            {"id": chore_id},
+        ).mappings().first()
+    finally:
+        conn.close()
+
+    if not chore:
+        return redirect(url_for("dinaro_child_dashboard"))
+
+    requested_hours = float(chore["default_hours"]) + max(0.0, overtime_hours)
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO dinaro_chore_logs (child_id, chore_id, work_date, overtime_hours, requested_hours, created_at)
+                VALUES (:child_id, :chore_id, :work_date, :overtime_hours, :requested_hours, :created_at)
+                """
+            ),
+            {
+                "child_id": child_id,
+                "chore_id": chore_id,
+                "work_date": date.today().isoformat(),
+                "overtime_hours": max(0.0, overtime_hours),
+                "requested_hours": requested_hours,
+                "created_at": _dinaro_now(),
+            },
+        )
+    return redirect(url_for("dinaro_child_dashboard"))
+
+
+@app.post("/dinaro/child/goal/add")
+def dinaro_child_add_goal():
+    child_id = _dinaro_require_child()
+    if not child_id:
+        return redirect(url_for("dinaro_child_login"))
+
+    title = (request.form.get("goal_title") or "").strip()
+    target = safe_float(request.form.get("goal_target"), 0.0)
+    if not title or target <= 0:
+        return redirect(url_for("dinaro_child_dashboard"))
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("INSERT INTO dinaro_goals (child_id, title, target_dinaro) VALUES (:id, :title, :target)"),
+            {"id": child_id, "title": title, "target": target},
+        )
+    return redirect(url_for("dinaro_child_dashboard"))
+
+
+@app.post("/dinaro/child/request/add")
+def dinaro_child_add_request():
+    child_id = _dinaro_require_child()
+    if not child_id:
+        return redirect(url_for("dinaro_child_login"))
+
+    item_name = (request.form.get("item_name") or "").strip()
+    item_cost = safe_float(request.form.get("item_cost_dinaro"), 0.0)
+    offer = safe_float(request.form.get("offer_dinaro"), 0.0)
+    note = (request.form.get("child_note") or "").strip()
+
+    if not item_name or item_cost <= 0 or offer <= 0:
+        return redirect(url_for("dinaro_child_dashboard"))
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO dinaro_requests
+                (child_id, item_name, item_cost_dinaro, offer_dinaro, status, child_note, created_at)
+                VALUES (:child_id, :item_name, :item_cost, :offer, 'open', :note, :created_at)
+                """
+            ),
+            {
+                "child_id": child_id,
+                "item_name": item_name,
+                "item_cost": item_cost,
+                "offer": offer,
+                "note": note or None,
+                "created_at": _dinaro_now(),
+            },
+        )
+    return redirect(url_for("dinaro_child_dashboard"))
+
+
+@app.post("/dinaro/child/request/<int:request_id>/update")
+def dinaro_child_update_request(request_id: int):
+    child_id = _dinaro_require_child()
+    if not child_id:
+        return redirect(url_for("dinaro_child_login"))
+
+    offer = safe_float(request.form.get("offer_dinaro"), 0.0)
+    note = (request.form.get("child_note") or "").strip()
+    if offer <= 0:
+        return redirect(url_for("dinaro_child_dashboard"))
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE dinaro_requests
+                SET offer_dinaro = :offer, child_note = :note, status = 'open'
+                WHERE id = :id AND child_id = :child_id AND status IN ('open', 'countered')
+                """
+            ),
+            {"offer": offer, "note": note or None, "id": request_id, "child_id": child_id},
+        )
+    return redirect(url_for("dinaro_child_dashboard"))
 
 
 

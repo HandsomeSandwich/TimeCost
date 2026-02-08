@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Dinaro Setup{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Dinaro Setup</h1>
+    <p class="muted">Create the family space and the first parent PIN.</p>
+  </header>
+
+  <section class="panel">
+    {% if error %}
+      <div class="callout">{{ error }}</div>
+    {% endif %}
+    <form method="post" class="stack">
+      <div class="grid-2">
+        <div class="field">
+          <label for="familyName">Family name (optional)</label>
+          <input id="familyName" type="text" name="family_name" placeholder="The Song Household">
+        </div>
+
+        <div class="field">
+          <label for="parentName">Parent name</label>
+          <input id="parentName" type="text" name="parent_name" required>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="parentPin">Parent PIN</label>
+          <input id="parentPin" type="password" name="parent_pin" inputmode="numeric" required>
+        </div>
+
+        <div class="field">
+          <label for="parentPinConfirm">Confirm PIN</label>
+          <input id="parentPinConfirm" type="password" name="parent_pin_confirm" inputmode="numeric" required>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="submit">Create family</button>
+        <a class="btn" href="{{ url_for('dinaro_parent_login') }}">Back to login</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

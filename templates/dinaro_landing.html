@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Dinaro{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Dinaro</h1>
+    <p class="muted">Time becomes dinaro. Dinaro become choices. Parents guide. Kids learn.</p>
+  </header>
+
+  <div class="grid-2">
+    <section class="panel">
+      <h2 class="card-title">Parent</h2>
+      <p class="muted">Manage chores, approve overtime, and negotiate requests.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="{{ url_for('dinaro_parent_login') }}">Parent login</a>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="card-title">Child</h2>
+      <p class="muted">Log chores, track dinaro, and request things you want.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="{{ url_for('dinaro_child_login') }}">Child login</a>
+      </div>
+    </section>
+  </div>
+
+  <div style="margin-top:16px;">
+    <a class="pill" href="{{ url_for('dinaro_setup') }}">First time setup</a>
+  </div>
+</div>
+{% endblock %}

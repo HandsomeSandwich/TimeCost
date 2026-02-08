@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Parent Login{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Parent login</h1>
+    <p class="muted">Use your parent PIN to enter.</p>
+  </header>
+
+  <section class="panel">
+    {% if error %}
+      <div class="callout">{{ error }}</div>
+    {% endif %}
+    <form method="post" class="stack">
+      <div class="field">
+        <label for="parentSelect">Parent</label>
+        <select id="parentSelect" name="parent_id" required>
+          <option value="">Choose a parent</option>
+          {% for p in parents %}
+            <option value="{{ p.id }}">{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="parentPin">PIN</label>
+        <input id="parentPin" type="password" name="parent_pin" inputmode="numeric" required>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="submit">Enter</button>
+        <a class="btn" href="{{ url_for('dinaro_landing') }}">Back</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

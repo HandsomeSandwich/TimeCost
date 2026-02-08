@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}Dinaro Parent{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Dinaro Parent</h1>
+    <p class="muted">
+      {{ family.name or "Family" }} · {{ rate_per_hour }} dinaro per hour
+    </p>
+  </header>
+
+  <form method="post" action="{{ url_for('dinaro_parent_logout') }}" class="inline">
+    <button class="btn" type="submit">Log out</button>
+  </form>
+
+  <section class="panel" style="margin-top:14px;">
+    <h2 class="card-title">Preferences</h2>
+    <form method="post" action="{{ url_for('dinaro_parent_settings') }}" class="grid-2">
+      <div class="field">
+        <label for="familyName">Family name</label>
+        <input id="familyName" name="family_name" type="text" value="{{ family.name or '' }}">
+      </div>
+      <div class="field">
+        <label for="rate">Rate (dinaro per hour)</label>
+        <input id="rate" name="rate_per_hour" type="number" step="0.25" value="{{ rate_per_hour }}">
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" type="submit">Save</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2 class="card-title">Kids</h2>
+    <div class="grid-2">
+      {% for kid in kids %}
+        <div class="card">
+          <div style="font-weight:600;">{{ kid.name }}</div>
+          <div class="muted">Balance: {{ "%.2f"|format(kid.balance or 0) }} dinaro</div>
+        </div>
+      {% else %}
+        <p class="muted">No kids yet.</p>
+      {% endfor %}
+    </div>
+
+    <div class="grid-2" style="margin-top:12px;">
+      <form method="post" action="{{ url_for('dinaro_parent_add_child') }}" class="panel">
+        <h3 class="card-title">Add child</h3>
+        <div class="field">
+          <label>Name</label>
+          <input type="text" name="child_name" required>
+        </div>
+        <div class="field">
+          <label>PIN</label>
+          <input type="password" name="child_pin" inputmode="numeric" required>
+        </div>
+        <div class="actions">
+          <button class="btn" type="submit">Add child</button>
+        </div>
+      </form>
+
+      <form method="post" action="{{ url_for('dinaro_parent_add_parent') }}" class="panel">
+        <h3 class="card-title">Add parent</h3>
+        <div class="field">
+          <label>Name</label>
+          <input type="text" name="parent_name" required>
+        </div>
+        <div class="field">
+          <label>PIN</label>
+          <input type="password" name="parent_pin" inputmode="numeric" required>
+        </div>
+        <div class="actions">
+          <button class="btn" type="submit">Add parent</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="card-title">Chores</h2>
+    <div class="grid-2">
+      {% for chore in chores %}
+        <div class="card">
+          <div style="font-weight:600;">{{ chore.title }}</div>
+          <div class="muted">
+            {{ chore.default_hours }} hr · {{ "%.2f"|format(chore.default_hours * rate_per_hour) }} dinaro
+          </div>
+        </div>
+      {% else %}
+        <p class="muted">No chores yet.</p>
+      {% endfor %}
+    </div>
+
+    <form method="post" action="{{ url_for('dinaro_parent_add_chore') }}" class="grid-2" style="margin-top:12px;">
+      <div class="field">
+        <label>Chore name</label>
+        <input type="text" name="chore_title" required>
+      </div>
+      <div class="field">
+        <label>Default hours</label>
+        <input type="number" name="default_hours" step="0.25" required>
+      </div>
+      <div class="actions">
+        <button class="btn" type="submit">Add chore</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2 class="card-title">Pending chore approvals</h2>
+    {% for log in pending_logs %}
+      <div class="card" style="margin-bottom:10px;">
+        <div style="font-weight:600;">{{ log.child_name }} · {{ log.chore_title or "Chore" }}</div>
+        <div class="muted">
+          Date: {{ log.work_date }} · Requested: {{ log.requested_hours }} hr (overtime {{ log.overtime_hours }} hr)
+        </div>
+        <div class="grid-2" style="margin-top:8px;">
+          <form method="post" action="{{ url_for('dinaro_parent_approve_log', log_id=log.id) }}" class="inline">
+            <label class="sr-only" for="approveHours{{ log.id }}">Approved hours</label>
+            <input id="approveHours{{ log.id }}" type="number" name="approved_hours" step="0.25" value="{{ log.requested_hours }}">
+            <button class="btn btn-primary" type="submit">Approve</button>
+          </form>
+          <form method="post" action="{{ url_for('dinaro_parent_deny_log', log_id=log.id) }}" class="inline">
+            <button class="btn btn-danger" type="submit">Deny</button>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <p class="muted">Nothing waiting right now.</p>
+    {% endfor %}
+  </section>
+
+  <section class="panel">
+    <h2 class="card-title">Requests</h2>
+    {% for r in requests %}
+      <div class="card" style="margin-bottom:10px;">
+        <div style="font-weight:600;">{{ r.child_name }} · {{ r.item_name }}</div>
+        <div class="muted">
+          Cost: {{ r.item_cost_dinaro }} dinaro · Offer: {{ r.offer_dinaro }} dinaro · Status: {{ r.status }}
+        </div>
+        {% if r.parent_counter_dinaro %}
+          <div class="muted">Counter: {{ r.parent_counter_dinaro }} dinaro</div>
+        {% endif %}
+
+        {% if r.status in ["open", "countered"] %}
+          <div class="grid-2" style="margin-top:8px;">
+            <form method="post" action="{{ url_for('dinaro_parent_counter_request', request_id=r.id) }}" class="panel">
+              <h3 class="card-title">Counter</h3>
+              <input type="number" name="counter_dinaro" step="0.25" placeholder="Counter dinaro" required>
+              <input type="text" name="parent_note" placeholder="Note (optional)">
+              <button class="btn" type="submit">Send counter</button>
+            </form>
+
+            <form method="post" action="{{ url_for('dinaro_parent_accept_request', request_id=r.id) }}" class="panel">
+              <h3 class="card-title">Accept</h3>
+              <input type="number" name="final_dinaro" step="0.25" value="{{ r.parent_counter_dinaro or r.offer_dinaro }}">
+              <input type="text" name="parent_note" placeholder="Note (optional)">
+              <button class="btn btn-primary" type="submit">Accept and deduct</button>
+            </form>
+          </div>
+          <form method="post" action="{{ url_for('dinaro_parent_decline_request', request_id=r.id) }}" style="margin-top:8px;">
+            <input type="text" name="parent_note" placeholder="Decline note (optional)">
+            <button class="btn btn-danger" type="submit">Decline</button>
+          </form>
+        {% else %}
+          <div class="muted">Closed on {{ r.closed_at or "—" }}.</div>
+        {% endif %}
+      </div>
+    {% else %}
+      <p class="muted">No requests yet.</p>
+    {% endfor %}
+  </section>
+
+  <section class="panel">
+    <h2 class="card-title">Goals</h2>
+    {% for goal in goals %}
+      {% set progress = (goal.balance / goal.target_dinaro * 100) if goal.target_dinaro > 0 else 0 %}
+      <div class="card" style="margin-bottom:10px;">
+        <div style="font-weight:600;">{{ goal.child_name }} · {{ goal.title }}</div>
+        <div class="muted">Target: {{ goal.target_dinaro }} dinaro</div>
+        <div class="progress-container" style="margin-top:6px;">
+          <div class="progress-bar" style="width: {{ 100 if progress > 100 else progress }}%;">
+            {{ progress|round(1) }}%
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <p class="muted">No goals yet.</p>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}
