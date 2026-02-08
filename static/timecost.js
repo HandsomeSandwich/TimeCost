@@ -58,3 +58,17 @@ body[data-view="dusk"] {
 
   --btn2: #202623;
 }
+
+function syncResponsiveInputs() {
+  const isMobile = window.matchMedia("(max-width: 720px)").matches;
+
+  // Disable inputs in the hidden layout so they don't submit duplicate arrays
+  document.querySelectorAll(".desktop-only input, .desktop-only select, .desktop-only textarea")
+    .forEach(el => el.disabled = isMobile);
+
+  document.querySelectorAll(".mobile-only input, .mobile-only select, .mobile-only textarea")
+    .forEach(el => el.disabled = !isMobile);
+}
+
+window.addEventListener("DOMContentLoaded", syncResponsiveInputs);
+window.addEventListener("resize", syncResponsiveInputs);

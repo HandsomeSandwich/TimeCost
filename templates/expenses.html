@@ -1,314 +1,238 @@
 {% extends "base.html" %}
 {% block title %}Expenses{% endblock %}
 
-{% block head %}
-  {% if category_totals %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  {% endif %}
-
-  <script>
-document.addEventListener("DOMContentLoaded", function () {
-  const expenseTableBody = document.getElementById("expenseTableBody");
-  const cardsWrap = document.getElementById("expenseCards");
-  const hourlyWageInput = document.getElementById("userHourlyRate");
-  const addBtn = document.getElementById("addExpenseBtn");
-
-  if (!expenseTableBody || !hourlyWageInput || !addBtn) return;
-
-  function escapeAttr(s) {
-    return String(s ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/'/g, "&#039;");
-  }
-
-  function hourlyRate() {
-    return parseFloat(hourlyWageInput.value) || 0;
-  }
-
-  function calcHours(amount) {
-    const rate = hourlyRate();
-    return rate > 0 ? (amount / rate) : 0;
-  }
-
-  function recalcRow(row) {
-    const amountInput = row.querySelector(".expenseAmount");
-    const hourlyCostSpan = row.querySelector(".expenseHourly");
-    const amount = parseFloat(amountInput?.value) || 0;
-    if (hourlyCostSpan) hourlyCostSpan.textContent = calcHours(amount).toFixed(2);
-  }
-
-  function recalcTotals() {
-    let totalAmount = 0;
-    let totalHourly = 0;
-    const rate = hourlyRate();
-
-    document.querySelectorAll("#expenseTableBody tr").forEach(function (row) {
-      const amount = parseFloat(row.querySelector(".expenseAmount")?.value) || 0;
-      totalAmount += amount;
-      if (rate > 0) totalHourly += (amount / rate);
-    });
-
-    const tA = totalAmount.toFixed(2);
-    const tH = totalHourly.toFixed(2);
-
-    const totalAmountEl = document.getElementById("totalAmount");
-    const totalHourlyEl = document.getElementById("totalHourly");
-    const totalAmountInlineEl = document.getElementById("totalAmountInline");
-    const totalHourlyInlineEl = document.getElementById("totalHourlyInline");
-    const totalInput = document.getElementById("expensesTotalInput");
-
-    if (totalAmountEl) totalAmountEl.textContent = tA;
-    if (totalHourlyEl) totalHourlyEl.textContent = tH;
-    if (totalAmountInlineEl) totalAmountInlineEl.textContent = tA;
-    if (totalHourlyInlineEl) totalHourlyInlineEl.textContent = tH;
-    if (totalInput) totalInput.value = tA;
-  }
-
-  function syncCardsFromTable() {
-    if (!cardsWrap) return;
-    cardsWrap.innerHTML = "";
-
-    document.querySelectorAll("#expenseTableBody tr").forEach((row, idx) => {
-      const nameEl = row.querySelector(".expenseName");
-      const amountEl = row.querySelector(".expenseAmount");
-      const catEl = row.querySelector(".expenseCategory");
-
-      const name = nameEl?.value || "";
-      const amount = amountEl?.value || "";
-      const category = catEl?.value || "Other";
-
-      const hours = calcHours(parseFloat(amount) || 0).toFixed(2);
-      const safeName = escapeAttr(name);
-
-      const card = document.createElement("div");
-      card.className = "expense-card";
-      card.innerHTML = `
-        <div class="expense-card-title">Expense ${idx + 1}</div>
-
-        <div class="expense-card-grid">
-          <div class="full">
-            <label>Expense</label>
-            <input type="text" class="cardName" value="${safeName}" required>
-          </div>
-
-          <div>
-            <label>Amount ({{ currency }})</label>
-            <input type="number" step="0.01" class="cardAmount" value="${escapeAttr(amount)}" required inputmode="decimal">
-          </div>
-
-          <div>
-            <label>Category</label>
-            <select class="cardCategory" required>
-              ${["Rent","Utilities","Savings","Discretionary","Other"].map(c =>
-                `<option value="${c}" ${c===category ? "selected" : ""}>${c}</option>`
-              ).join("")}
-            </select>
-          </div>
-        </div>
-
-        <div class="expense-meta">
-          <span><strong>Hours:</strong> <span class="cardHours">${hours}</span></span>
-          <button type="button" class="btn btn-sm btn-ghost removeButton">Remove</button>
-        </div>
-      `;
-
-      const cardName = card.querySelector(".cardName");
-      const cardAmount = card.querySelector(".cardAmount");
-      const cardCategory = card.querySelector(".cardCategory");
-      const cardHours = card.querySelector(".cardHours");
-
-      cardName.addEventListener("input", () => { if (nameEl) nameEl.value = cardName.value; });
-
-      cardAmount.addEventListener("input", () => {
-        if (amountEl) amountEl.value = cardAmount.value;
-        recalcRow(row);
-        recalcTotals();
-        cardHours.textContent = calcHours(parseFloat(cardAmount.value) || 0).toFixed(2);
-      });
-
-      cardCategory.addEventListener("change", () => { if (catEl) catEl.value = cardCategory.value; });
-
-      card.querySelector(".removeButton").addEventListener("click", () => {
-        row.remove();
-        recalcTotals();
-        syncCardsFromTable();
-      });
-
-      cardsWrap.appendChild(card);
-    });
-  }
-
-  function addRowListeners(row) {
-    const amountInput = row.querySelector(".expenseAmount");
-    const nameInput = row.querySelector(".expenseName");
-    const catSelect = row.querySelector(".expenseCategory");
-
-    function onRowEdit() {
-      recalcRow(row);
-      recalcTotals();
-      syncCardsFromTable();
-    }
-
-    amountInput?.addEventListener("input", onRowEdit);
-    nameInput?.addEventListener("input", onRowEdit);
-    catSelect?.addEventListener("change", onRowEdit);
-
-    row.querySelector(".removeRow")?.addEventListener("click", function () {
-      row.remove();
-      recalcTotals();
-      syncCardsFromTable();
-    });
-  }
-
-  function addExpenseRow(name = "", amount = "", category = "Other") {
-    const row = document.createElement("tr");
-    const safeName = escapeAttr(name);
-    const safeAmount = escapeAttr(amount);
-
-    row.innerHTML = `
-      <td><input type="text" name="expense_name[]" class="expenseName" value="${safeName}" required></td>
-      <td><input type="number" step="0.01" name="expense_amount[]" class="expenseAmount num" value="${safeAmount}" required inputmode="decimal"></td>
-      <td>
-        <select name="expense_category[]" class="expenseCategory" required>
-          <option value="Rent" ${category === "Rent" ? "selected" : ""}>Rent</option>
-          <option value="Utilities" ${category === "Utilities" ? "selected" : ""}>Utilities</option>
-          <option value="Savings" ${category === "Savings" ? "selected" : ""}>Savings</option>
-          <option value="Discretionary" ${category === "Discretionary" ? "selected" : ""}>Discretionary</option>
-          <option value="Other" ${category === "Other" ? "selected" : ""}>Other</option>
-        </select>
-      </td>
-      <td class="num"><span class="expenseHourly">0.00</span></td>
-      <td><button type="button" class="btn btn-sm btn-ghost removeRow">Remove</button></td>
-    `;
-
-    expenseTableBody.appendChild(row);
-    addRowListeners(row);
-    recalcRow(row);
-    recalcTotals();
-    syncCardsFromTable();
-  }
-
-  addBtn.addEventListener("click", () => addExpenseRow());
-
-  hourlyWageInput.addEventListener("input", () => {
-    document.querySelectorAll("#expenseTableBody tr").forEach(recalcRow);
-    recalcTotals();
-    syncCardsFromTable();
-  });
-
-  const existing = [
-    {% for e in saved_expenses %}
-      { name: {{ e.name|tojson }}, amount: {{ e.amount|tojson }}, category: {{ e.category|tojson }} }{% if not loop.last %},{% endif %}
-    {% endfor %}
-  ];
-
-  if (existing.length) existing.forEach(e => addExpenseRow(e.name, e.amount, e.category));
-  else addExpenseRow();
-
-  // Chart (only if present)
-  {% if category_totals %}
-  const chartEl = document.getElementById("categoryChart");
-  if (chartEl && window.Chart) {
-    const ctx = chartEl.getContext("2d");
-    new Chart(ctx, {
-      type: "pie",
-      data: {
-        labels: [{% for row in category_totals %}"{{ row.category }}"{% if not loop.last %},{% endif %}{% endfor %}],
-        datasets: [{
-          data: [{% for row in category_totals %}{{ row.total }}{% if not loop.last %},{% endif %}{% endfor %}]
-        }]
-      },
-      options: {
-        plugins: {
-          title: { display: true, text: "Expenses by Category" },
-          legend: { position: "bottom" }
-        }
-      }
-    });
-  }
-  {% endif %}
-});
-  </script>
-{% endblock %}
-
 {% block content %}
-<div class="page">
-  <header class="page-header">
-    <h1>Expenses</h1>
-    <p class="muted">
-      Add your recurring costs. We’ll translate each one into work hours using your hourly rate.
-    </p>
-  </header>
+{% set copy = {
+  "river": {
+    "title": "Expenses",
+    "subtitle": "Ongoing costs. Quietly tracked.",
+    "add_btn": "Add expense",
+    "save_btn": "Save"
+  },
+  "leslie": {
+    "title": "Expense Squad",
+    "subtitle": "We are tracking every dollar so it can march in a straight line.",
+    "add_btn": "Add expense",
+    "save_btn": "Save the plan"
+  },
+  "eddie": {
+    "title": "Expense Confessional",
+    "subtitle": "Lets list the little betrayals one by one.",
+    "add_btn": "Add another",
+    "save_btn": "Save it"
+  }
+} %}
+{% set c = copy.get(perspective, copy["river"]) %}
+<div class="page page-wide">
+  <div class="panel">
 
-  <form action="{{ url_for('expenses') }}" method="post" class="stack">
-    <section class="panel">
-      <div class="field">
-        <label for="userHourlyRate">Hourly rate ({{ currency }})</label>
-        <input
-          type="number" step="0.01"
-          id="userHourlyRate" name="user_hourly_rate"
-          value="{{ session.get('hourlyRate', '') }}" required
-          inputmode="decimal"
-        >
-        <p class="help">Auto-fills from Personal if available. You can change it here any time.</p>
+    <form method="post" action="{{ url_for('expenses') }}">
+
+      <div class="panel-head">
+        <div>
+          <h1 class="panel-title">{{ c.title }}</h1>
+          <p class="muted panel-subtitle">{{ c.subtitle }}</p>
+        </div>
+
+        <div class="panel-actions">
+          <button class="btn" name="add" value="1" type="submit">{{ c.add_btn }}</button>
+          <button class="btn primary" type="submit">{{ c.save_btn }}</button>
+        </div>
       </div>
-    </section>
 
-    <section class="panel">
-      <div class="desktop-only">
+      <!-- =========================
+           DESKTOP TABLE
+      ========================== -->
+      <div class="desktop-only table-wrap">
         <table class="expense-table">
           <thead>
             <tr>
               <th>Expense</th>
-              <th class="num">Amount ({{ currency }})</th>
+              <th>Amount ({{ currency }})</th>
               <th>Category</th>
               <th class="num">Hours</th>
-              <th class="action">Action</th>
+              <th>Shared</th>
             </tr>
           </thead>
-          <tbody id="expenseTableBody"></tbody>
-          <tfoot>
-            <tr>
-              <td><strong>Total</strong></td>
-              <td class="num"><strong id="totalAmount">0.00</strong></td>
-              <td></td>
-              <td class="num"><strong id="totalHourly">0.00</strong></td>
-              <td></td>
-            </tr>
-          </tfoot>
+          <tbody>
+
+            {% if saved_expenses|length == 0 %}
+              <tr>
+                <td>
+                  <input type="text" name="expense_name[]" value="" placeholder="Root cellar rent">
+                </td>
+                <td>
+                  <input type="number" step="0.01" name="expense_amount[]" value="0.00" placeholder="28.50">
+                </td>
+                <td>
+                  <select name="expense_category[]">
+                    <option value="House & Light">House &amp; Light</option>
+                    <option value="Provisions">Provisions</option>
+                    <option value="Nest Egg">Nest Egg</option>
+                    <option value="Odds & Ends">Odds &amp; Ends</option>
+                  </select>
+                </td>
+                <td class="num">0.00</td>
+                <td>
+                  <input type="hidden" name="expense_scope[]" value="personal">
+                  <label class="pill" style="gap:8px;">
+                    <input type="checkbox" class="sharedToggle">
+                    Shared
+                  </label>
+                </td>
+                <td class="action"></td>
+              </tr>
+            {% else %}
+              {% for e in saved_expenses %}
+              <tr>
+                <td>
+                  <input type="text" name="expense_name[]" value="{{ e.name }}" placeholder="Root cellar rent">
+                </td>
+
+                <td>
+                  <input type="number" step="0.01" name="expense_amount[]" value="{{ e.amount }}" placeholder="28.50">
+                </td>
+
+                <td>
+                  <select name="expense_category[]">
+                    <option value="House & Light" {% if e.category == "House & Light" %}selected{% endif %}>House &amp; Light</option>
+                    <option value="Provisions" {% if e.category == "Provisions" %}selected{% endif %}>Provisions</option>
+                    <option value="Nest Egg" {% if e.category in ["Nest Egg", "Savings"] %}selected{% endif %}>Nest Egg</option>
+                    <option value="Odds & Ends" {% if e.category == "Odds & Ends" %}selected{% endif %}>Odds &amp; Ends</option>
+                  </select>
+                </td>
+
+                <td class="num">
+                  {{ "%.2f"|format(e.amount / hourly_value) if hourly_value else "0.00" }}
+                </td>
+
+                <td>
+                  <input type="hidden" name="expense_scope[]" value="{{ e.scope or 'personal' }}">
+                  <label class="pill" style="gap:8px;">
+                    <input
+                      type="checkbox"
+                      class="sharedToggle"
+                      {% if (e.scope or 'personal') == 'shared' %}checked{% endif %}
+                    >
+                    Shared
+                  </label>
+                </td>
+                <td class="action">
+                  <button
+                    class="btn btn-danger"
+                    formaction="{{ url_for('remove_expense', index=e.id) }}"
+                    formmethod="post"
+                    type="submit"
+                  >Remove</button>
+                </td>
+              </tr>
+              {% endfor %}
+            {% endif %}
+
+          </tbody>
         </table>
       </div>
 
-      <div class="mobile-only">
-        <div id="expenseCards" class="expense-cards"></div>
-      </div>
+      <!-- =========================
+           MOBILE CARDS
+      ========================== -->
+      <div class="mobile-only expense-cards">
 
-      <input type="hidden" name="expensesTotal" id="expensesTotalInput" value="0.00">
+        {% if saved_expenses|length == 0 %}
+          <div class="expense-card">
+            <div class="expense-card-title">
+              <input type="text" name="expense_name[]" value="" placeholder="Lantern oil">
+            </div>
 
-      <div class="actions">
-        <button type="button" id="addExpenseBtn" class="btn">Add expense</button>
-        <button type="submit" class="btn btn-primary">Save</button>
-      </div>
+            <div class="expense-card-grid">
+              <div>
+                <label>Amount ({{ currency }})</label>
+                <input type="number" step="0.01" name="expense_amount[]" value="0.00" placeholder="28.50">
+              </div>
 
-      <div class="summary muted">
-        <span>Total: <strong id="totalAmountInline">0.00</strong> {{ currency }}</span>
-        <span>Hours: <strong id="totalHourlyInline">0.00</strong></span>
-      </div>
-    </section>
+              <div>
+                <label>Category</label>
+                <select name="expense_category[]">
+                  <option value="House & Light">House &amp; Light</option>
+                  <option value="Provisions">Provisions</option>
+                  <option value="Nest Egg">Nest Egg</option>
+                  <option value="Odds & Ends">Odds &amp; Ends</option>
+                </select>
+              </div>
 
-    {% if category_totals %}
-      <section class="panel">
-        <details>
-          <summary>Show breakdown</summary>
-          <div class="chart-container">
-            <canvas id="categoryChart"></canvas>
+              <input type="hidden" name="expense_scope[]" value="personal">
+              <label class="pill" style="gap:8px; margin-top:8px;">
+                <input type="checkbox" class="sharedToggle">
+                Shared
+              </label>
+
+
+              <div class="full muted">Hours: 0.00</div>
+            </div>
           </div>
-        </details>
-      </section>
-    {% endif %}
-  </form>
+        {% else %}
+          {% for e in saved_expenses %}
+          <div class="expense-card">
+            <div class="expense-card-title">
+              <input type="text" name="expense_name[]" value="{{ e.name }}" placeholder="Lantern oil">
+            </div>
+
+            <div class="expense-card-grid">
+              <div>
+                <label>Amount ({{ currency }})</label>
+                <input type="number" step="0.01" name="expense_amount[]" value="{{ e.amount }}" placeholder="28.50">
+              </div>
+
+              <div>
+                <label>Category</label>
+                <select name="expense_category[]">
+                  <option value="House & Light" {% if e.category == "House & Light" %}selected{% endif %}>House &amp; Light</option>
+                  <option value="Provisions" {% if e.category == "Provisions" %}selected{% endif %}>Provisions</option>
+                  <option value="Nest Egg" {% if e.category in ["Nest Egg", "Savings"] %}selected{% endif %}>Nest Egg</option>
+                  <option value="Odds & Ends" {% if e.category == "Odds & Ends" %}selected{% endif %}>Odds &amp; Ends</option>
+                </select>
+              </div>
+
+              <div class="full muted">
+                Hours: {{ "%.2f"|format(e.amount / hourly_value) if hourly_value else "0.00" }}
+              </div>
+            </div>
+
+            <div class="expense-meta">
+              <button
+                class="btn btn-danger"
+                formaction="{{ url_for('remove_expense', index=e.id) }}"
+                formmethod="post"
+                type="submit"
+              >Remove</button>
+            </div>
+          </div>
+          {% endfor %}
+        {% endif %}
+
+      </div>
+
+    </form>
+
+    <!-- Separate Reset form -->
+    <form method="post" action="{{ url_for('expenses_reset') }}" class="reset-row">
+      <button class="btn btn-danger" type="submit" onclick="return confirm('Clear all expenses?');">
+        Reset
+      </button>
+    </form>
+
+  </div>
 </div>
 {% endblock %}
+
+<script>
+  document.querySelectorAll(".sharedToggle").forEach(cb => {
+    cb.addEventListener("change", (e) => {
+      const wrapper = e.target.closest("tr, .expense-card");
+      if (!wrapper) return;
+      const hidden = wrapper.querySelector('input[name="expense_scope[]"]');
+      if (!hidden) return;
+      hidden.value = e.target.checked ? "shared" : "personal";
+    });
+  });
+</script>

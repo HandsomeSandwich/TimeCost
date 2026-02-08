@@ -7,10 +7,34 @@
 {%- endmacro %}
 
 {% block content %}
+{% set copy = {
+  "river": {
+    "title": "Goals",
+    "subtitle": "A simple tracker. No commentary. Just progress.",
+    "start_help": "You can start at 0. This just sets the baseline.",
+    "add_btn": "Add goal",
+    "section_title": "Your goals"
+  },
+  "leslie": {
+    "title": "Goal Domination",
+    "subtitle": "We name the target, we rally the troops, we hit it.",
+    "start_help": "Start at 0 if you have to. We build momentum.",
+    "add_btn": "Add goal",
+    "section_title": "Mission board"
+  },
+  "eddie": {
+    "title": "Goals, Darling",
+    "subtitle": "Ambition with a paper trail.",
+    "start_help": "Start at 0 if you must. Just admit it.",
+    "add_btn": "Add goal",
+    "section_title": "Your glorious schemes"
+  }
+} %}
+{% set c = copy.get(perspective, copy["river"]) %}
 <div class="page">
   <header class="page-header">
-    <h1>Goals</h1>
-    <p class="muted">A simple tracker. No commentary. Just progress.</p>
+    <h1>{{ c.title }}</h1>
+    <p class="muted">{{ c.subtitle }}</p>
   </header>
 
   <div class="stack">
@@ -41,19 +65,19 @@
 
           <div class="field">
             <label>&nbsp;</label>
-            <p class="help">You can start at 0. This just sets the baseline.</p>
+            <p class="help">{{ c.start_help }}</p>
           </div>
         </div>
 
         <div class="actions">
-          <button type="submit" name="new_goal" value="1" class="btn btn-primary">Add goal</button>
+          <button type="submit" name="new_goal" value="1" class="btn btn-primary">{{ c.add_btn }}</button>
         </div>
       </form>
     </section>
 
     {% if goals %}
       <section class="panel">
-        <h2 class="card-title">Your goals</h2>
+        <h2 class="card-title">{{ c.section_title }}</h2>
 
         <!-- Mobile cards -->
         <div class="mobile-only">

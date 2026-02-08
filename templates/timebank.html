@@ -11,12 +11,31 @@
 {% endblock %}
 
 {% block content %}
+{% set copy = {
+  "river": {
+    "title": "Time Bank",
+    "subtitle": "Translate your month into hours: what is required, what is reserved, and what is left.",
+    "expenses_help": "Tip: use your Expenses page total for consistency.",
+    "savings_help": "Optional. If blank, savings is treated as 0."
+  },
+  "leslie": {
+    "title": "Time Bank",
+    "subtitle": "Lets audit your month and make every hour feel intentional.",
+    "expenses_help": "Use your Expenses total so everything aligns.",
+    "savings_help": "Optional, but I highly recommend a savings line item."
+  },
+  "eddie": {
+    "title": "Time Bank",
+    "subtitle": "Lets count the hours you trade away, and what you keep.",
+    "expenses_help": "Use the Expenses total unless you enjoy chaos.",
+    "savings_help": "Optional. Put something in if you have any self-respect."
+  }
+} %}
+{% set c = copy.get(perspective, copy["river"]) %}
 <div class="page">
   <header class="page-header">
-    <h1>Time Bank</h1>
-    <p class="muted">
-      Translate your month into hours: what’s required, what’s reserved, and what’s left.
-    </p>
+    <h1>{{ c.title }}</h1>
+    <p class="muted">{{ c.subtitle }}</p>
   </header>
 
   <form method="POST" action="{{ url_for('timebank') }}" class="stack">
@@ -32,7 +51,7 @@
           <label for="expenses">Monthly expenses total ({{ currency }})</label>
           <input type="number" step="0.01" inputmode="decimal"
                  id="expenses" name="expenses" value="{{ expenses or '' }}" required>
-          <p class="help">Tip: use your Expenses page total for consistency.</p>
+          <p class="help">{{ c.expenses_help }}</p>
         </div>
       </div>
 
@@ -48,7 +67,7 @@
           <input type="number" step="0.01" inputmode="decimal"
                  id="savingsValue" name="savingsValue" value="{{ savings_value or '' }}"
                  placeholder="0.00">
-          <p class="help">Optional. If blank, savings is treated as 0.</p>
+          <p class="help">{{ c.savings_help }}</p>
         </div>
       </div>
 

@@ -2,10 +2,46 @@
 {% block title %}Personal{% endblock %}
 
 {% block content %}
+{% set copy = {
+  "river": {
+    "title": "Personal",
+    "subtitle": "Set your baseline. We will sync time and money without fuss.",
+    "currency_help": "You can shift currency from the top bar any time.",
+    "pay_help": "Used to infer annual and hourly when you do not set them.",
+    "paycheck_help": "Optional. If you enter this, we combine it with frequency.",
+    "hours_help": "Used to turn money into time.",
+    "annual_help": "This can prefill income in other tools.",
+    "hourly_help": "If blank, we estimate from salary or paycheck.",
+    "expenses_help": "This total comes from Expenses. Edit items there."
+  },
+  "leslie": {
+    "title": "Personal Power Plan",
+    "subtitle": "Lets get your numbers heroic. Future you will write a thank-you note.",
+    "currency_help": "Pick your money language. You can swap it from the top bar.",
+    "pay_help": "This helps us compute annual and hourly like a boss.",
+    "paycheck_help": "Optional, but super useful if you have it.",
+    "hours_help": "We use this to translate money into time.",
+    "annual_help": "Great for autofill across your whole budget universe.",
+    "hourly_help": "If you skip it, we will estimate. Still accurate. Still smart.",
+    "expenses_help": "Pulled from Expenses. Go tweak your list if this looks off."
+  },
+  "eddie": {
+    "title": "Personal Dossier",
+    "subtitle": "Give me your numbers so I can tell you what your life costs.",
+    "currency_help": "Currency of choice. Change it any time if you must.",
+    "pay_help": "We need this to conjure hourly reality.",
+    "paycheck_help": "Optional, but honestly helpful.",
+    "hours_help": "Hours are the raw material of your existence.",
+    "annual_help": "Type it in if you have it. The rest of the app will behave.",
+    "hourly_help": "Leave blank and I will guess. You will live.",
+    "expenses_help": "This comes from Expenses. Go tidy your mess there."
+  }
+} %}
+{% set c = copy.get(perspective, copy["river"]) %}
 <div class="page">
   <header class="page-header">
-    <h1>Personal</h1>
-    <p class="muted">These details help pre-fill calculations. Nothing here is required beyond what you use.</p>
+    <h1>{{ c.title }}</h1>
+    <p class="muted">{{ c.subtitle }}</p>
   </header>
 
   <form action="{{ url_for('personal') }}" method="post" class="stack">
@@ -28,7 +64,7 @@
             <option value="₩" {% if currency == "₩" %}selected{% endif %}>KRW (₩)</option>
             <option value="₽" {% if currency == "₽" %}selected{% endif %}>RUB (₽)</option>
           </select>
-          <p class="help">You can also change currency any time from the top bar.</p>
+          <p class="help">{{ c.currency_help }}</p>
         </div>
       </div>
     </section>
@@ -57,7 +93,7 @@
           </div>
         </div>
 
-        <p class="help">Used to estimate annual and hourly rates when you don’t enter them directly.</p>
+        <p class="help">{{ c.pay_help }}</p>
       </div>
 
       <div class="grid-2">
@@ -67,7 +103,7 @@
                  id="paycheckAmount" name="paycheckAmount"
                  value="{{ paycheckAmount or '' }}"
                  placeholder="e.g. 1500">
-          <p class="help">Optional. If you use paycheck amount, we’ll combine it with frequency.</p>
+          <p class="help">{{ c.paycheck_help }}</p>
         </div>
 
         <div class="field">
@@ -75,7 +111,7 @@
           <input type="number" step="0.1" inputmode="decimal"
                  id="workHours" name="workHours"
                  value="{{ workHours or 40 }}" required>
-          <p class="help">Used for time-based estimates.</p>
+          <p class="help">{{ c.hours_help }}</p>
         </div>
       </div>
     </section>
@@ -87,7 +123,7 @@
           <input type="number" step="0.01" inputmode="decimal"
                  id="annualRate" name="annualRate"
                  value="{{ annualRate or '' }}">
-          <p class="help">If entered, this can pre-fill monthly income in other tools.</p>
+          <p class="help">{{ c.annual_help }}</p>
         </div>
 
         <div class="field">
@@ -95,7 +131,7 @@
           <input type="number" step="0.01" inputmode="decimal"
                  id="hourlyRate" name="hourlyRate"
                  value="{{ hourlyRate or '' }}">
-          <p class="help">If blank, we estimate hourly from salary or paycheck + frequency.</p>
+          <p class="help">{{ c.hourly_help }}</p>
         </div>
       </div>
     </section>
@@ -107,7 +143,7 @@
                id="monthlyExpenses" name="monthlyExpenses"
                value="{{ expenses or 0 }}"
                readonly class="readonly">
-        <p class="help">This total comes from your Expenses list. Edit items on the Expenses page.</p>
+        <p class="help">{{ c.expenses_help }}</p>
       </div>
 
       <div class="actions">

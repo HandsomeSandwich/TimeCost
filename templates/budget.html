@@ -14,10 +14,34 @@
 {% endblock %}
 
 {% block content %}
+{% set copy = {
+  "river": {
+    "title": "Budget",
+    "subtitle": "A calm monthly map. No judgment, just clarity.",
+    "expenses_help": "Pulled from your Expenses page.",
+    "savings_help": "Optional. Used only for projections.",
+    "optional_help": "Leave optional fields blank and we will calculate the essentials."
+  },
+  "leslie": {
+    "title": "Budget Battle Plan",
+    "subtitle": "Numbers in formation. We are going to crush uncertainty.",
+    "expenses_help": "Synced from Expenses. Keep that list sharp.",
+    "savings_help": "Optional, but future-you loves a plan.",
+    "optional_help": "Skip the extras if you want. We will still build a solid plan."
+  },
+  "eddie": {
+    "title": "Budget Autopsy",
+    "subtitle": "Lay it out. We will find the leaks and call them by name.",
+    "expenses_help": "Pulled from Expenses. Try to be honest.",
+    "savings_help": "Optional. Its your fantasy, darling.",
+    "optional_help": "Leave blanks. We will do the bare minimum with dignity."
+  }
+} %}
+{% set c = copy.get(perspective, copy["river"]) %}
 <div class="page">
   <header class="page-header">
-    <h1>Budget</h1>
-    <p class="muted">A simple monthly view. No judgment. Just numbers translated into clarity.</p>
+    <h1>{{ c.title }}</h1>
+    <p class="muted">{{ c.subtitle }}</p>
   </header>
 
   <form method="POST" action="{{ url_for('budget') }}" class="stack">
@@ -34,7 +58,7 @@
           <label for="expenses">Monthly expenses ({{ currency }})</label>
           <input type="number" step="0.01" inputmode="decimal"
                  id="expenses" name="expenses" value="{{ expenses or '' }}" readonly class="readonly">
-          <p class="help">Pulled from your Expenses page.</p>
+          <p class="help">{{ c.expenses_help }}</p>
         </div>
       </div>
 
@@ -49,7 +73,7 @@
           <label for="savingsGoal">Long-term savings goal ({{ currency }})</label>
           <input type="number" step="0.01" inputmode="decimal"
                  id="savingsGoal" name="savingsGoal" value="{{ savings_goal or '' }}">
-          <p class="help">Optional. Used only for projections.</p>
+          <p class="help">{{ c.savings_help }}</p>
         </div>
       </div>
 
@@ -62,7 +86,7 @@
 
         <div class="field">
           <label>&nbsp;</label>
-          <p class="help">If you leave optional fields blank, we’ll just calculate the basics.</p>
+          <p class="help">{{ c.optional_help }}</p>
         </div>
       </div>
 

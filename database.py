@@ -49,7 +49,10 @@ def init_db() -> None:
         id {id_col},
         name TEXT NOT NULL,
         amount {num_col} NOT NULL,
-        category TEXT NOT NULL
+        category TEXT NOT NULL,
+        scope TEXT NOT NULL DEFAULT 'personal',
+        owner_key TEXT,
+        household_id INTEGER
     )
     """
 
@@ -80,16 +83,29 @@ def init_db() -> None:
 
         # --- SQLite-only: add missing columns on older local DBs ---
         if engine.dialect.name == "sqlite":
+            # expenses: add new columns if missing
+            cols = conn.execute(text("PRAGMA table_info(expenses)")).mappings().all()
+            col_names = {c["name"] for c in cols}
+
+            if "scope" not in col_names:
+                conn.execute(text("ALTER TABLE expenses ADD COLUMN scope TEXT NOT NULL DEFAULT 'personal'"))
+            if "owner_key" not in col_names:
+                conn.execute(text("ALTER TABLE expenses ADD COLUMN owner_key TEXT"))
+            if "household_id" not in col_names:
+                conn.execute(text("ALTER TABLE expenses ADD COLUMN household_id INTEGER"))
+
+            # freelance_entries legacy patch
             cols = conn.execute(text("PRAGMA table_info(freelance_entries)")).mappings().all()
             col_names = {c["name"] for c in cols}
 
-            # If you have an older table, patch it forward
             if "work_date" not in col_names:
                 conn.execute(text("ALTER TABLE freelance_entries ADD COLUMN work_date TEXT"))
-                conn.execute(text(
-                    "UPDATE freelance_entries SET work_date = date('now') "
-                    "WHERE work_date IS NULL OR work_date = ''"
-                ))
+                conn.execute(
+                    text(
+                        "UPDATE freelance_entries SET work_date = date('now') "
+                        "WHERE work_date IS NULL OR work_date = ''"
+                    )
+                )
 
             if "hourly_rate" not in col_names and "rate" in col_names:
                 # You can't rename columns in older SQLite easily without table rebuild,

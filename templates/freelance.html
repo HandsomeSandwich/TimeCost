@@ -5,9 +5,33 @@
 <main id="main" class="container">
   <div class="page">
     <div class="panel">
+      {% set copy = {
+        "river": {
+          "title": "Freelance Ledger",
+          "subtitle": "Keep a tidy record of your outings. Time, terms, and what it all works out to.",
+          "use_btn": "Use this blended rate in TimeCost",
+          "log_title": "Log an outing",
+          "log_subtitle": "Just the facts. A little style will not hurt."
+        },
+        "leslie": {
+          "title": "Freelance Victory Log",
+          "subtitle": "Track the hours. Track the wins. Be proud of the receipts.",
+          "use_btn": "Use this blended rate in TimeCost",
+          "log_title": "Log a win",
+          "log_subtitle": "Details matter. Future you will high-five this."
+        },
+        "eddie": {
+          "title": "Freelance Ledger, Darling",
+          "subtitle": "Catalog the chaos: time, rates, and the cash it dragged in.",
+          "use_btn": "Use this blended rate in TimeCost",
+          "log_title": "Log the ordeal",
+          "log_subtitle": "Facts only. Drama is implied."
+        }
+      } %}
+      {% set c = copy.get(perspective, copy["river"]) %}
 
-      <h1>Freelance Ledger</h1>
-      <p class="muted">Keep a tidy record of your outings. Time, terms, and what it all works out to.</p>
+      <h1>{{ c.title }}</h1>
+      <p class="muted">{{ c.subtitle }}</p>
 
       <div class="pill-row" style="display:flex; gap:10px; flex-wrap:wrap; margin:14px 0;">
         <a class="pill" href="{{ url_for('freelance', range='month') }}">This month</a>
@@ -47,15 +71,15 @@
 
       <form method="post" action="{{ url_for('freelance', range=range_key) }}" style="margin: 10px 0 20px;">
         <input type="hidden" name="action" value="use_effective_rate" />
-        <button class="btn" type="submit">Use this blended rate in TimeCost</button>
+        <button class="btn" type="submit">{{ c.use_btn }}</button>
       </form>
 
       <hr style="border:none; border-top:1px solid var(--border); margin: 18px 0;" />
 
       <hr style="border:none; border-top:1px solid var(--border); margin: 18px 0;" />
 
-      <h2>Log an outing</h2>
-      <p class="muted" style="margin-top:-6px;">Just the facts. A little style won’t hurt.</p>
+      <h2>{{ c.log_title }}</h2>
+      <p class="muted" style="margin-top:-6px;">{{ c.log_subtitle }}</p>
 
       <form class="form stack" method="post" action="{{ url_for('freelance_add_entry') }}">
         <div class="grid-2">

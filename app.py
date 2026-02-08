@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import os
 from datetime import date, datetime, timedelta
+from itertools import zip_longest
 from typing import Optional
 from collections import defaultdict
+import secrets
 
 from flask import Flask, render_template, request, session, redirect, url_for
 from sqlalchemy import text
@@ -20,9 +22,14 @@ app = Flask(__name__)
 # In production, set FLASK_SECRET_KEY in env so sessions persist across restarts.
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(32))
 
+# Favicon
+@app.get("/favicon.ico")
+def favicon():
+    return redirect(url_for("static", filename="favicon.svg"))
+
 # --- PiggyBank ---
-from PiggyBank import piggybank_bp  # noqa: E402
-import PiggyBank.routes  # noqa: F401, E402  # ensures routes are registered
+from PiggyBank import piggybank_bp
+import PiggyBank.routes
 app.register_blueprint(piggybank_bp, url_prefix="/piggybank")
 
 # Initialize DB on startup
@@ -47,6 +54,13 @@ def set_view():
 def ensure_view():
     if "view" not in session:
         session["view"] = "dawn"
+
+
+@app.before_request
+def ensure_identity():
+    if "user_key" not in session:
+        session["user_key"] = secrets.token_urlsafe(16)
+
 
 
 @app.context_processor
@@ -169,6 +183,45 @@ def workday_equivalent(total_hours: float, hours_per_day: float = 8.0) -> str:
     if days < 2:
         return "about 1 workday"
     return f"about {round(days, 1)} workdays"
+
+def clamp(x: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, x))
+
+
+def equal_hours_including_personal(
+    personal_a: float,
+    personal_b: float,
+    shared_total: float,
+    rate_a: float,
+    rate_b: float,
+) -> dict:
+    personal_a = safe_float(personal_a, 0.0)
+    personal_b = safe_float(personal_b, 0.0)
+    shared_total = safe_float(shared_total, 0.0)
+    rate_a = safe_float(rate_a, 0.0)
+    rate_b = safe_float(rate_b, 0.0)
+
+    if shared_total < 0 or rate_a <= 0 or rate_b <= 0:
+        return {"ok": False}
+
+    # x = how much of SHARED Partner A pays
+    x = (rate_a * (personal_b + shared_total) - rate_b * personal_a) / (rate_a + rate_b)
+    a_shared = clamp(x, 0.0, shared_total)
+    b_shared = shared_total - a_shared
+
+    hours_a = (personal_a + a_shared) / rate_a if rate_a > 0 else 0.0
+    hours_b = (personal_b + b_shared) / rate_b if rate_b > 0 else 0.0
+
+    return {
+        "ok": True,
+        "a_shared": round(a_shared, 2),
+        "b_shared": round(b_shared, 2),
+        "hours_a": round(hours_a, 2),
+        "hours_b": round(hours_b, 2),
+        "target_hours": round((hours_a + hours_b) / 2.0, 2),
+        "clamped": not (0.0 < x < shared_total),
+    }
+
 
 
 def get_effective_hourly_rate() -> Optional[float]:
@@ -377,7 +430,7 @@ def timebank():
         conn = get_connection()
         try:
             row = conn.execute(
-                text("SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE category = 'Savings'")
+            text("SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE category = 'Nest Egg'")
             ).mappings().first()
             return float(row["total"]) if row and row["total"] is not None else 0.0
         finally:
@@ -410,7 +463,8 @@ def timebank():
 
     all_rows = fetch_all_expenses()
     expenses_total = sum((row.get("amount") or 0) for row in all_rows)
-    savings_value = sum((row.get("amount") or 0) for row in all_rows if row.get("category") == "Savings")
+    savings_value = sum((row.get("amount") or 0) for row in all_rows if row.get("category") in ("Nest Egg", "Savings")
+)
 
     weekly_hours = safe_float(session.get("workHours"), 0.0)
     hoursWorked = _weekly_to_monthly_hours(weekly_hours) if weekly_hours > 0 else 0.0
@@ -431,36 +485,61 @@ def timebank():
 @app.route("/expenses", methods=["GET", "POST"])
 def expenses():
     if request.method == "POST":
+        # If user clicked "Add expense", insert a blank row and bounce back
+        if "add" in request.form:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "INSERT INTO expenses (name, amount, category, scope) "
+                        "VALUES (:name, :amount, :category, :scope)"
+                    ),
+                    {"name": "", "amount": 0.0, "category": "House & Light", "scope": "personal"},
+                )
+            return redirect(url_for("expenses"))
+
+        # Otherwise treat as Save
         expense_names = request.form.getlist("expense_name[]")
         expense_amounts = request.form.getlist("expense_amount[]")
         expense_categories = request.form.getlist("expense_category[]")
+        expense_scopes = request.form.getlist("expense_scope[]")
 
         with engine.begin() as conn:
             conn.execute(text("DELETE FROM expenses"))
 
-            for name, amount, category in zip(expense_names, expense_amounts, expense_categories):
+            for name, amount, category, scope in zip_longest(
+                expense_names, expense_amounts, expense_categories, expense_scopes
+            ):
                 name = (name or "").strip()
                 category = (category or "").strip()
+                scope = (scope or "personal").strip() or "personal"
 
                 try:
                     amt = float(amount)
                 except (TypeError, ValueError):
                     continue
 
-                if name and category:
-                    conn.execute(
-                        text("INSERT INTO expenses (name, amount, category) VALUES (:name, :amount, :category)"),
-                        {"name": name, "amount": amt, "category": category},
-                    )
+                # keep blank rows from being saved forever
+                if not name:
+                    continue
+
+                conn.execute(
+                    text(
+                        "INSERT INTO expenses (name, amount, category, scope) "
+                        "VALUES (:name, :amount, :category, :scope)"
+                    ),
+                    {"name": name, "amount": amt, "category": category, "scope": scope},
+                )
 
         return redirect(url_for("expenses"))
 
+    # GET
     conn = get_connection()
     try:
-        saved_expenses = conn.execute(text("SELECT * FROM expenses")).mappings().all()
+        saved_expenses = conn.execute(text("SELECT * FROM expenses ORDER BY id ASC")).mappings().all()
         category_totals = conn.execute(
             text("SELECT category, COALESCE(SUM(amount), 0) AS total FROM expenses GROUP BY category")
         ).mappings().all()
+        hourly_value = get_effective_hourly_rate() or 0.0
     finally:
         conn.close()
 
@@ -469,8 +548,15 @@ def expenses():
         saved_expenses=saved_expenses,
         category_totals=category_totals,
         currency=_currency(),
+        hourly_value=hourly_value,
     )
 
+
+@app.post("/expenses/reset")
+def expenses_reset():
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM expenses"))
+    return redirect(url_for("expenses"))
 
 @app.route("/update_expense_category", methods=["POST"])
 def update_expense_category():
@@ -494,6 +580,73 @@ def remove_expense(index):
         conn.execute(text("DELETE FROM expenses WHERE id = :id"), {"id": index})
     return redirect(url_for("expenses"))
 
+@app.route("/couple", methods=["GET", "POST"])
+def couple():
+    """
+    Equal-hours split (including personal expenses).
+    Partner A = you (this session)
+    Partner B = your partner (entered manually for now)
+    """
+
+    # ---- 1) Pull expenses from DB
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            text("SELECT amount, category FROM expenses")
+        ).mappings().all()
+    finally:
+        conn.close()
+
+    total = sum(safe_float(r.get("amount"), 0.0) for r in rows)
+
+    # ---- 2) Define what counts as "shared"
+    # For now: House & Light is shared (mortgage/utilities).
+    # You can expand later with a "shared" checkbox column.
+    shared_categories = {"House & Light"}
+    shared_total = sum(
+        safe_float(r.get("amount"), 0.0)
+        for r in rows
+        if (r.get("category") or "") in shared_categories
+    )
+
+    # Everything else is personal (including Nest Egg, Provisions, Odds)
+    personal_total = max(0.0, total - shared_total)
+
+    # ---- 3) Partner hourly rates
+    # A comes from your Personal page/session
+    rate_a = get_effective_hourly_rate() or 0.0
+
+    # B entered via form (for now)
+    rate_b = safe_float(request.form.get("partner_hourly"), 0.0) if request.method == "POST" else 0.0
+
+    # ---- 4) Personal split assumption (temporary)
+    # Until we add per-row "owner", we assume personal_total is split by who paid it.
+    # For now: let user enter their own personal spend share %.
+    a_personal = safe_float(request.form.get("my_personal"), 0.0) if request.method == "POST" else 0.0
+    b_personal = max(0.0, personal_total - a_personal)
+
+    result = None
+    if request.method == "POST" and rate_a > 0 and rate_b > 0:
+        result = equal_hours_including_personal(
+            personal_a=a_personal,
+            personal_b=b_personal,
+            shared_total=shared_total,
+            rate_a=rate_a,
+            rate_b=rate_b,
+        )
+
+    return render_template(
+        "couple.html",
+        currency=_currency(),
+        total=round(total, 2),
+        shared_total=round(shared_total, 2),
+        personal_total=round(personal_total, 2),
+        rate_a=rate_a,
+        rate_b=rate_b,
+        a_personal=round(a_personal, 2),
+        b_personal=round(b_personal, 2),
+        result=result,
+    )
 
 # ----------------------------
 # Routes: Budget
@@ -825,6 +978,91 @@ def freelance_delete_entry(entry_id: int):
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM freelance_entries WHERE id = :id"), {"id": entry_id})
     return redirect(url_for("freelance"))
+
+def _require_user_key() -> str:
+    # You already set this in ensure_identity()
+    return session["user_key"]
+
+def _current_household_id() -> Optional[int]:
+    hid = session.get("household_id")
+    try:
+        return int(hid) if hid is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+@app.route("/household", methods=["GET", "POST"])
+def household():
+    """
+    Minimal household join/create.
+    - Create: generates an invite code, creates household, adds you as member, stores household_id in session.
+    - Join: user enters invite code, we look it up, add them, store household_id in session.
+    """
+    user_key = _require_user_key()
+
+    if request.method == "POST":
+        action = (request.form.get("action") or "").strip()
+
+        if action == "create":
+            invite_code = secrets.token_urlsafe(6)
+
+            with engine.begin() as conn:
+                row = conn.execute(
+                    text("INSERT INTO households (invite_code) VALUES (:c) RETURNING id"),
+                    {"c": invite_code},
+                ).mappings().first()
+
+                # SQLite doesn't support RETURNING on older versions.
+                # If RETURNING fails for you locally, swap to: insert then SELECT last_insert_rowid().
+                household_id = row["id"] if row else None
+
+                if household_id is None:
+                    household_id = conn.execute(text("SELECT last_insert_rowid() AS id")).mappings().first()["id"]
+
+                conn.execute(
+                    text("""
+                        INSERT OR IGNORE INTO household_members (household_id, user_key, display_name)
+                        VALUES (:hid, :uk, :dn)
+                    """),
+                    {"hid": household_id, "uk": user_key, "dn": (session.get("username") or "Me")},
+                )
+
+            session["household_id"] = int(household_id)
+            session["household_invite_code"] = invite_code
+            return redirect(url_for("expenses"))
+
+        if action == "join":
+            code = (request.form.get("invite_code") or "").strip()
+            if not code:
+                return redirect(url_for("household"))
+
+            with engine.begin() as conn:
+                hh = conn.execute(
+                    text("SELECT id, invite_code FROM households WHERE invite_code = :c"),
+                    {"c": code},
+                ).mappings().first()
+
+                if not hh:
+                    return redirect(url_for("household"))
+
+                household_id = int(hh["id"])
+
+                conn.execute(
+                    text("""
+                        INSERT OR IGNORE INTO household_members (household_id, user_key, display_name)
+                        VALUES (:hid, :uk, :dn)
+                    """),
+                    {"hid": household_id, "uk": user_key, "dn": (session.get("username") or "Me")},
+                )
+
+            session["household_id"] = household_id
+            session["household_invite_code"] = code
+            return redirect(url_for("expenses"))
+
+    # GET: show current state (template later)
+    invite_code = session.get("household_invite_code")
+    return render_template("household.html", household_id=_current_household_id(), invite_code=invite_code)
+
 
 
 # ----------------------------
