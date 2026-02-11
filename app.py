@@ -352,6 +352,23 @@ def _dinaro_child_family_id(child_id: int) -> int:
         conn.close()
 
 
+def _dinaro_make_class_code() -> str:
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    for _ in range(20):
+        code = "".join(secrets.choice(alphabet) for _ in range(6))
+        conn = get_connection()
+        try:
+            exists = conn.execute(
+                text("SELECT 1 FROM dinaro_families WHERE class_code = :code"),
+                {"code": code},
+            ).mappings().first()
+        finally:
+            conn.close()
+        if not exists:
+            return code
+    return secrets.token_hex(3).upper()
+
+
 def get_effective_hourly_rate() -> Optional[float]:
     # 0) freelance override if selected
     if session.get("wageSource") == "freelance":
@@ -1319,6 +1336,86 @@ def dinaro_landing():
     return render_template("dinaro_landing.html")
 
 
+@app.route("/dinaro/classroom/setup", methods=["GET", "POST"])
+def dinaro_classroom_setup():
+    if request.method == "POST":
+        class_name = (request.form.get("class_name") or "").strip()
+        teacher_name = (request.form.get("teacher_name") or "").strip()
+        pin = (request.form.get("teacher_pin") or "").strip()
+        pin_confirm = (request.form.get("teacher_pin_confirm") or "").strip()
+
+        if not teacher_name or not pin or pin != pin_confirm:
+            return render_template("dinaro_class_setup.html", error="Check teacher name and matching PIN.")
+
+        pin_hash, pin_salt = _make_pin(pin)
+        code = _dinaro_make_class_code()
+
+        with engine.begin() as conn:
+            row = conn.execute(
+                text(
+                    "INSERT INTO dinaro_families (name, rate_per_hour, class_code, is_classroom) "
+                    "VALUES (:name, :rate, :code, 1) RETURNING id"
+                ),
+                {"name": class_name or None, "rate": 4, "code": code},
+            ).mappings().first()
+            family_id = row["id"] if row else None
+            if family_id is None:
+                family_id = conn.execute(text("SELECT last_insert_rowid() AS id")).mappings().first()["id"]
+            conn.execute(
+                text(
+                    "INSERT INTO dinaro_parents (family_id, name, pin_hash, pin_salt) "
+                    "VALUES (:family_id, :name, :pin_hash, :pin_salt)"
+                ),
+                {"family_id": family_id, "name": teacher_name, "pin_hash": pin_hash, "pin_salt": pin_salt},
+            )
+
+        return render_template("dinaro_class_setup.html", success_code=code)
+
+    return render_template("dinaro_class_setup.html")
+
+
+@app.route("/dinaro/classroom/teacher", methods=["GET", "POST"])
+def dinaro_classroom_teacher_login():
+    if request.method == "POST":
+        class_code = (request.form.get("class_code") or "").strip().upper()
+        pin = (request.form.get("teacher_pin") or "").strip()
+        if not class_code or not pin:
+            return render_template("dinaro_class_teacher_login.html", error="Enter class code and PIN.")
+
+        conn = get_connection()
+        try:
+            family = conn.execute(
+                text(
+                    "SELECT id FROM dinaro_families WHERE class_code = :code AND is_classroom = 1"
+                ),
+                {"code": class_code},
+            ).mappings().first()
+        finally:
+            conn.close()
+
+        if not family:
+            return render_template("dinaro_class_teacher_login.html", error="Class code not found.")
+
+        family_id = int(family["id"])
+        conn = get_connection()
+        try:
+            parent = conn.execute(
+                text("SELECT id, pin_hash, pin_salt FROM dinaro_parents WHERE family_id = :id"),
+                {"id": family_id},
+            ).mappings().first()
+        finally:
+            conn.close()
+
+        if not parent or not _verify_pin(pin, parent["pin_hash"], parent["pin_salt"]):
+            return render_template("dinaro_class_teacher_login.html", error="Wrong PIN.")
+
+        session["dinaro_parent_id"] = int(parent["id"])
+        session.pop("dinaro_child_id", None)
+        return redirect(url_for("dinaro_parent_dashboard"))
+
+    return render_template("dinaro_class_teacher_login.html")
+
+
 @app.route("/dinaro/setup", methods=["GET", "POST"])
 def dinaro_setup():
     conn = get_connection()
@@ -1423,7 +1520,7 @@ def dinaro_parent_dashboard():
     conn = get_connection()
     try:
         family = conn.execute(
-            text("SELECT id, name, rate_per_hour FROM dinaro_families WHERE id = :id"),
+            text("SELECT id, name, rate_per_hour, class_code, is_classroom FROM dinaro_families WHERE id = :id"),
             {"id": family_id},
         ).mappings().first()
         kids = conn.execute(
@@ -1689,7 +1786,7 @@ def dinaro_parent_accept_request(request_id: int):
         final_dinaro = float(row["parent_counter_dinaro"] or row["offer_dinaro"] or 0)
 
     with engine.begin() as conn:
-        conn.execute(
+       conn.execute(
             text(
                 """
                 UPDATE dinaro_requests
@@ -1729,37 +1826,65 @@ def dinaro_parent_decline_request(request_id: int):
 
 @app.route("/dinaro/child/login", methods=["GET", "POST"])
 def dinaro_child_login():
-    conn = get_connection()
-    try:
-        kids = conn.execute(
-            text("SELECT id, name FROM dinaro_children ORDER BY name ASC")
-        ).mappings().all()
-    finally:
-        conn.close()
-
     if request.method == "POST":
-        child_id = request.form.get("child_id")
         pin = (request.form.get("child_pin") or "").strip()
-        if not child_id or not pin:
-            return render_template("dinaro_child_login.html", kids=kids, error="Enter your PIN.")
+        class_code = (request.form.get("class_code") or "").strip().upper()
+        child_name = (request.form.get("child_name") or "").strip()
+        if not class_code or not child_name or not pin:
+            return render_template("dinaro_class_student_login.html", error="Enter class code, name, and PIN.")
 
         conn = get_connection()
         try:
-            row = conn.execute(
-                text("SELECT id, pin_hash, pin_salt FROM dinaro_children WHERE id = :id"),
-                {"id": child_id},
+            family = conn.execute(
+                text("SELECT id FROM dinaro_families WHERE class_code = :code AND is_classroom = 1"),
+                {"code": class_code},
             ).mappings().first()
         finally:
             conn.close()
 
-        if not row or not _verify_pin(pin, row["pin_hash"], row["pin_salt"]):
-            return render_template("dinaro_child_login.html", kids=kids, error="Wrong PIN.")
+        if not family:
+            return render_template("dinaro_class_student_login.html", error="Class code not found.")
 
-        session["dinaro_child_id"] = int(row["id"])
+        family_id = int(family["id"])
+        conn = get_connection()
+        try:
+            existing = conn.execute(
+                text(
+                    "SELECT id, pin_hash, pin_salt FROM dinaro_children "
+                    "WHERE family_id = :fid AND name = :name"
+                ),
+                {"fid": family_id, "name": child_name},
+            ).mappings().first()
+        finally:
+            conn.close()
+
+        if existing:
+            if not _verify_pin(pin, existing["pin_hash"], existing["pin_salt"]):
+                return render_template("dinaro_class_student_login.html", error="Wrong PIN.")
+            child_id = existing["id"]
+        else:
+            pin_hash, pin_salt = _make_pin(pin)
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "INSERT INTO dinaro_children (family_id, name, pin_hash, pin_salt) "
+                        "VALUES (:family_id, :name, :pin_hash, :pin_salt)"
+                    ),
+                    {
+                        "family_id": family_id,
+                        "name": child_name,
+                        "pin_hash": pin_hash,
+                        "pin_salt": pin_salt,
+                    },
+                )
+                row = conn.execute(text("SELECT last_insert_rowid() AS id")).mappings().first()
+                child_id = row["id"]
+
+        session["dinaro_child_id"] = int(child_id)
         session.pop("dinaro_parent_id", None)
         return redirect(url_for("dinaro_child_dashboard"))
 
-    return render_template("dinaro_child_login.html", kids=kids)
+    return render_template("dinaro_class_student_login.html")
 
 
 @app.post("/dinaro/child/logout")

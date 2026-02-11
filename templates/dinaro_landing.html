@@ -5,8 +5,30 @@
 <div class="page">
   <header class="page-header">
     <h1>Dinaro</h1>
-    <p class="muted">Time becomes dinaro. Dinaro become choices. Parents guide. Kids learn.</p>
+    <p class="muted">Practice money with imaginary currency. Real habits, zero risk.</p>
   </header>
+
+  <section class="panel" style="margin-bottom:16px;">
+    <h2 class="card-title">Choose a mode</h2>
+    <div class="grid-2">
+      <div class="card">
+        <div style="font-weight:600;">Family mode</div>
+        <div class="muted">Parents guide at home with chores, goals, and requests.</div>
+        <div class="actions" style="margin-top:10px;">
+          <a class="btn btn-primary" href="{{ url_for('dinaro_setup') }}">Family setup</a>
+          <a class="btn" href="{{ url_for('dinaro_parent_login') }}">Parent login</a>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-weight:600;">Classroom mode</div>
+        <div class="muted">Teachers run a class with a shared code and student PINs.</div>
+        <div class="actions" style="margin-top:10px;">
+          <a class="btn btn-primary" href="{{ url_for('dinaro_classroom_setup') }}">Classroom setup</a>
+          <a class="btn" href="{{ url_for('dinaro_classroom_teacher_login') }}">Teacher login</a>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <div class="grid-2">
     <section class="panel">
@@ -14,6 +36,7 @@
       <p class="muted">Manage chores, approve overtime, and negotiate requests.</p>
       <div class="actions">
         <a class="btn btn-primary" href="{{ url_for('dinaro_parent_login') }}">Parent login</a>
+        <a class="btn" href="{{ url_for('dinaro_classroom_teacher_login') }}">Teacher login</a>
       </div>
     </section>
 
@@ -21,13 +44,13 @@
       <h2 class="card-title">Child</h2>
       <p class="muted">Log chores, track dinaro, and request things you want.</p>
       <div class="actions">
-        <a class="btn btn-primary" href="{{ url_for('dinaro_child_login') }}">Child login</a>
+        <a class="btn btn-primary" href="{{ url_for('dinaro_child_login') }}">Student login</a>
       </div>
     </section>
   </div>
 
   <div style="margin-top:16px;">
-    <a class="pill" href="{{ url_for('dinaro_setup') }}">First time setup</a>
+    <span class="muted">Students only see their own data.</span>
   </div>
 </div>
 {% endblock %}

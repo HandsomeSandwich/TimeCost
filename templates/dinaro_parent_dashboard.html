@@ -7,6 +7,9 @@
     <h1>Dinaro Parent</h1>
     <p class="muted">
       {{ family.name or "Family" }} · {{ rate_per_hour }} dinaro per hour
+      {% if family.class_code %}
+        · Class code: <strong>{{ family.class_code }}</strong>
+      {% endif %}
     </p>
   </header>
 
@@ -16,6 +19,9 @@
 
   <section class="panel" style="margin-top:14px;">
     <h2 class="card-title">Preferences</h2>
+    <div class="muted" style="margin-bottom:10px;">
+      Quick start: add kids, add chores, then approve the first logs.
+    </div>
     <form method="post" action="{{ url_for('dinaro_parent_settings') }}" class="grid-2">
       <div class="field">
         <label for="familyName">Family name</label>
@@ -79,20 +85,8 @@
 
   <section class="panel">
     <h2 class="card-title">Chores</h2>
-    <div class="grid-2">
-      {% for chore in chores %}
-        <div class="card">
-          <div style="font-weight:600;">{{ chore.title }}</div>
-          <div class="muted">
-            {{ chore.default_hours }} hr · {{ "%.2f"|format(chore.default_hours * rate_per_hour) }} dinaro
-          </div>
-        </div>
-      {% else %}
-        <p class="muted">No chores yet.</p>
-      {% endfor %}
-    </div>
-
-    <form method="post" action="{{ url_for('dinaro_parent_add_chore') }}" class="grid-2" style="margin-top:12px;">
+    <div class="muted" style="margin-bottom:8px;">Quick add a chore to get started.</div>
+    <form method="post" action="{{ url_for('dinaro_parent_add_chore') }}" class="grid-2" style="margin-bottom:12px;">
       <div class="field">
         <label>Chore name</label>
         <input type="text" name="chore_title" required>
@@ -105,6 +99,18 @@
         <button class="btn" type="submit">Add chore</button>
       </div>
     </form>
+    <div class="grid-2">
+      {% for chore in chores %}
+        <div class="card">
+          <div style="font-weight:600;">{{ chore.title }}</div>
+          <div class="muted">
+            {{ chore.default_hours }} hr · {{ "%.2f"|format(chore.default_hours * rate_per_hour) }} dinaro
+          </div>
+        </div>
+      {% else %}
+        <p class="muted">No chores yet.</p>
+      {% endfor %}
+    </div>
   </section>
 
   <section class="panel">
