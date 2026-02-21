@@ -8,6 +8,12 @@
     <p class="muted">
       {{ family.name or "Family" }} · {{ rate_per_hour }} dinaro per hour
     </p>
+    {% if family.family_code %}
+      <div class="pill" style="margin-top: 8px; background: var(--accent-soft); color: var(--accent); font-weight: 700;">
+        <i data-lucide="shield" style="width:14px; height:14px; vertical-align:middle; margin-right:4px;"></i>
+        Family Login Code: {{ family.family_code }}
+      </div>
+    {% endif %}
   </header>
 
   <form method="post" action="{{ url_for('dinaro_parent_logout') }}" class="inline">

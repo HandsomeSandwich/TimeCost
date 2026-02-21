@@ -291,6 +291,37 @@ def _dinaro_rate_for_family(family_id: int) -> float:
         conn.close()
 
 
+def _dinaro_make_family_code() -> str:
+    """Generate a unique 6-char code for families."""
+    chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # No I, O, 0, 1
+    code = "".join(secrets.choice(chars) for _ in range(6))
+    return code
+
+
+def _dinaro_ensure_family_codes():
+    """Fill in missing family codes."""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            text("SELECT id FROM dinaro_families WHERE family_code IS NULL")
+        ).mappings().all()
+        if not rows:
+            return
+        
+        with engine.begin() as conn2:
+            for r in rows:
+                code = _dinaro_make_family_code()
+                conn2.execute(
+                    text("UPDATE dinaro_families SET family_code = :code WHERE id = :id"),
+                    {"code": code, "id": r["id"]}
+                )
+    finally:
+        conn.close()
+
+
+_dinaro_ensure_family_codes()
+
+
 def _dinaro_add_ledger(child_id: int, delta: float, reason: str, request_id=None, log_id=None) -> None:
     with engine.begin() as conn:
         conn.execute(
@@ -1344,10 +1375,10 @@ def dinaro_setup():
         with engine.begin() as conn:
             row = conn.execute(
                 text(
-                    "INSERT INTO dinaro_families (name, rate_per_hour) "
-                    "VALUES (:name, :rate) RETURNING id"
+                    "INSERT INTO dinaro_families (name, rate_per_hour, family_code) "
+                    "VALUES (:name, :rate, :code) RETURNING id"
                 ),
-                {"name": family_name or None, "rate": 4},
+                {"name": family_name or None, "rate": 4, "code": _dinaro_make_family_code()},
             ).mappings().first()
             family_id = row["id"] if row else None
             if family_id is None:
@@ -1424,7 +1455,7 @@ def dinaro_parent_dashboard():
     conn = get_connection()
     try:
         family = conn.execute(
-            text("SELECT id, name, rate_per_hour FROM dinaro_families WHERE id = :id"),
+            text("SELECT id, name, rate_per_hour, family_code FROM dinaro_families WHERE id = :id"),
             {"id": family_id},
         ).mappings().first()
         kids = conn.execute(
@@ -1923,49 +1954,113 @@ def dinaro_parent_decline_request(request_id: int):
 
 @app.route("/dinaro/child/login", methods=["GET", "POST"])
 def dinaro_child_login():
-    # Family-only login: pick child from list and enter PIN
+    # Two-step login for safety:
+    # 1. Family Code (persisted in session)
+    # 2. Child Picker + PIN
+    
+    family_code = session.get("dinaro_family_code")
+    
     if request.method == "POST":
-        pin = (request.form.get("child_pin") or "").strip()
-        child_id = request.form.get("child_id")
-        if not child_id or not pin:
-            # re-render with error and kids list
+        action = request.form.get("action")
+        
+        if action == "find_family":
+            code = (request.form.get("family_code") or "").strip().upper()
             conn = get_connection()
             try:
-                kids = conn.execute(
-                    text("SELECT id, name FROM dinaro_children ORDER BY name ASC")
-                ).mappings().all()
+                family = conn.execute(
+                    text("SELECT id FROM dinaro_families WHERE family_code = :code"),
+                    {"code": code},
+                ).mappings().first()
+                if family:
+                    session["dinaro_family_code"] = code
+                    return redirect(url_for("dinaro_child_login"))
+                else:
+                    return render_template("dinaro_child_login.html", error="Family code not found.")
             finally:
                 conn.close()
-            return render_template("dinaro_child_login.html", error="Choose your name and enter PIN.", kids=kids)
+                
+        elif action == "login":
+            pin = (request.form.get("child_pin") or "").strip()
+            child_id = request.form.get("child_id")
+            
+            if not family_code:
+                return redirect(url_for("dinaro_child_login"))
+                
+            if not child_id or not pin:
+                conn = get_connection()
+                try:
+                    kids = conn.execute(
+                        text("""
+                            SELECT c.id, c.name FROM dinaro_children c
+                            JOIN dinaro_families f ON f.id = c.family_id
+                            WHERE f.family_code = :code
+                            ORDER BY c.name ASC
+                        """),
+                        {"code": family_code}
+                    ).mappings().all()
+                finally:
+                    conn.close()
+                return render_template("dinaro_child_login.html", error="Choose your name and enter PIN.", kids=kids, family_code=family_code)
 
-        conn = get_connection()
-        try:
-            row = conn.execute(
-                text("SELECT id, pin_hash, pin_salt FROM dinaro_children WHERE id = :id"),
-                {"id": child_id},
-            ).mappings().first()
-        finally:
-            conn.close()
-
-        if not row or not _verify_pin(pin, row["pin_hash"], row["pin_salt"]):
             conn = get_connection()
             try:
-                kids = conn.execute(text("SELECT id, name FROM dinaro_children ORDER BY name ASC")).mappings().all()
+                row = conn.execute(
+                    text("SELECT id, pin_hash, pin_salt FROM dinaro_children WHERE id = :id"),
+                    {"id": child_id},
+                ).mappings().first()
             finally:
                 conn.close()
-            return render_template("dinaro_child_login.html", error="Wrong PIN.", kids=kids)
 
-        session["dinaro_child_id"] = int(row["id"])
-        session.pop("dinaro_parent_id", None)
-        return redirect(url_for("dinaro_child_dashboard"))
+            if not row or not _verify_pin(pin, row["pin_hash"], row["pin_salt"]):
+                conn = get_connection()
+                try:
+                    kids = conn.execute(
+                        text("""
+                            SELECT c.id, c.name FROM dinaro_children c
+                            JOIN dinaro_families f ON f.id = c.family_id
+                            WHERE f.family_code = :code
+                            ORDER BY c.name ASC
+                        """),
+                        {"code": family_code}
+                    ).mappings().all()
+                finally:
+                    conn.close()
+                return render_template("dinaro_child_login.html", error="Wrong PIN.", kids=kids, family_code=family_code)
 
-    # GET: show list of all children to choose from
+            session["dinaro_child_id"] = int(row["id"])
+            session.pop("dinaro_parent_id", None)
+            return redirect(url_for("dinaro_child_dashboard"))
+
+    # GET
+    if not family_code:
+        return render_template("dinaro_child_login.html")
+    
     conn = get_connection()
     try:
-        kids = conn.execute(text("SELECT id, name FROM dinaro_children ORDER BY name ASC")).mappings().all()
+        kids = conn.execute(
+            text("""
+                SELECT c.id, c.name FROM dinaro_children c
+                JOIN dinaro_families f ON f.id = c.family_id
+                WHERE f.family_code = :code
+                ORDER BY c.name ASC
+            """),
+            {"code": family_code}
+        ).mappings().all()
     finally:
         conn.close()
-    return render_template("dinaro_child_login.html", kids=kids)
+        
+    if not kids:
+        # If family exists but has no kids yet
+        session.pop("dinaro_family_code", None)
+        return render_template("dinaro_child_login.html", error="No children found for this family code.")
+        
+    return render_template("dinaro_child_login.html", kids=kids, family_code=family_code)
+
+
+@app.post("/dinaro/child/reset-family")
+def dinaro_child_reset_family():
+    session.pop("dinaro_family_code", None)
+    return redirect(url_for("dinaro_child_login"))
 
 
 @app.post("/dinaro/child/logout")

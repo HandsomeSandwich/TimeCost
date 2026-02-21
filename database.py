@@ -98,7 +98,8 @@ def init_db() -> None:
     CREATE TABLE IF NOT EXISTS dinaro_families (
         id {id_col},
         name TEXT,
-        rate_per_hour {num_col} NOT NULL DEFAULT 4
+        rate_per_hour {num_col} NOT NULL DEFAULT 4,
+        family_code TEXT UNIQUE
     )
     """
 
@@ -243,6 +244,10 @@ def init_db() -> None:
                 # so just keep using hourly_rate going forward.
                 # (If you need a real migration later, we can do it safely.)
                 pass
+
+            # dinaro_families: add family_code column if missing
+            if "family_code" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN family_code TEXT"))
 
             # dinaro_families: add classroom columns if missing
             cols = conn.execute(text("PRAGMA table_info(dinaro_families)")).mappings().all()

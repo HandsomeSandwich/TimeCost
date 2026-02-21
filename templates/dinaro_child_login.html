@@ -12,27 +12,47 @@
     {% if error %}
       <div class="callout">{{ error }}</div>
     {% endif %}
-    <form method="post" class="stack">
-      <div class="field">
-        <label for="childSelect">Child</label>
-        <select id="childSelect" name="child_id" required>
-          <option value="">Choose a child</option>
-          {% for kid in kids %}
-            <option value="{{ kid.id }}">{{ kid.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
 
-      <div class="field">
-        <label for="childPin">PIN</label>
-        <input id="childPin" type="password" name="child_pin" inputmode="numeric" required>
-      </div>
+    {% if not family_code %}
+      {# STEP 1: ENTER FAMILY CODE #}
+      <form method="post" class="stack">
+        <input type="hidden" name="action" value="find_family">
+        <div class="field">
+          <label for="familyCode">Family Login Code</label>
+          <input id="familyCode" type="text" name="family_code" placeholder="Enter the code from Parent Dashboard" required style="text-transform: uppercase;">
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Continue</button>
+          <a class="btn" href="{{ url_for('dinaro_landing') }}">Back</a>
+        </div>
+      </form>
+    {% else %}
+      {# STEP 2: SELECT CHILD + PIN #}
+      <form method="post" class="stack">
+        <input type="hidden" name="action" value="login">
+        <div class="field">
+          <label for="childSelect">Child</label>
+          <select id="childSelect" name="child_id" required>
+            <option value="">Choose your name</option>
+            {% for kid in kids %}
+              <option value="{{ kid.id }}">{{ kid.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-      <div class="actions">
-        <button class="btn btn-primary" type="submit">Enter</button>
-        <a class="btn" href="{{ url_for('dinaro_landing') }}">Back</a>
-      </div>
-    </form>
+        <div class="field">
+          <label for="childPin">PIN</label>
+          <input id="childPin" type="password" name="child_pin" inputmode="numeric" required>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Enter</button>
+          <form method="post" action="{{ url_for('dinaro_child_reset_family') }}" class="inline">
+            <button class="btn" type="submit">Not your family?</button>
+          </form>
+        </div>
+      </form>
+    {% endif %}
   </section>
 </div>
 {% endblock %}
