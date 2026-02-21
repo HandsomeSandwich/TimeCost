@@ -37,6 +37,182 @@
   --topbar-hover: var(--accent-soft);
 }
 
+/* Personality: organic, earthy, soft textures (General Fallback) */
+body[data-view="personality"]{
+  --bg: #fdfaf5;
+  --panel: #ffffff;
+  --border: #e9e2d5;
+
+  --text: #2d2a26;
+  --muted: #736d66;
+
+  --accent: #bc6c25;
+  --accent-soft: #fefae0;
+
+  --btn: #606c38;
+  --btn2: #f4f1de;
+
+  --radius: 22px;
+
+  --input-bg: #fffcf9;
+  --input-border: #e0d7c6;
+  --input-border-hover: #bc6c25;
+  --input-border-focus: #606c38;
+  --focus-ring: rgba(96, 108, 56, 0.15);
+  --placeholder: #a8a095;
+
+  --topbar-bg: rgba(253, 250, 245, 0.85);
+  --topbar-chip-bg: #ffffff;
+  --topbar-hover: #fefae0;
+}
+
+/* Leslie Knope: Bright, High-Energy, "Binder" Palette */
+body[data-view="personality"][data-perspective="leslie"] {
+  --bg: #fdfcf0;
+  --panel: #ffffff;
+  --border: #d4e3f2;
+  --text: #1a1a1a;
+  --muted: #5b6e84;
+  --accent: #0077b6; /* Binder Blue */
+  --accent-soft: #eef7ff;
+  --btn: #2d6a4f; /* Green Leadership */
+  --btn2: #fefae0;
+  --radius: 12px; /* More organized, less round */
+  --input-bg: #ffffff;
+  --input-border: #cfe0f1;
+  --input-border-focus: #0077b6;
+  --topbar-bg: rgba(253, 252, 240, 0.9);
+  --topbar-chip-bg: #eef7ff;
+}
+
+/* River Song: Deep Space, Diary Blue, Archaeology Gold */
+body[data-view="personality"][data-perspective="river"] {
+  --bg: #141a2a;
+  --panel: #1e263a;
+  --border: rgba(67, 127, 245, 0.15);
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #437ff5; /* Diary Blue */
+  --accent-soft: rgba(67, 127, 245, 0.1);
+  --btn: #ca8a04; /* TARDIS Key / Sonic Screwdriver Gold */
+  --btn2: rgba(226, 232, 240, 0.05);
+  --radius: 20px;
+  --input-bg: rgba(15, 23, 42, 0.6);
+  --input-border: rgba(67, 127, 245, 0.2);
+  --input-border-focus: #437ff5;
+  --topbar-bg: rgba(20, 26, 42, 0.85);
+  --topbar-chip-bg: rgba(67, 127, 245, 0.08);
+}
+
+/* Eddie Monsoon: Rich Purples, Champagne Gold, Fashion Luxe */
+body[data-view="personality"][data-perspective="eddie"] {
+  --bg: #1a0b1c;
+  --panel: #2d142c;
+  --border: #511845;
+  --text: #ffffff;
+  --muted: #c89dbd;
+  --accent: #ff4d6d; /* Fashion Pink */
+  --accent-soft: rgba(255, 77, 109, 0.1);
+  --btn: #900c3f; /* Deep Magenta */
+  --btn2: #511845;
+  --radius: 30px; /* Dramatic curves */
+  --input-bg: #1a0b1c;
+  --input-border: #900c3f;
+  --input-border-focus: #ff4d6d;
+  --topbar-bg: rgba(26, 11, 28, 0.9);
+  --topbar-chip-bg: #511845;
+}
+
+body[data-view="personality"] .panel,
+body[data-view="personality"] .card {
+  box-shadow: 0 4px 20px rgba(45, 42, 38, 0.05), 0 1px 3px rgba(45, 42, 38, 0.08);
+  border-radius: var(--radius);
+  transition: all 0.4s ease;
+}
+
+body[data-view="personality"] .btn-primary,
+body[data-view="personality"] .primary {
+  background: var(--btn);
+  box-shadow: 0 2px 4px rgba(96, 108, 56, 0.2);
+  transition: all 0.4s ease;
+}
+
+body[data-view="personality"] .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Candy Shop: soft cream, marshmallow, strawberry/mango */
+body[data-view="candy"]{
+  --bg: #fffcf2;
+  --panel: #ffffff;
+  --border: #f1e0c5;
+
+  --text: #432818;
+  --muted: #99582a;
+
+  --accent: #ff4d6d;
+  --accent-soft: #ffe5ec;
+
+  --btn: #ff4d6d;
+  --btn2: #fff0f3;
+
+  --radius: 28px; /* Extra round! */
+
+  --input-bg: #ffffff;
+  --input-border: #f1e0c5;
+  --input-border-hover: #ffb703;
+  --input-border-focus: #ff4d6d;
+  --focus-ring: rgba(255, 77, 109, 0.2);
+  --placeholder: rgba(67, 40, 24, 0.4);
+
+  --topbar-bg: rgba(255, 252, 242, 0.9);
+  --topbar-chip-bg: #fff0f3;
+  --topbar-hover: #ffe5ec;
+}
+
+/* Candy theme specific bubble styles */
+body[data-view="candy"] .panel,
+body[data-view="candy"] .card,
+body[data-view="candy"] .btn,
+body[data-view="candy"] .field input,
+body[data-view="candy"] .field select {
+  border-radius: var(--radius);
+  box-shadow: 0 8px 0 rgba(241, 224, 197, 0.4);
+  border-width: 2px;
+}
+
+body[data-view="candy"] .btn-primary {
+  background: var(--accent);
+  box-shadow: 0 6px 0 #c9184a;
+  transform: translateY(0);
+  transition: all 0.1s;
+}
+
+body[data-view="candy"] .btn-primary:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #c9184a;
+}
+
+@keyframes earn-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); filter: brightness(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes slide-in-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.quirky-earn {
+  animation: earn-pop 0.4s ease-out;
+}
+
+.quirky-badge {
+  animation: slide-in-up 0.5s ease-out;
+}
+
 /* Dusk: cozy woods, lantern light */
 body[data-view="dusk"]{
   --bg: #151c23;
@@ -90,6 +266,11 @@ body{
   font-family: var(--font-ui);
   background: var(--bg);
   color: var(--text);
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+}
+
+.panel, .card, .btn, .select, input, select, textarea {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
 }
 
 a{ color:inherit; text-decoration:none; }
@@ -300,7 +481,7 @@ h1,h2,h3{
   font-weight:650;
   cursor:pointer;
 }
-.btn.primary{
+.btn.btn-primary, .btn.primary {
   background: var(--btn);
   border-color: transparent;
   color:#fff;

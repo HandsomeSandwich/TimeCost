@@ -7,9 +7,6 @@
     <h1>Dinaro Parent</h1>
     <p class="muted">
       {{ family.name or "Family" }} · {{ rate_per_hour }} dinaro per hour
-      {% if family.class_code %}
-        · Class code: <strong>{{ family.class_code }}</strong>
-      {% endif %}
     </p>
   </header>
 
@@ -17,8 +14,36 @@
     <button class="btn" type="submit">Log out</button>
   </form>
 
+  <section class="panel" style="margin-top:14px; border: 2px solid var(--accent);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h2 class="card-title" style="display: flex; align-items: center; gap: 8px; margin: 0;">
+        <i data-lucide="history" style="color:var(--accent);"></i> Recent Transaction History
+      </h2>
+      <a href="{{ url_for('dinaro_parent_export') }}" class="btn btn-sm">
+        <i data-lucide="download" style="width:14px; height:14px; vertical-align:middle; margin-right:4px;"></i> Export to CSV
+      </a>
+    </div>
+    <div class="stack">
+      {% for entry in ledger %}
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-weight:600;">{{ entry.child_name }}: {{ entry.reason or "Transaction" }}</div>
+            <div class="muted" style="font-size:0.85em;">{{ entry.created_at[:16].replace('T', ' ') }}</div>
+          </div>
+          <div style="font-weight:700; color: {% if entry.delta > 0 %}#2ecc71{% else %}#e74c3c{% endif %};">
+            {{ "+" if entry.delta > 0 else "" }}{{ "%.2f"|format(entry.delta) }}
+          </div>
+        </div>
+      {% else %}
+        <p class="muted">No history yet.</p>
+      {% endfor %}
+    </div>
+  </section>
+
   <section class="panel" style="margin-top:14px;">
-    <h2 class="card-title">Preferences</h2>
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="settings" style="color:var(--accent);"></i> Preferences
+    </h2>
     <div class="muted" style="margin-bottom:10px;">
       Quick start: add kids, add chores, then approve the first logs.
     </div>
@@ -38,12 +63,55 @@
   </section>
 
   <section class="panel">
-    <h2 class="card-title">Kids</h2>
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="users" style="color:var(--accent);"></i> Kids
+    </h2>
     <div class="grid-2">
       {% for kid in kids %}
         <div class="card">
-          <div style="font-weight:600;">{{ kid.name }}</div>
-          <div class="muted">Balance: {{ "%.2f"|format(kid.balance or 0) }} dinaro</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:600;">{{ kid.name }}</div>
+              <div class="muted">Balance: {{ "%.2f"|format(kid.balance or 0) }} dinaro</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-sm" onclick="document.getElementById('editKid{{ kid.id }}').style.display='block'">Edit</button>
+              <form method="post" action="{{ url_for('dinaro_parent_update_child_mode', child_id=kid.id) }}" class="inline">
+                <select name="view_mode" onchange="this.form.submit()" style="padding: 4px 8px; border-radius: 8px; font-size: 0.85em;">
+                  <option value="visual" {% if kid.view_mode == 'visual' %}selected{% endif %}>Visual (Kids)</option>
+                  <option value="teen" {% if kid.view_mode == 'teen' %}selected{% endif %}>Teen</option>
+                </select>
+              </form>
+            </div>
+          </div>
+          <div id="editKid{{ kid.id }}" class="panel" style="display:none; margin-top:12px; border:1px solid var(--accent);">
+            <form method="post" action="{{ url_for('dinaro_parent_edit_child', child_id=kid.id) }}" class="stack">
+              <div class="field">
+                <label>Name</label>
+                <input type="text" name="child_name" value="{{ kid.name }}" required>
+              </div>
+              <div class="field">
+                <label>New PIN (leave blank to keep current)</label>
+                <input type="password" name="child_pin" inputmode="numeric">
+              </div>
+              <div class="actions">
+                <button class="btn btn-primary" type="submit">Save</button>
+                <button class="btn" type="button" onclick="document.getElementById('editKid{{ kid.id }}').style.display='none'">Cancel</button>
+              </div>
+            </form>
+          </div>
+          <details style="margin-top:12px;">
+            <summary style="cursor:pointer; font-size:0.85rem; color:var(--accent);">🎁 Send Surprise Bonus</summary>
+            <form method="post" action="{{ url_for('dinaro_parent_child_bonus', child_id=kid.id) }}" style="margin-top:8px; display:grid; gap:8px;">
+              <div class="field">
+                <input type="number" name="bonus_amount" step="0.5" placeholder="Amount" required style="padding:6px; font-size:0.85rem;">
+              </div>
+              <div class="field">
+                <input type="text" name="bonus_note" placeholder="Note (e.g. Great job today!)" style="padding:6px; font-size:0.85rem;">
+              </div>
+              <button class="btn btn-primary" type="submit" style="padding:6px; font-size:0.85rem;">Send 🎁</button>
+            </form>
+          </details>
         </div>
       {% else %}
         <p class="muted">No kids yet.</p>
@@ -84,7 +152,9 @@
   </section>
 
   <section class="panel">
-    <h2 class="card-title">Chores</h2>
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="hammer" style="color:var(--accent);"></i> Chores
+    </h2>
     <div class="muted" style="margin-bottom:8px;">Quick add a chore to get started.</div>
     <form method="post" action="{{ url_for('dinaro_parent_add_chore') }}" class="grid-2" style="margin-bottom:12px;">
       <div class="field">
@@ -95,6 +165,14 @@
         <label>Default hours</label>
         <input type="number" name="default_hours" step="0.25" required>
       </div>
+      <div class="field">
+        <label>Recurrence</label>
+        <select name="recurrence">
+          <option value="none">One-time</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+        </select>
+      </div>
       <div class="actions">
         <button class="btn" type="submit">Add chore</button>
       </div>
@@ -102,9 +180,47 @@
     <div class="grid-2">
       {% for chore in chores %}
         <div class="card">
-          <div style="font-weight:600;">{{ chore.title }}</div>
-          <div class="muted">
-            {{ chore.default_hours }} hr · {{ "%.2f"|format(chore.default_hours * rate_per_hour) }} dinaro
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:600;">{{ chore.title }}</div>
+              <div class="muted">
+                {{ chore.default_hours }} hr · {{ "%.2f"|format(chore.default_hours * rate_per_hour) }} dinaro
+                {% if chore.recurrence != 'none' %}
+                  <span class="badge" style="background:var(--accent-soft); color:var(--accent);">{{ chore.recurrence|capitalize }}</span>
+                {% endif %}
+              </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-sm" onclick="document.getElementById('editChore{{ chore.id }}').style.display='block'">Edit</button>
+              <form method="post" action="{{ url_for('dinaro_parent_delete_chore', chore_id=chore.id) }}" onsubmit="return confirm('Delete this chore?')">
+                <button class="btn btn-danger btn-sm" type="submit">×</button>
+              </form>
+            </div>
+          </div>
+
+          <div id="editChore{{ chore.id }}" class="panel" style="display:none; margin-top:12px; border:1px solid var(--accent);">
+            <form method="post" action="{{ url_for('dinaro_parent_edit_chore', chore_id=chore.id) }}" class="stack">
+              <div class="field">
+                <label>Chore name</label>
+                <input type="text" name="chore_title" value="{{ chore.title }}" required>
+              </div>
+              <div class="field">
+                <label>Default hours</label>
+                <input type="number" name="default_hours" step="0.25" value="{{ chore.default_hours }}" required>
+              </div>
+              <div class="field">
+                <label>Recurrence</label>
+                <select name="recurrence">
+                  <option value="none" {% if chore.recurrence == 'none' %}selected{% endif %}>One-time</option>
+                  <option value="daily" {% if chore.recurrence == 'daily' %}selected{% endif %}>Daily</option>
+                  <option value="weekly" {% if chore.recurrence == 'weekly' %}selected{% endif %}>Weekly</option>
+                </select>
+              </div>
+              <div class="actions">
+                <button class="btn btn-primary" type="submit">Save</button>
+                <button class="btn" type="button" onclick="document.getElementById('editChore{{ chore.id }}').style.display='none'">Cancel</button>
+              </div>
+            </form>
           </div>
         </div>
       {% else %}
@@ -114,7 +230,66 @@
   </section>
 
   <section class="panel">
-    <h2 class="card-title">Pending chore approvals</h2>
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="gift" style="color:var(--accent);"></i> Spendable Items (Rewards)
+    </h2>
+    <div class="muted" style="margin-bottom:8px;">Add items kids can spend their Dinaro on.</div>
+    <form method="post" action="{{ url_for('dinaro_parent_add_spendable') }}" class="grid-2" style="margin-bottom:12px;">
+      <div class="field">
+        <label>Item name</label>
+        <input type="text" name="spendable_title" required>
+      </div>
+      <div class="field">
+        <label>Cost (Dinaro)</label>
+        <input type="number" name="cost_dinaro" step="0.25" required>
+      </div>
+      <div class="actions">
+        <button class="btn" type="submit">Add item</button>
+      </div>
+    </form>
+    <div class="grid-2">
+      {% for item in spendables %}
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:600;">{{ item.title }}</div>
+              <div class="muted">{{ "%.2f"|format(item.cost_dinaro) }} dinaro</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-sm" onclick="document.getElementById('editSpendable{{ item.id }}').style.display='block'">Edit</button>
+              <form method="post" action="{{ url_for('dinaro_parent_delete_spendable', spendable_id=item.id) }}" onsubmit="return confirm('Delete this item?')">
+                <button class="btn btn-danger btn-sm" type="submit">×</button>
+              </form>
+            </div>
+          </div>
+
+          <div id="editSpendable{{ item.id }}" class="panel" style="display:none; margin-top:12px; border:1px solid var(--accent);">
+            <form method="post" action="{{ url_for('dinaro_parent_edit_spendable', spendable_id=item.id) }}" class="stack">
+              <div class="field">
+                <label>Item name</label>
+                <input type="text" name="spendable_title" value="{{ item.title }}" required>
+              </div>
+              <div class="field">
+                <label>Cost (Dinaro)</label>
+                <input type="number" name="cost_dinaro" step="0.25" value="{{ item.cost_dinaro }}" required>
+              </div>
+              <div class="actions">
+                <button class="btn btn-primary" type="submit">Save</button>
+                <button class="btn" type="button" onclick="document.getElementById('editSpendable{{ item.id }}').style.display='none'">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        <p class="muted">No spendable items yet.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="clock" style="color:var(--accent);"></i> Pending chore approvals
+    </h2>
     {% for log in pending_logs %}
       <div class="card" style="margin-bottom:10px;">
         <div style="font-weight:600;">{{ log.child_name }} · {{ log.chore_title or "Chore" }}</div>
@@ -138,7 +313,9 @@
   </section>
 
   <section class="panel">
-    <h2 class="card-title">Requests</h2>
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="shopping-cart" style="color:var(--accent);"></i> Requests
+    </h2>
     {% for r in requests %}
       <div class="card" style="margin-bottom:10px;">
         <div style="font-weight:600;">{{ r.child_name }} · {{ r.item_name }}</div>
@@ -179,14 +356,17 @@
   </section>
 
   <section class="panel">
-    <h2 class="card-title">Goals</h2>
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="target" style="color:var(--accent);"></i> Goals
+    </h2>
     {% for goal in goals %}
       {% set progress = (goal.balance / goal.target_dinaro * 100) if goal.target_dinaro > 0 else 0 %}
+      {% set capped = 100 if progress > 100 else progress %}
       <div class="card" style="margin-bottom:10px;">
         <div style="font-weight:600;">{{ goal.child_name }} · {{ goal.title }}</div>
         <div class="muted">Target: {{ goal.target_dinaro }} dinaro</div>
         <div class="progress-container" style="margin-top:6px;">
-          <div class="progress-bar" style="width: {{ 100 if progress > 100 else progress }}%;">
+          <div class="progress-bar" style="width: {% if progress > 100 %}100{% else %}{{ progress }}{% endif %}%;">
             {{ progress|round(1) }}%
           </div>
         </div>
@@ -195,5 +375,6 @@
       <p class="muted">No goals yet.</p>
     {% endfor %}
   </section>
+
 </div>
 {% endblock %}

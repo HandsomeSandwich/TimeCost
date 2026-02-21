@@ -9,48 +9,43 @@
   </header>
 
   <section class="panel" style="margin-bottom:16px;">
-    <h2 class="card-title">Choose a mode</h2>
-    <div class="grid-2">
-      <div class="card">
-        <div style="font-weight:600;">Family mode</div>
-        <div class="muted">Parents guide at home with chores, goals, and requests.</div>
-        <div class="actions" style="margin-top:10px;">
-          <a class="btn btn-primary" href="{{ url_for('dinaro_setup') }}">Family setup</a>
-          <a class="btn" href="{{ url_for('dinaro_parent_login') }}">Parent login</a>
-        </div>
-      </div>
-      <div class="card">
-        <div style="font-weight:600;">Classroom mode</div>
-        <div class="muted">Teachers run a class with a shared code and student PINs.</div>
-        <div class="actions" style="margin-top:10px;">
-          <a class="btn btn-primary" href="{{ url_for('dinaro_classroom_setup') }}">Classroom setup</a>
-          <a class="btn" href="{{ url_for('dinaro_classroom_teacher_login') }}">Teacher login</a>
-        </div>
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="home" style="color:var(--accent);"></i> Family Management
+    </h2>
+    <div class="card">
+      <div style="font-weight:600;">Family mode</div>
+      <div class="muted">Parents guide at home with chores, goals, and requests.</div>
+      <div class="actions" style="margin-top:10px;">
+        <a class="btn btn-primary" href="{{ url_for('dinaro_setup') }}">Family setup</a>
+        <a class="btn" href="{{ url_for('dinaro_parent_login') }}">Parent login</a>
       </div>
     </div>
   </section>
 
   <div class="grid-2">
     <section class="panel">
-      <h2 class="card-title">Parent</h2>
+      <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="shield-check" style="color:var(--accent);"></i> Parent Dashboard
+      </h2>
       <p class="muted">Manage chores, approve overtime, and negotiate requests.</p>
       <div class="actions">
         <a class="btn btn-primary" href="{{ url_for('dinaro_parent_login') }}">Parent login</a>
-        <a class="btn" href="{{ url_for('dinaro_classroom_teacher_login') }}">Teacher login</a>
       </div>
     </section>
 
     <section class="panel">
-      <h2 class="card-title">Child</h2>
+      <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="user" style="color:var(--accent);"></i> Child Dashboard
+      </h2>
       <p class="muted">Log chores, track dinaro, and request things you want.</p>
       <div class="actions">
-        <a class="btn btn-primary" href="{{ url_for('dinaro_child_login') }}">Student login</a>
+        <a class="btn btn-primary" href="{{ url_for('dinaro_child_login') }}">Child login</a>
       </div>
     </section>
   </div>
 
   <div style="margin-top:16px;">
-    <span class="muted">Students only see their own data.</span>
+    <span class="muted">Children only see their own data.</span>
   </div>
 </div>
 {% endblock %}

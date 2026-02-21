@@ -154,15 +154,19 @@
 </section>
 
 
-    {% if result == "Invalid input" %}
-      <section class="panel" aria-live="polite">
-        <h2 class="card-title">Result</h2>
+    {% if result is none %}
+    <section class="panel" aria-live="polite">
+      <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="info" style="color:var(--accent);"></i> Result
+      </h2>
         <p class="muted">{{ c.invalid }}</p>
       </section>
 
     {% elif result is not none %}
       <section class="panel" aria-live="polite">
-        <h2 class="card-title">Result{% if item_name %} for “{{ item_name }}”{% endif %}</h2>
+        <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="check-circle" style="color:var(--accent);"></i> Result{% if item_name %} for “{{ item_name }}”{% endif %}
+        </h2>
 
         <p style="margin:0 0 10px;">
           {{ c.hours_line }} <strong>{{ (result or 0)|round(2) }}</strong> hours of work.

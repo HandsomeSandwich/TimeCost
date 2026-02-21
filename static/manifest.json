@@ -1,0 +1,17 @@
+{
+  "name": "TimeCost & Dinaro",
+  "short_name": "TimeCost",
+  "description": "Calculate work-time costs and manage family chores/allowances.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fdfaf5",
+  "theme_color": "#bc6c25",
+  "icons": [
+    {
+      "src": "/static/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -14,11 +14,14 @@
   &display=swap" rel="stylesheet">
 
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#bc6c25">
   <link rel="stylesheet" href="{{ url_for('static', filename='timecost.css', v='20260208a') }}">
+  <script src="https://unpkg.com/lucide@latest"></script>
   {% block head %}{% endblock %}
 </head>
 
-<body data-view="{{ session.get('view', 'dawn') }}">
+<body data-view="{{ session.get('view', 'personality') }}" data-perspective="{{ perspective }}">
 
   <header class="topbar">
     <div class="topbar-inner">
@@ -27,11 +30,11 @@
       </div>
 
       <nav class="nav" aria-label="Primary">
-        <a href="{{ url_for('calculator') }}">Calculator</a>
-        <a href="{{ url_for('dinaro_landing') }}">Dinaro</a>
+        <a href="{{ url_for('calculator') }}"><i data-lucide="calculator" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;"></i> Calculator</a>
+        <a href="{{ url_for('dinaro_landing') }}"><i data-lucide="coins" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;"></i> Dinaro</a>
 
         <details class="nav-details">
-          <summary>Tools</summary>
+          <summary><i data-lucide="wrench" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;"></i> Tools</summary>
           <div class="nav-popover" aria-label="Tools">
             <a href="{{ url_for('personal') }}">Personal</a>
             <a href="{{ url_for('freelance') }}">Freelance</a>
@@ -46,7 +49,7 @@
 
       <div class="topbar-controls">
         <button class="menu-btn" type="button" id="menuBtn" aria-expanded="false" aria-controls="navDrawer">
-          ☰ <span class="sr-only">Menu</span>
+          <i data-lucide="menu"></i> <span class="sr-only">Menu</span>
         </button>
 
         <form class="inline" action="{{ url_for('set_currency') }}" method="post">
@@ -66,14 +69,12 @@
         </form>
 
         <form method="post" action="{{ url_for('set_view') }}" class="inline">
-          <input
-            type="hidden"
-            name="view"
-            value="{{ 'dusk' if session.get('view') == 'dawn' else 'dawn' }}"
-          >
-          <button class="btn btn-sm" type="submit">
-            {{ 'Dusk' if session.get('view') == 'dawn' else 'Dawn' }}
-          </button>
+          <select class="select" name="view" onchange="this.form.submit()">
+            <option value="personality" {% if session.get('view') == 'personality' %}selected{% endif %}>Personality</option>
+            <option value="dawn" {% if session.get('view') == 'dawn' %}selected{% endif %}>Dawn</option>
+            <option value="dusk" {% if session.get('view') == 'dusk' %}selected{% endif %}>Dusk</option>
+            <option value="candy" {% if session.get('view') == 'candy' %}selected{% endif %}>Candy</option>
+          </select>
         </form>
       </div>
     </div>
@@ -100,5 +101,15 @@
   </main>
 
   <script src="{{ url_for('static', filename='timecost.js') }}" defer></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+          .then(registration => console.log('SW registered'))
+          .catch(err => console.log('SW registration failed:', err));
+      });
+    }
+    lucide.createIcons();
+  </script>
 </body>
 </html>

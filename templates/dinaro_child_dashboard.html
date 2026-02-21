@@ -3,139 +3,382 @@
 
 {% block content %}
 <div class="page">
-  <header class="page-header">
-    <h1>{{ child.name }}</h1>
-    <p class="muted">Balance: {{ "%.2f"|format(child.balance or 0) }} dinaro · {{ rate_per_hour }} dinaro per hour</p>
+  <header class="page-header" style="text-align: center; margin-bottom: 24px;">
+    {% if child.view_mode == 'visual' %}
+      <div style="font-size: 3rem; margin-bottom: 8px;"><i data-lucide="piggy-bank" style="width:64px; height:64px;"></i></div>
+      <h1 style="font-size: 2.5rem; margin-bottom: 4px;">Hi, {{ child.name }}!</h1>
+      <div class="panel quirky-earn" style="display: inline-block; padding: 16px 32px; border: 3px solid var(--accent); border-radius: 24px;">
+        <div style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;" class="muted">Your Money</div>
+        <div style="font-size: 2.2rem; font-weight: 800; color: var(--accent);">{{ "%.2f"|format(child.balance or 0) }} dinaro</div>
+      </div>
+    {% else %}
+      <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+        <div style="text-align: left;">
+          <h1 style="margin-bottom: 0;">{{ child.name }}'s Dashboard</h1>
+          <p class="muted" style="margin-top: 4px;">{{ rate_per_hour }} dinaro/hr</p>
+        </div>
+        <div class="panel quirky-earn" style="padding: 12px 24px; text-align: right;">
+          <div class="muted" style="font-size: 0.85rem;">Current Balance</div>
+          <div style="font-size: 1.5rem; font-weight: 700;">{{ "%.2f"|format(child.balance or 0) }} dinaro</div>
+        </div>
+      </div>
+    {% endif %}
   </header>
 
-  <form method="post" action="{{ url_for('dinaro_child_logout') }}" class="inline">
-    <button class="btn" type="submit">Log out</button>
-  </form>
-
-  <section class="panel" style="margin-top:14px;">
-    <h2 class="card-title">Log a chore</h2>
-    <form method="post" action="{{ url_for('dinaro_child_log_chore') }}" class="grid-2">
-      <div class="field">
-        <label for="choreSelect">Chore</label>
-        <select id="choreSelect" name="chore_id" required>
-          <option value="">Choose a chore</option>
-          {% for chore in chores %}
-            <option value="{{ chore.id }}">{{ chore.title }} ({{ chore.default_hours }} hr)</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="field">
-        <label for="overtime">Overtime hours (optional)</label>
-        <input id="overtime" type="number" name="overtime_hours" step="0.25" placeholder="0">
-        <p class="help">Ask for extra time here. Parent can approve or deny.</p>
-      </div>
-      <div class="actions">
-        <button class="btn btn-primary" type="submit">Send for approval</button>
-      </div>
+  <div style="text-align: center; margin-bottom: 24px;">
+    <form method="post" action="{{ url_for('dinaro_child_logout') }}" class="inline">
+      <button class="btn" type="submit">{% if child.view_mode == 'visual' %}👋 Log out{% else %}Log out{% endif %}</button>
     </form>
+  </div>
 
-    <div class="grid-2" style="margin-top:12px;">
-      {% for chore in chores %}
-        <div class="card">
-          <div style="font-weight:600;">{{ chore.title }}</div>
-          <div class="muted">{{ chore.default_hours }} hr · {{ "%.2f"|format(chore.default_hours * rate_per_hour) }} dinaro</div>
+  {% if child.view_mode == 'visual' %}
+    {# VISUAL MODE: BIG BUTTONS AND EMOJIS #}
+  <section class="panel" style="margin-bottom: 24px; border: 2px solid var(--accent);">
+    <h2 class="card-title" style="font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="check-square" style="color:var(--accent);"></i> Daily To-Do
+    </h2>
+    <div class="stack">
+      {% for chore in todo_list %}
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center; padding: 16px;">
+          <div>
+            <div style="font-weight:700; font-size: 1.1rem;">{{ chore.title }}</div>
+            <div class="muted" style="font-size: 0.85rem;">{{ chore.recurrence|capitalize }} · {{ chore.default_hours }} hr</div>
+          </div>
+          <form method="post" action="{{ url_for('dinaro_child_log_chore') }}">
+            <input type="hidden" name="chore_id" value="{{ chore.id }}">
+            <button class="btn btn-primary" type="submit" style="padding: 8px 16px;">Done! ✅</button>
+          </form>
         </div>
       {% else %}
-        <p class="muted">No chores yet.</p>
+        <p class="muted">All caught up! Great job! 🌟</p>
       {% endfor %}
     </div>
   </section>
 
-  <section class="panel">
-    <h2 class="card-title">Goals</h2>
-    <form method="post" action="{{ url_for('dinaro_child_add_goal') }}" class="grid-2">
-      <div class="field">
-        <label>Goal name</label>
-        <input type="text" name="goal_title" required>
+  <section class="panel" style="margin-bottom: 24px; border: 2px solid var(--accent);">
+    <h2 class="card-title" style="font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="award" style="color:var(--accent);"></i> Your Badges
+    </h2>
+      <div style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;">
+        {% for badge in badges %}
+          <div class="card quirky-badge" style="min-width: 140px; text-align: center; padding: 12px; flex-shrink: 0; animation-delay: {{ loop.index0 * 0.1 }}s;">
+            <div style="font-size: 2rem;">{{ badge.emoji }}</div>
+            <div style="font-weight: 700; font-size: 0.9rem; margin-top: 4px;">{{ badge.title }}</div>
+            <div class="muted" style="font-size: 0.75rem;">{{ badge.desc }}</div>
+          </div>
+        {% else %}
+          <p class="muted">Do more jobs to earn badges!</p>
+        {% endfor %}
       </div>
-      <div class="field">
-        <label>Target dinaro</label>
-        <input type="number" name="goal_target" step="0.25" required>
-      </div>
-      <div class="actions">
-        <button class="btn" type="submit">Add goal</button>
-      </div>
-    </form>
+    </section>
 
-    {% for goal in goals %}
-      {% set progress = (child.balance / goal.target_dinaro * 100) if goal.target_dinaro > 0 else 0 %}
-      <div class="card" style="margin-top:10px;">
-        <div style="font-weight:600;">{{ goal.title }}</div>
-        <div class="muted">Target: {{ goal.target_dinaro }} dinaro</div>
-        <div class="progress-container" style="margin-top:6px;">
-          <div class="progress-bar" style="width: {{ 100 if progress > 100 else progress }}%;">
-            {{ progress|round(1) }}%
+  <section class="panel" style="margin-bottom: 24px; border: 2px solid var(--accent);">
+    <h2 class="card-title" style="font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="history" style="color:var(--accent);"></i> Last things that happened
+    </h2>
+      <div class="stack">
+        {% for entry in ledger[:5] %}
+          <div class="card" style="display:flex; justify-content:space-between; align-items:center; padding: 16px;">
+            <div style="font-size: 1.1rem;">
+              {{ "🎉" if entry.delta > 0 else "🛍️" }} {{ entry.reason or "Transaction" }}
+            </div>
+            <div style="font-weight:800; font-size: 1.2rem; color: {% if entry.delta > 0 %}#2ecc71{% else %}#e74c3c{% endif %};">
+              {{ "+" if entry.delta > 0 else "" }}{{ "%.2f"|format(entry.delta) }}
+            </div>
+          </div>
+        {% else %}
+          <p class="muted">Nothing here yet!</p>
+        {% endfor %}
+      </div>
+    </section>
+
+  <section class="panel" style="margin-bottom: 24px;">
+    <h2 class="card-title" style="font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="hammer" style="color:var(--accent);"></i> Finish a job!
+    </h2>
+      <form method="post" action="{{ url_for('dinaro_child_log_chore') }}" class="stack">
+        <div class="field">
+          <label style="font-size: 1.1rem;">What did you do?</label>
+          <select name="chore_id" required style="font-size: 1.1rem; padding: 16px;">
+            <option value="">Pick a job...</option>
+            {% for chore in chores %}
+              <option value="{{ chore.id }}">{{ chore.title }} ({{ chore.default_hours }} hr)</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="btn btn-primary" type="submit" style="font-size: 1.2rem; padding: 18px;">✅ I finished it!</button>
+      </form>
+    </section>
+
+  <section class="panel" style="margin-bottom: 24px;">
+    <h2 class="card-title" style="font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="target" style="color:var(--accent);"></i> Saving for...
+    </h2>
+      {% for goal in goals %}
+        {% set progress = (child.balance / goal.target_dinaro * 100) if goal.target_dinaro > 0 else 0 %}
+        <div class="card" style="margin-top:10px; padding: 20px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 8px;">
+            <div style="font-weight:700; font-size: 1.3rem;">{{ goal.title }}</div>
+            <form method="post" action="{{ url_for('dinaro_child_delete_goal', goal_id=goal.id) }}" onsubmit="return confirm('Delete this goal?')">
+              <button class="btn btn-danger" style="padding: 4px 10px; font-size: 1rem; border-radius: 50%;" type="submit">×</button>
+            </form>
+          </div>
+          <div class="progress-container" style="height: 30px; border-radius: 15px; background: #eee; overflow: hidden; position: relative;">
+            <div class="progress-bar" style="height: 100%; width: {% if progress > 100 %}100{% else %}{{ progress }}{% endif %}%; background: var(--accent); transition: width 0.5s;">
+            </div>
+            <div style="position: absolute; width: 100%; text-align: center; top: 50%; transform: translateY(-50%); font-weight: 800; color: #333;">
+              {{ progress|round(0) }}% there!
+            </div>
+          </div>
+          <div class="muted" style="margin-top: 8px; text-align: right; font-weight: 600;">{{ "%.2f"|format(child.balance) }} / {{ goal.target_dinaro }} dinaro</div>
+        </div>
+      {% else %}
+        <p class="muted">Add a goal in Teen mode!</p>
+      {% endfor %}
+    </section>
+
+  <section class="panel" style="margin-bottom: 24px;">
+    <h2 class="card-title" style="font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="shopping-cart" style="color:var(--accent);"></i> Marketplace
+    </h2>
+    <div class="grid-2" style="gap: 16px;">
+      {% for item in spendables %}
+        {% set can_afford = (child.balance >= item.cost_dinaro) %}
+        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 16px; border: 2px solid {% if can_afford %}#ff4d6d{% else %}#ccc{% endif %}; position: relative; overflow: hidden;">
+          {% if not can_afford %}
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--border);"></div>
+          {% endif %}
+          
+          <div>
+            <div style="font-size: 2.5rem; margin-bottom: 8px;">
+              {% if 'screen' in item.title|lower or 'game' in item.title|lower or 'video' in item.title|lower %}🎮
+              {% elif 'candy' in item.title|lower or 'treat' in item.title|lower or 'ice cream' in item.title|lower %}🍦
+              {% elif 'toy' in item.title|lower or 'lego' in item.title|lower %}🧸
+              {% elif 'book' in item.title|lower %}📚
+              {% elif 'trip' in item.title|lower or 'outing' in item.title|lower %}🚗
+              {% elif 'sleep' in item.title|lower or 'bed' in item.title|lower %}🌙
+              {% else %}🎁{% endif %}
+            </div>
+            <div style="font-weight: 700; font-size: 1.2rem;">{{ item.title }}</div>
+            <div style="font-weight: 800; color: #ff4d6d; font-size: 1.1rem; margin-top: 4px;">{{ "%.2f"|format(item.cost_dinaro) }} dinaro</div>
+          </div>
+
+          <div style="margin-top: 16px;">
+            {% if can_afford %}
+              <form method="post" action="{{ url_for('dinaro_child_add_request') }}">
+                <input type="hidden" name="spendable_id" value="{{ item.id }}">
+                <button class="btn btn-primary" type="submit" style="width: 100%; padding: 12px; font-size: 1rem;">🛍️ Buy Now!</button>
+              </form>
+            {% else %}
+              <div class="muted" style="font-size: 0.85rem; background: var(--bg); padding: 8px; border-radius: 8px; text-align: center;">
+                Need {{ "%.2f"|format(item.cost_dinaro - child.balance) }} more
+              </div>
+              <button class="btn" disabled style="width: 100%; margin-top: 8px; opacity: 0.5; cursor: not-allowed;">Locked 🔒</button>
+            {% endif %}
           </div>
         </div>
-      </div>
-    {% else %}
-      <p class="muted">No goals yet.</p>
-    {% endfor %}
+      {% else %}
+        <p class="muted">The shop is empty right now. Ask a parent to add some rewards!</p>
+      {% endfor %}
+    </div>
   </section>
 
-  <section class="panel">
-    <h2 class="card-title">Requests</h2>
-    <form method="post" action="{{ url_for('dinaro_child_add_request') }}" class="stack">
-      <div class="grid-2">
-        <div class="field">
-          <label>Item name</label>
-          <input type="text" name="item_name" required>
-        </div>
-        <div class="field">
-          <label>Item cost (dinaro)</label>
-          <input type="number" name="item_cost_dinaro" step="0.25" required>
-        </div>
-      </div>
-      <div class="grid-2">
-        <div class="field">
-          <label>Your offer (dinaro)</label>
-          <input type="number" name="offer_dinaro" step="0.25" required>
-        </div>
-        <div class="field">
-          <label>Note (optional)</label>
-          <input type="text" name="child_note" placeholder="Why you want it">
-        </div>
-      </div>
-      <div class="actions">
-        <button class="btn btn-primary" type="submit">Send request</button>
-      </div>
-    </form>
+    <script>
+      function checkBalance(input) {
+        const balance = {{ child.balance or 0 }};
+        const offer = parseFloat(input.value);
+        const warning = document.getElementById('balanceWarning');
+        if (offer > balance) {
+          warning.style.display = 'block';
+        } else {
+          warning.style.display = 'none';
+        }
+      }
+    </script>
 
-    {% for r in requests %}
-      <div class="card" style="margin-top:12px;">
-        <div style="font-weight:600;">{{ r.item_name }}</div>
-        <div class="muted">
-          Cost: {{ r.item_cost_dinaro }} dinaro · Offer: {{ r.offer_dinaro }} dinaro · Status: {{ r.status }}
-        </div>
-        {% if r.parent_counter_dinaro %}
-          <div class="muted">Parent counter: {{ r.parent_counter_dinaro }} dinaro</div>
-        {% endif %}
-        {% if r.status in ["open", "countered"] %}
-          <form method="post" action="{{ url_for('dinaro_child_update_request', request_id=r.id) }}" class="grid-2" style="margin-top:8px;">
-            <div class="field">
-              <label>Update your offer</label>
-              <input type="number" name="offer_dinaro" step="0.25" value="{{ r.offer_dinaro }}">
+  {% else %}
+    {# TEEN MODE: PERCENTAGES, LISTS, DETAILED DATA #}
+    <section class="panel" style="margin-bottom: 20px; border: 2px solid var(--accent);">
+      <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="award"></i> Achievements
+      </h2>
+      <div style="display: flex; gap: 12px; overflow-x: auto;">
+        {% for badge in badges %}
+          <div class="pill quirky-badge" style="height: auto; padding: 10px; flex-shrink: 0; animation-delay: {{ loop.index0 * 0.1 }}s;">
+            <span style="font-size: 1.2rem; margin-right: 8px;">{{ badge.emoji }}</span>
+            <div style="text-align: left;">
+              <div style="font-size: 0.85rem; font-weight: 700;">{{ badge.title }}</div>
+              <div style="font-size: 0.7rem; opacity: 0.8;">{{ badge.desc }}</div>
             </div>
-            <div class="field">
-              <label>Note (optional)</label>
-              <input type="text" name="child_note" value="{{ r.child_note or '' }}">
-            </div>
-            <div class="actions">
-              <button class="btn" type="submit">Update offer</button>
-            </div>
-          </form>
+          </div>
         {% else %}
-          <div class="muted">Closed on {{ r.closed_at or "—" }}.</div>
-        {% endif %}
+          <p class="muted">No badges yet.</p>
+        {% endfor %}
       </div>
-    {% else %}
-      <p class="muted">No requests yet.</p>
-    {% endfor %}
-  </section>
+    </section>
+
+    <section class="panel" style="margin-bottom: 20px; border: 2px solid var(--accent);">
+      <h2 class="card-title">Recent History</h2>
+      <div class="stack">
+        {% for entry in ledger[:10] %}
+          <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:600;">{{ entry.reason or "Transaction" }}</div>
+              <div class="muted" style="font-size:0.8rem;">{{ entry.created_at[:16].replace('T', ' ') }}</div>
+            </div>
+            <div style="font-weight:700; color: {% if entry.delta > 0 %}#2ecc71{% else %}#e74c3c{% endif %};">
+              {{ "+" if entry.delta > 0 else "" }}{{ "%.2f"|format(entry.delta) }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <div class="grid-2">
+      <section class="panel">
+        <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="check-square"></i> To-Do List
+        </h2>
+        <div class="stack">
+          {% for chore in todo_list %}
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-weight:600;">{{ chore.title }}</div>
+                <div class="muted" style="font-size:0.8rem;">{{ chore.recurrence|capitalize }}</div>
+              </div>
+              <form method="post" action="{{ url_for('dinaro_child_log_chore') }}">
+                <input type="hidden" name="chore_id" value="{{ chore.id }}">
+                <button class="btn btn-primary btn-sm" type="submit">Log Done</button>
+              </form>
+            </div>
+          {% else %}
+            <p class="muted">Nothing on your list!</p>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="card-title">Log Chore</h2>
+        <form method="post" action="{{ url_for('dinaro_child_log_chore') }}" class="stack">
+          <div class="field">
+            <label>Chore</label>
+            <select name="chore_id" required>
+              {% for chore in chores %}
+                <option value="{{ chore.id }}">{{ chore.title }} ({{ chore.default_hours }}h)</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label>Overtime (optional)</label>
+            <input type="number" name="overtime_hours" step="0.25" placeholder="0">
+          </div>
+          <button class="btn btn-primary" type="submit">Submit Log</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2 class="card-title">Savings Goals</h2>
+        <form method="post" action="{{ url_for('dinaro_child_add_goal') }}" class="stack">
+          <div class="field">
+            <label>New Goal</label>
+            <input type="text" name="goal_title" placeholder="New PC, Car, Savings..." required>
+          </div>
+          <div class="field">
+            <label>Target Amount</label>
+            <input type="number" name="goal_target" step="1" required>
+          </div>
+          <button class="btn" type="submit">Add Goal</button>
+        </form>
+      </section>
+    </div>
+
+    <section class="panel" style="margin-top: 20px;">
+      <h2 class="card-title">Goal Progress</h2>
+      <div class="grid-2">
+        {% for goal in goals %}
+          {% set progress = (child.balance / goal.target_dinaro * 100) if goal.target_dinaro > 0 else 0 %}
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+              <span style="font-weight: 600;">{{ goal.title }}</span>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span class="muted" style="font-size: 0.9rem;">{{ progress|round(1) }}%</span>
+                <form method="post" action="{{ url_for('dinaro_child_delete_goal', goal_id=goal.id) }}" onsubmit="return confirm('Delete this goal?')">
+                  <button class="btn btn-danger" style="padding: 2px 6px; font-size: 0.7rem;" type="submit">Delete</button>
+                </form>
+              </div>
+            </div>
+            <div class="progress-container" style="height: 10px; background: #ddd; border-radius: 5px; overflow: hidden;">
+              {% set teen_prog = (child.balance / goal.target_dinaro * 100) if goal.target_dinaro > 0 else 0 %}
+              <div class="progress-bar" style="height: 100%; width: {% if teen_prog > 100 %}100{% else %}{{ teen_prog }}{% endif %}%; background: var(--accent);"></div>
+            </div>
+            <div style="margin-top: 6px; font-size: 0.85rem;" class="muted">
+              {{ "%.2f"|format(child.balance) }} of {{ goal.target_dinaro }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top: 20px;">
+      <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="shopping-cart"></i> Marketplace
+      </h2>
+      <div class="grid-2" style="gap: 12px; margin-bottom: 20px;">
+        {% for item in spendables %}
+          {% set can_afford = (child.balance >= item.cost_dinaro) %}
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-left: 4px solid {% if can_afford %}#2ecc71{% else %}#ccc{% endif %};">
+            <div>
+              <div style="font-weight: 600;">
+                {% if 'screen' in item.title|lower or 'game' in item.title|lower or 'video' in item.title|lower %}🎮
+                {% elif 'candy' in item.title|lower or 'treat' in item.title|lower or 'ice cream' in item.title|lower %}🍦
+                {% elif 'toy' in item.title|lower or 'lego' in item.title|lower %}🧸
+                {% elif 'book' in item.title|lower %}📚
+                {% elif 'trip' in item.title|lower or 'outing' in item.title|lower %}🚗
+                {% elif 'sleep' in item.title|lower or 'bed' in item.title|lower %}🌙
+                {% else %}🎁{% endif %}
+                {{ item.title }}
+              </div>
+              <div class="muted" style="font-size: 0.9rem;">{{ "%.2f"|format(item.cost_dinaro) }} Dinaro</div>
+            </div>
+
+            {% if can_afford %}
+              <form method="post" action="{{ url_for('dinaro_child_add_request') }}">
+                <input type="hidden" name="spendable_id" value="{{ item.id }}">
+                <button class="btn btn-primary" type="submit" style="padding: 6px 12px; font-size: 0.85rem;">Buy 🛍️</button>
+              </form>
+            {% else %}
+              <div class="muted" style="font-size: 0.75rem; text-align: right;">
+                Short {{ "%.2f"|format(item.cost_dinaro - child.balance) }}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <h2 class="card-title">Custom Spending Request</h2>
+      <form method="post" action="{{ url_for('dinaro_child_add_request') }}" class="grid-2">
+        <div class="field">
+          <label>Item</label>
+          <select name="spendable_id" required>
+            <option value="">Choose an item...</option>
+            {% for item in spendables %}
+              <option value="{{ item.id }}">{{ item.title }} ({{ item.cost_dinaro }} dinaro)</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Your Offer (Dinaro)</label>
+          <input type="number" name="offer_dinaro" step="0.25" placeholder="Leave blank for full cost">
+        </div>
+        <div class="field" style="grid-column: span 2;">
+          <label>Note (optional)</label>
+          <input type="text" name="child_note" placeholder="Why do you want this?">
+        </div>
+        <div class="actions" style="grid-column: span 2;">
+          <button class="btn btn-primary" type="submit">Create Request</button>
+        </div>
+      </form>
+    </section>
+  {% endif %}
 </div>
 {% endblock %}

@@ -98,9 +98,7 @@ def init_db() -> None:
     CREATE TABLE IF NOT EXISTS dinaro_families (
         id {id_col},
         name TEXT,
-        rate_per_hour {num_col} NOT NULL DEFAULT 4,
-        class_code TEXT,
-        is_classroom INTEGER NOT NULL DEFAULT 0
+        rate_per_hour {num_col} NOT NULL DEFAULT 4
     )
     """
 
@@ -121,7 +119,8 @@ def init_db() -> None:
         name TEXT NOT NULL,
         pin_hash TEXT NOT NULL,
         pin_salt TEXT NOT NULL,
-        balance {num_col} NOT NULL DEFAULT 0
+        balance {num_col} NOT NULL DEFAULT 0,
+        view_mode TEXT NOT NULL DEFAULT 'visual'
     )
     """
 
@@ -131,7 +130,8 @@ def init_db() -> None:
         family_id INTEGER NOT NULL,
         title TEXT NOT NULL,
         default_hours {num_col} NOT NULL DEFAULT 0.5,
-        active INTEGER NOT NULL DEFAULT 1
+        active INTEGER NOT NULL DEFAULT 1,
+        recurrence TEXT NOT NULL DEFAULT 'none'
     )
     """
 
@@ -187,6 +187,16 @@ def init_db() -> None:
     )
     """
 
+    dinaro_spendables_sql = f"""
+    CREATE TABLE IF NOT EXISTS dinaro_spendables (
+        id {id_col},
+        family_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        cost_dinaro {num_col} NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1
+    )
+    """
+
     with engine.begin() as conn:
         conn.execute(text(expenses_sql))
         conn.execute(text(goals_sql))
@@ -200,6 +210,7 @@ def init_db() -> None:
         conn.execute(text(dinaro_requests_sql))
         conn.execute(text(dinaro_goals_sql))
         conn.execute(text(dinaro_ledger_sql))
+        conn.execute(text(dinaro_spendables_sql))
 
         # --- SQLite-only: add missing columns on older local DBs ---
         if engine.dialect.name == "sqlite":
@@ -240,6 +251,18 @@ def init_db() -> None:
                 conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN class_code TEXT"))
             if "is_classroom" not in col_names:
                 conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN is_classroom INTEGER NOT NULL DEFAULT 0"))
+
+            # dinaro_children: add view_mode if missing
+            cols = conn.execute(text("PRAGMA table_info(dinaro_children)")).mappings().all()
+            col_names = {c["name"] for c in cols}
+            if "view_mode" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_children ADD COLUMN view_mode TEXT NOT NULL DEFAULT 'visual'"))
+
+            # dinaro_chores: add recurrence if missing
+            cols = conn.execute(text("PRAGMA table_info(dinaro_chores)")).mappings().all()
+            col_names = {c["name"] for c in cols}
+            if "recurrence" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_chores ADD COLUMN recurrence TEXT NOT NULL DEFAULT 'none'"))
 
             # --- Migration: clams_* -> dinaro_* (one-time copy) ---
             clams_table = conn.execute(
