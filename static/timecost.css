@@ -243,6 +243,35 @@ body[data-view="dusk"]{
 /* ============================
    Base
 ============================ */
+/* Screen-reader only utility */
+.sr-only{
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Mobile drawer sections */
+.drawer-section{
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.drawer-title{
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 4px 10px 6px;
+}
+
 .skip-link{
   position:absolute;
   left:-9999px;
@@ -387,6 +416,66 @@ h1,h2,h3{
   border-radius: 12px;
 }
 .nav-popover a:hover{ background: var(--accent-soft); }
+
+/* Settings gear popover */
+.settings-details > summary{
+  padding: 9px 11px;
+}
+
+.settings-popover{
+  display: none;
+  position: absolute;
+  top: 44px;
+  right: 0;
+  left: auto;
+  min-width: 230px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.10);
+  padding: 12px;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 30;
+}
+
+.settings-details[open] .settings-popover{
+  display: flex;
+}
+
+.settings-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.settings-label{
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.settings-select{
+  font-size: 0.85rem;
+  padding: 7px 28px 7px 10px;
+}
+
+.settings-row form{
+  position: relative;
+}
+.settings-row form::after{
+  content: "▾";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--muted);
+  font-size: 12px;
+}
 
 /* Controls */
 .menu-btn{
@@ -626,3 +715,356 @@ h1,h2,h3{
   color: var(--muted);
 }
 .help-popover li{ margin: 4px 0; }
+
+/* ============================
+   Landing page
+============================ */
+.landing {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 1rem 0 2rem;
+}
+
+.landing-eyebrow {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.landing-hero {
+  text-align: center;
+  padding: 3rem 1rem 2.5rem;
+}
+
+.landing-title {
+  font-family: var(--font-head);
+  font-size: clamp(2.2rem, 6vw, 3.5rem);
+  line-height: 1.15;
+  color: var(--text);
+  margin: 0 0 1rem;
+  text-wrap: balance;
+}
+
+.landing-sub {
+  font-size: 1.1rem;
+  color: var(--muted);
+  max-width: 500px;
+  margin: 0 auto 2rem;
+  line-height: 1.65;
+}
+
+.landing-ctas {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* How it works steps */
+.landing-steps {
+  display: flex;
+  gap: 12px;
+  margin: 0 0 1.5rem;
+  flex-wrap: wrap;
+}
+
+.landing-step {
+  flex: 1;
+  min-width: 190px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.15rem 1.25rem;
+}
+
+.step-num {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.95rem;
+}
+
+/* Feature cards */
+.landing-panel {
+  margin-bottom: 1.25rem;
+}
+
+.landing-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.landing-feature:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.landing-feature i {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.landing-feature p {
+  margin: 3px 0 0;
+  font-size: 0.88rem;
+}
+
+/* Dinaro block */
+.landing-dinaro {
+  display: flex;
+  gap: 2.5rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.landing-dinaro-text {
+  flex: 1;
+  min-width: 240px;
+}
+
+.landing-dinaro-icons {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 200px;
+  padding-top: 0.5rem;
+}
+
+.dinaro-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.dinaro-icon-row i {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Email subscribe section */
+.subscribe-section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.subscribe-title {
+  font-family: var(--font-head);
+  font-size: 1.5rem;
+  color: var(--text);
+  margin: 0.25rem 0 0.5rem;
+}
+
+.subscribe-sub {
+  max-width: 420px;
+  margin: 0 auto 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.subscribe-form {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.subscribe-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.subscribe-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--input-border);
+  border-radius: calc(var(--radius) / 1.5);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: var(--font-ui);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.subscribe-input:focus {
+  outline: none;
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.subscribe-input::placeholder {
+  color: var(--placeholder);
+}
+
+.subscribe-btn {
+  white-space: nowrap;
+}
+
+.subscribe-success {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 1rem;
+  color: var(--text);
+  padding: 0.5rem 0;
+}
+
+/* ============================
+   Support / Donate page
+============================ */
+.support-page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 1rem 0 2rem;
+}
+
+.support-hero {
+  text-align: center;
+  padding: 3rem 1rem 2.5rem;
+}
+
+.support-title {
+  font-family: var(--font-head);
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.15;
+  color: var(--text);
+  margin: 0.25rem 0 1rem;
+  text-wrap: balance;
+}
+
+.support-sub {
+  font-size: 1.05rem;
+  color: var(--muted);
+  max-width: 500px;
+  margin: 0 auto 0.75rem;
+  line-height: 1.65;
+}
+
+.support-rate-note {
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Three-column tier cards */
+.support-tiers {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.support-card {
+  flex: 1;
+  min-width: 200px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.75rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.support-card-featured {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.support-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 12px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+.support-time {
+  font-family: var(--font-head);
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
+}
+
+.support-amount {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.support-desc {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0.25rem 0 0.75rem;
+  flex: 1;
+}
+
+.support-btn {
+  width: 100%;
+  text-align: center;
+  margin-top: auto;
+}
+
+.support-btn-disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+.support-footer-note {
+  text-align: center;
+  font-size: 0.88rem;
+  line-height: 1.7;
+  padding: 0.5rem 0 1rem;
+}

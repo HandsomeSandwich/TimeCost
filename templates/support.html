@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Buy Me Some Time — TimeCost{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Support TimeCost. Every contribution adds real time to building something genuinely useful." />
+{% endblock %}
+
+{% block content %}
+<div class="support-page">
+
+  <header class="support-hero">
+    <p class="landing-eyebrow">Support the project</p>
+    <h1 class="support-title">Buy me some time</h1>
+    <p class="support-sub">
+      TimeCost is free and built in spare hours.
+      If it's saved you time — or made you think twice before spending —
+      consider adding a bit of time back into it.
+    </p>
+    <p class="support-rate-note muted">
+      Time is calculated at £15/hr — close to the UK median wage.
+      Rate is infrastructural, not ego.
+    </p>
+  </header>
+
+  <div class="support-tiers">
+
+    <!-- £5 → 20 minutes -->
+    <div class="support-card">
+      <div class="support-time">20 min</div>
+      <div class="support-amount">£5</div>
+      <p class="support-desc">
+        A focused sprint. Enough to fix a bug,
+        tweak a label, or make one small thing feel right.
+      </p>
+      {% if links.min15 %}
+      <a class="btn btn-primary support-btn" href="{{ links.min15 }}" target="_blank" rel="noopener">
+        Add 20 minutes
+      </a>
+      {% else %}
+      <span class="btn support-btn support-btn-disabled">Coming soon</span>
+      {% endif %}
+    </div>
+
+    <!-- £15 → 1 hour -->
+    <div class="support-card support-card-featured">
+      <div class="support-badge">Most helpful</div>
+      <div class="support-time">1 hour</div>
+      <div class="support-amount">£15</div>
+      <p class="support-desc">
+        Room to focus. Enough for a solid new feature,
+        a round of improvements, or a deep fix.
+      </p>
+      {% if links.hour1 %}
+      <a class="btn btn-primary support-btn" href="{{ links.hour1 }}" target="_blank" rel="noopener">
+        Add 1 hour
+      </a>
+      {% else %}
+      <span class="btn support-btn support-btn-disabled">Coming soon</span>
+      {% endif %}
+    </div>
+
+    <!-- £60 → 4 hours -->
+    <div class="support-card">
+      <div class="support-time">4 hours</div>
+      <div class="support-amount">£60</div>
+      <p class="support-desc">
+        Deep work. The kind that ships something
+        meaningfully better — not just tidier.
+      </p>
+      {% if links.halfday %}
+      <a class="btn btn-primary support-btn" href="{{ links.halfday }}" target="_blank" rel="noopener">
+        Add 4 hours
+      </a>
+      {% else %}
+      <span class="btn support-btn support-btn-disabled">Coming soon</span>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <p class="support-footer-note muted">
+    Payments go directly via Stripe. No account needed. No recurring charges.
+    <br>
+    Rather just use the app?
+    <a href="{{ url_for('calculator') }}" style="color:var(--accent);">Head to the calculator →</a>
+  </p>
+
+</div>
+{% endblock %}

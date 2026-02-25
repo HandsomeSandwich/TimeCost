@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}TimeCost — What does money really cost?{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Every price tag has a hidden number: how many hours of your life it costs. TimeCost makes that number visible." />
+<meta property="og:title" content="TimeCost — What does money really cost?" />
+<meta property="og:description" content="Every price tag has a hidden number: how many hours of your life it costs. TimeCost makes that number visible." />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="TimeCost — What does money really cost?" />
+<meta name="twitter:description" content="Every price tag has a hidden number: how many hours of your life it costs." />
+{% endblock %}
+
+{% block content %}
+<div class="landing">
+
+  <!-- Hero -->
+  <section class="landing-hero">
+    <p class="landing-eyebrow">Time is the real currency</p>
+    <h1 class="landing-title">What does money really cost?</h1>
+    <p class="landing-sub">
+      Every price tag has a hidden number: how many hours of your life it costs.
+      TimeCost makes that number visible.
+    </p>
+    <div class="landing-ctas">
+      <a class="btn btn-primary" href="{{ url_for('calculator') }}">Try the calculator →</a>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="landing-steps">
+    <div class="landing-step">
+      <div class="step-num">1</div>
+      <div class="step-text">
+        <strong>Enter a price</strong>
+        <span class="muted">Coffee, rent, a car — anything with a tag.</span>
+      </div>
+    </div>
+    <div class="landing-step">
+      <div class="step-num">2</div>
+      <div class="step-text">
+        <strong>Enter your pay</strong>
+        <span class="muted">Hourly, daily, or annual — whatever works.</span>
+      </div>
+    </div>
+    <div class="landing-step">
+      <div class="step-num">3</div>
+      <div class="step-text">
+        <strong>See the real cost</strong>
+        <span class="muted">Not in pounds. In hours of your life.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Personal tools grid -->
+  <section class="panel landing-panel">
+    <h2 class="card-title" style="margin-bottom:1rem;">
+      <i data-lucide="sparkles" style="width:18px;height:18px;color:var(--accent);vertical-align:middle;margin-right:6px;"></i>
+      Personal finance tools
+    </h2>
+    <div class="grid-2">
+      <a class="card landing-feature" href="{{ url_for('calculator') }}">
+        <i data-lucide="calculator"></i>
+        <div>
+          <strong>Calculator</strong>
+          <p class="muted">Convert any price to work hours instantly.</p>
+        </div>
+      </a>
+      <a class="card landing-feature" href="{{ url_for('budget') }}">
+        <i data-lucide="layout-dashboard"></i>
+        <div>
+          <strong>Budget</strong>
+          <p class="muted">See your monthly spend in time, not money.</p>
+        </div>
+      </a>
+      <a class="card landing-feature" href="{{ url_for('goals') }}">
+        <i data-lucide="target"></i>
+        <div>
+          <strong>Goals</strong>
+          <p class="muted">Save towards what matters, track progress.</p>
+        </div>
+      </a>
+      <a class="card landing-feature" href="{{ url_for('freelance') }}">
+        <i data-lucide="briefcase"></i>
+        <div>
+          <strong>Freelance</strong>
+          <p class="muted">Log client work and calculate your earnings.</p>
+        </div>
+      </a>
+      <a class="card landing-feature" href="{{ url_for('expenses') }}">
+        <i data-lucide="receipt"></i>
+        <div>
+          <strong>Expenses</strong>
+          <p class="muted">Track recurring costs and household spend.</p>
+        </div>
+      </a>
+      <a class="card landing-feature" href="{{ url_for('staples') }}">
+        <i data-lucide="shopping-basket"></i>
+        <div>
+          <strong>Staples</strong>
+          <p class="muted">Compare cost-per-unit on everyday items.</p>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Dinaro section -->
+  <section class="panel landing-panel landing-dinaro">
+    <div class="landing-dinaro-text">
+      <p class="landing-eyebrow" style="text-align:left;">For families</p>
+      <h2 style="font-family:var(--font-head);font-size:1.6rem;line-height:1.25;margin:0.25rem 0 0.75rem;">
+        Teaching kids about money — for real
+      </h2>
+      <p class="muted" style="line-height:1.6;margin-bottom:1.25rem;">
+        Children earn Dinaro by completing chores. They save, negotiate,
+        and decide how to spend it. Same habits as real money — without the real stakes.
+      </p>
+      <div class="actions">
+        <a class="btn btn-primary" href="{{ url_for('dinaro_setup') }}">Set up your family →</a>
+        <a class="btn" href="{{ url_for('dinaro_landing') }}">Learn more</a>
+      </div>
+    </div>
+    <div class="landing-dinaro-icons">
+      <div class="dinaro-icon-row">
+        <i data-lucide="star" style="color:var(--accent);"></i>
+        <span>Earn by completing chores</span>
+      </div>
+      <div class="dinaro-icon-row">
+        <i data-lucide="piggy-bank" style="color:var(--accent);"></i>
+        <span>Save towards goals</span>
+      </div>
+      <div class="dinaro-icon-row">
+        <i data-lucide="message-circle" style="color:var(--accent);"></i>
+        <span>Negotiate spending with parents</span>
+      </div>
+      <div class="dinaro-icon-row">
+        <i data-lucide="shield-check" style="color:var(--accent);"></i>
+        <span>Children see only their own data</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Email capture -->
+  <section class="subscribe-section">
+    {% if subscribed %}
+    <div class="subscribe-success">
+      <i data-lucide="check-circle" style="width:20px;height:20px;color:var(--accent);flex-shrink:0;"></i>
+      <span>You're in! We'll let you know when new features land.</span>
+    </div>
+    {% else %}
+    <p class="landing-eyebrow">Stay in the loop</p>
+    <h2 class="subscribe-title">New tools, updates, and ideas</h2>
+    <p class="muted subscribe-sub">No spam. No noise. Just occasional updates when something worth sharing happens.</p>
+    <form class="subscribe-form" action="{{ url_for('subscribe') }}" method="post">
+      <input type="hidden" name="source" value="landing" />
+      <div class="subscribe-row">
+        <input
+          class="subscribe-input"
+          type="email"
+          name="email"
+          placeholder="your@email.com"
+          required
+          autocomplete="email"
+        />
+        <button class="btn btn-primary subscribe-btn" type="submit">Keep me posted</button>
+      </div>
+    </form>
+    {% endif %}
+  </section>
+
+  <!-- Footer nudge -->
+  <p class="muted" style="text-align:center;padding:1rem 0 0.5rem;font-size:0.9rem;">
+    Free to use. No account required.
+    <a href="{{ url_for('calculator') }}" style="color:var(--accent);">Start now →</a>
+    &nbsp;·&nbsp;
+    <a href="{{ url_for('support') }}" style="color:var(--muted);">Buy me some time</a>
+  </p>
+
+</div>
+{% endblock %}

@@ -34,9 +34,15 @@ from PiggyBank import piggybank_bp
 import PiggyBank.routes
 app.register_blueprint(piggybank_bp, url_prefix="/piggybank")
 
+# --- Dinaro (Blueprint scaffold) ---
+from dinaro import dinaro_bp  # routes attached within package
+app.register_blueprint(dinaro_bp)
+
 # Initialize DB on startup
 try:
     init_db()
+    from dinaro.routes import _dinaro_ensure_family_codes
+    _dinaro_ensure_family_codes()
 except Exception as e:
     print("Database init error:", e)
 
@@ -50,6 +56,16 @@ def set_view():
     if view in ("dawn", "dusk", "candy", "personality"):
         session["view"] = view
     return redirect(request.referrer or url_for("calculator"))
+
+
+@app.before_request
+def redirect_www():
+    """Redirect www.thetimecost.com → thetimecost.com"""
+    if request.host.startswith("www."):
+        return redirect(
+            request.url.replace("www.", "", 1),
+            code=301,
+        )
 
 
 @app.before_request
@@ -72,6 +88,7 @@ def inject_globals():
         "perspective": session.get("perspective", "river"),
         "is_parent": session.get("piggy_parent", False),
         "guide": session.get("guide", "lorelai"),
+        "plausible_domain": os.environ.get("PLAUSIBLE_DOMAIN", ""),
     }
 
 
@@ -262,126 +279,12 @@ def equal_hours_including_personal(
     }
 
 
-def _pin_hash(pin: str, salt: str) -> str:
-    return hashlib.sha256((salt + pin).encode("utf-8")).hexdigest()
-
-
-def _make_pin(pin: str) -> tuple[str, str]:
-    salt = secrets.token_hex(8)
-    return _pin_hash(pin, salt), salt
-
-
-def _verify_pin(pin: str, pin_hash: str, salt: str) -> bool:
-    return _pin_hash(pin, salt) == pin_hash
-
-
-def _dinaro_now() -> str:
-    return datetime.utcnow().isoformat(timespec="seconds")
-
-
-def _dinaro_rate_for_family(family_id: int) -> float:
-    conn = get_connection()
-    try:
-        row = conn.execute(
-            text("SELECT rate_per_hour FROM dinaro_families WHERE id = :id"),
-            {"id": family_id},
-        ).mappings().first()
-        return float(row["rate_per_hour"]) if row else 4.0
-    finally:
-        conn.close()
-
-
-def _dinaro_make_family_code() -> str:
-    """Generate a unique 6-char code for families."""
-    chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # No I, O, 0, 1
-    code = "".join(secrets.choice(chars) for _ in range(6))
-    return code
-
-
-def _dinaro_ensure_family_codes():
-    """Fill in missing family codes."""
-    conn = get_connection()
-    try:
-        rows = conn.execute(
-            text("SELECT id FROM dinaro_families WHERE family_code IS NULL")
-        ).mappings().all()
-        if not rows:
-            return
-        
-        with engine.begin() as conn2:
-            for r in rows:
-                code = _dinaro_make_family_code()
-                conn2.execute(
-                    text("UPDATE dinaro_families SET family_code = :code WHERE id = :id"),
-                    {"code": code, "id": r["id"]}
-                )
-    finally:
-        conn.close()
-
-
-_dinaro_ensure_family_codes()
-
-
-def _dinaro_add_ledger(child_id: int, delta: float, reason: str, request_id=None, log_id=None) -> None:
-    with engine.begin() as conn:
-        conn.execute(
-            text(
-                """
-                INSERT INTO dinaro_ledger (child_id, delta, reason, created_at, request_id, log_id)
-                VALUES (:child_id, :delta, :reason, :created_at, :request_id, :log_id)
-                """
-            ),
-            {
-                "child_id": child_id,
-                "delta": delta,
-                "reason": reason,
-                "created_at": _dinaro_now(),
-                "request_id": request_id,
-                "log_id": log_id,
-            },
-        )
-        conn.execute(
-            text("UPDATE dinaro_children SET balance = balance + :delta WHERE id = :id"),
-            {"delta": delta, "id": child_id},
-        )
-
-
-def _dinaro_require_parent() -> int:
-    parent_id = session.get("dinaro_parent_id")
-    if not parent_id:
-        return 0
-    return int(parent_id)
-
-
-def _dinaro_require_child() -> int:
-    child_id = session.get("dinaro_child_id")
-    if not child_id:
-        return 0
-    return int(child_id)
-
-
-def _dinaro_parent_family_id(parent_id: int) -> int:
-    conn = get_connection()
-    try:
-        row = conn.execute(
-            text("SELECT family_id FROM dinaro_parents WHERE id = :id"),
-            {"id": parent_id},
-        ).mappings().first()
-        return int(row["family_id"]) if row else 0
-    finally:
-        conn.close()
-
-
-def _dinaro_child_family_id(child_id: int) -> int:
-    conn = get_connection()
-    try:
-        row = conn.execute(
-            text("SELECT family_id FROM dinaro_children WHERE id = :id"),
-            {"id": child_id},
-        ).mappings().first()
-        return int(row["family_id"]) if row else 0
-    finally:
-        conn.close()
+from dinaro.routes import (
+    _pin_hash, _make_pin, _verify_pin, _dinaro_now, _dinaro_rate_for_family,
+    _dinaro_make_family_code, _dinaro_ensure_family_codes, _dinaro_add_ledger,
+    _dinaro_require_parent, _dinaro_require_child, _dinaro_parent_family_id, _dinaro_child_family_id,
+    safe_float as dinaro_safe_float
+)
 
 
 def get_effective_hourly_rate() -> Optional[float]:
@@ -469,7 +372,109 @@ def _prefill_wage_from_personal() -> tuple[str, str, str]:
 # ----------------------------
 # Routes: Calculator
 # ----------------------------
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
+def landing():
+    subscribed = request.args.get("subscribed") == "1"
+    return render_template("landing.html", subscribed=subscribed)
+
+
+@app.get("/sitemap.xml")
+def sitemap():
+    base = "https://thetimecost.com"
+    pages = [
+        ("/",           "weekly",  "1.0"),
+        ("/calculate",  "weekly",  "0.9"),
+        ("/personal",   "monthly", "0.7"),
+        ("/freelance",  "monthly", "0.7"),
+        ("/expenses",   "monthly", "0.7"),
+        ("/timebank",   "monthly", "0.7"),
+        ("/budget",     "monthly", "0.7"),
+        ("/goals",      "monthly", "0.7"),
+        ("/staples",    "monthly", "0.7"),
+        ("/dinaro",     "weekly",  "0.8"),
+        ("/support",    "monthly", "0.5"),
+    ]
+    xml_lines = ['<?xml version="1.0" encoding="UTF-8"?>',
+                 '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for path, freq, priority in pages:
+        xml_lines += [
+            "  <url>",
+            f"    <loc>{base}{path}</loc>",
+            f"    <changefreq>{freq}</changefreq>",
+            f"    <priority>{priority}</priority>",
+            "  </url>",
+        ]
+    xml_lines.append("</urlset>")
+    return "\n".join(xml_lines), 200, {"Content-Type": "application/xml"}
+
+
+@app.get("/robots.txt")
+def robots():
+    lines = [
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /admin/",
+        "Disallow: /dinaro/parent/",
+        "Disallow: /dinaro/child/",
+        "",
+        "Sitemap: https://thetimecost.com/sitemap.xml",
+    ]
+    return "\n".join(lines), 200, {"Content-Type": "text/plain"}
+
+
+@app.route("/support")
+def support():
+    links = {
+        "min15": os.environ.get("STRIPE_LINK_15MIN", ""),
+        "hour1": os.environ.get("STRIPE_LINK_1HOUR", ""),
+        "halfday": os.environ.get("STRIPE_LINK_HALFDAY", ""),
+    }
+    return render_template("support.html", links=links)
+
+
+@app.route("/subscribe", methods=["POST"])
+def subscribe():
+    email = request.form.get("email", "").strip().lower()
+    if not email or "@" not in email or "." not in email.split("@")[-1]:
+        return redirect(url_for("landing"))
+    source = request.form.get("source", "landing")
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO email_signups (email, source, signed_up_at) "
+                    "VALUES (:email, :source, :now)"
+                ),
+                {"email": email, "source": source, "now": datetime.utcnow().isoformat()},
+            )
+    except Exception:
+        pass  # Duplicate email — silently succeed
+    return redirect(url_for("landing") + "?subscribed=1")
+
+
+@app.route("/admin/subscribers")
+def admin_subscribers():
+    key = request.args.get("key", "")
+    admin_key = os.environ.get("ADMIN_KEY", "")
+    if not admin_key or key != admin_key:
+        return "Unauthorized", 401
+    with engine.begin() as conn:
+        rows = conn.execute(
+            text("SELECT email, source, signed_up_at FROM email_signups ORDER BY signed_up_at DESC")
+        ).mappings().all()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["email", "source", "signed_up_at"])
+    for row in rows:
+        writer.writerow([row["email"], row["source"], row["signed_up_at"]])
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=subscribers.csv"},
+    )
+
+
+@app.route("/calculate", methods=["GET", "POST"])
 def calculator():
     pre_wage_type, pre_wage_amount, _source = _prefill_wage_from_personal()
 

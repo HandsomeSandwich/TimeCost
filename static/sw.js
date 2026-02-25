@@ -1,7 +1,7 @@
-const CACHE_NAME = 'timecost-cache-v1';
+const CACHE_NAME = 'timecost-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
-  '/static/timecost.css',
+  '/static/timecost.css?v=20260225b',
   '/static/timecost.js',
   '/static/favicon.svg'
 ];
@@ -12,12 +12,25 @@ self.addEventListener('install', (event) => {
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      )
+    )
+  );
+  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      // Use cached response or fetch from network
       return cachedResponse || fetch(event.request);
     })
   );

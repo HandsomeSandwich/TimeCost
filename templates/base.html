@@ -4,6 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}TimeCost{% endblock %}</title>
+  {% block meta %}
+  <meta name="description" content="Convert any price into work hours. Personal finance tools that show you what things truly cost — in time." />
+  {% endblock %}
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +19,10 @@
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <meta name="theme-color" content="#bc6c25">
-  <link rel="stylesheet" href="{{ url_for('static', filename='timecost.css', v='20260208a') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='timecost.css', v='20260225b') }}">
+  {% if config.get('GOOGLE_SITE_VERIFICATION') %}
+  <meta name="google-site-verification" content="{{ config['GOOGLE_SITE_VERIFICATION'] }}" />
+  {% endif %}
   <script src="https://unpkg.com/lucide@latest"></script>
   {% block head %}{% endblock %}
 </head>
@@ -26,7 +32,7 @@
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">
-        <a class="brand-name" href="{{ url_for('calculator') }}">TimeCost</a>
+        <a class="brand-name" href="{{ url_for('landing') }}">TimeCost</a>
       </div>
 
       <nav class="nav" aria-label="Primary">
@@ -52,30 +58,46 @@
           <i data-lucide="menu"></i> <span class="sr-only">Menu</span>
         </button>
 
-        <form class="inline" action="{{ url_for('set_currency') }}" method="post">
-          <select class="select" name="currency" onchange="this.form.submit()">
-            {% for sym in ["£","$","€","¥","₹","₩","₽"] %}
-              <option value="{{ sym }}" {% if currency==sym %}selected{% endif %}>{{ sym }}</option>
-            {% endfor %}
-          </select>
-        </form>
-
-        <form class="inline" action="{{ url_for('set_perspective') }}" method="post">
-          <select class="select" name="perspective" onchange="this.form.submit()">
-            <option value="river" {% if perspective=="river" %}selected{% endif %}>River</option>
-            <option value="leslie" {% if perspective=="leslie" %}selected{% endif %}>Leslie</option>
-            <option value="eddie" {% if perspective=="eddie" %}selected{% endif %}>Eddie</option>
-          </select>
-        </form>
-
-        <form method="post" action="{{ url_for('set_view') }}" class="inline">
-          <select class="select" name="view" onchange="this.form.submit()">
-            <option value="personality" {% if session.get('view') == 'personality' %}selected{% endif %}>Personality</option>
-            <option value="dawn" {% if session.get('view') == 'dawn' %}selected{% endif %}>Dawn</option>
-            <option value="dusk" {% if session.get('view') == 'dusk' %}selected{% endif %}>Dusk</option>
-            <option value="candy" {% if session.get('view') == 'candy' %}selected{% endif %}>Candy</option>
-          </select>
-        </form>
+        <details class="nav-details settings-details">
+          <summary aria-label="Settings">
+            <i data-lucide="settings" style="width:18px;height:18px;vertical-align:middle;"></i>
+          </summary>
+          <div class="settings-popover">
+            <div class="settings-row">
+              <label class="settings-label">Currency</label>
+              <form action="{{ url_for('set_currency') }}" method="post">
+                <select class="select settings-select" name="currency" onchange="this.form.submit()">
+                  {% for sym in ["£","$","€","¥","₹","₩","₽"] %}
+                    <option value="{{ sym }}" {% if currency==sym %}selected{% endif %}>{{ sym }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            </div>
+            {% if session.get('view', 'personality') == 'personality' %}
+            <div class="settings-row">
+              <label class="settings-label">Perspective</label>
+              <form action="{{ url_for('set_perspective') }}" method="post">
+                <select class="select settings-select" name="perspective" onchange="this.form.submit()">
+                  <option value="river" {% if perspective=="river" %}selected{% endif %}>River</option>
+                  <option value="leslie" {% if perspective=="leslie" %}selected{% endif %}>Leslie</option>
+                  <option value="eddie" {% if perspective=="eddie" %}selected{% endif %}>Eddie</option>
+                </select>
+              </form>
+            </div>
+            {% endif %}
+            <div class="settings-row">
+              <label class="settings-label">Theme</label>
+              <form method="post" action="{{ url_for('set_view') }}">
+                <select class="select settings-select" name="view" onchange="this.form.submit()">
+                  <option value="personality" {% if session.get('view') == 'personality' %}selected{% endif %}>Personality</option>
+                  <option value="dawn" {% if session.get('view') == 'dawn' %}selected{% endif %}>Dawn</option>
+                  <option value="dusk" {% if session.get('view') == 'dusk' %}selected{% endif %}>Dusk</option>
+                  <option value="candy" {% if session.get('view') == 'candy' %}selected{% endif %}>Candy</option>
+                </select>
+              </form>
+            </div>
+          </div>
+        </details>
       </div>
     </div>
 
@@ -87,11 +109,17 @@
       <div class="drawer-section">
         <div class="drawer-title">Tools</div>
         <a href="{{ url_for('personal') }}">Personal</a>
+        <a href="{{ url_for('freelance') }}">Freelance</a>
         <a href="{{ url_for('expenses') }}">Expenses</a>
         <a href="{{ url_for('timebank') }}">Time Bank</a>
         <a href="{{ url_for('budget') }}">Budget</a>
         <a href="{{ url_for('goals') }}">Goals</a>
         <a href="{{ url_for('staples') }}">Staples</a>
+      </div>
+      <div class="drawer-section">
+        <a href="{{ url_for('support') }}" style="color:var(--accent);font-weight:500;">
+          <i data-lucide="clock" style="width:15px;height:15px;vertical-align:middle;margin-right:5px;"></i>Buy me some time
+        </a>
       </div>
     </div>
   </header>
@@ -100,6 +128,9 @@
     {% block content %}{% endblock %}
   </main>
 
+  {% if plausible_domain %}
+  <script defer data-domain="{{ plausible_domain }}" src="https://plausible.io/js/script.js"></script>
+  {% endif %}
   <script src="{{ url_for('static', filename='timecost.js') }}" defer></script>
   <script>
     if ('serviceWorker' in navigator) {

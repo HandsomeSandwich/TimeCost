@@ -99,7 +99,9 @@ def init_db() -> None:
         id {id_col},
         name TEXT,
         rate_per_hour {num_col} NOT NULL DEFAULT 4,
-        family_code TEXT UNIQUE
+        family_code TEXT UNIQUE,
+        class_code TEXT,
+        is_classroom INTEGER NOT NULL DEFAULT 0
     )
     """
 
@@ -198,6 +200,15 @@ def init_db() -> None:
     )
     """
 
+    email_signups_sql = f"""
+    CREATE TABLE IF NOT EXISTS email_signups (
+        id {id_col},
+        email TEXT NOT NULL UNIQUE,
+        source TEXT,
+        signed_up_at TEXT NOT NULL
+    )
+    """
+
     with engine.begin() as conn:
         conn.execute(text(expenses_sql))
         conn.execute(text(goals_sql))
@@ -210,6 +221,7 @@ def init_db() -> None:
         conn.execute(text(dinaro_chore_logs_sql))
         conn.execute(text(dinaro_requests_sql))
         conn.execute(text(dinaro_goals_sql))
+        conn.execute(text(email_signups_sql))
         conn.execute(text(dinaro_ledger_sql))
         conn.execute(text(dinaro_spendables_sql))
 
