@@ -27,6 +27,7 @@ BILLIONAIRES = [
     {"name": "Mark Zuckerberg",    "net_worth_usd": 210_000_000_000, "annual_growth_usd":  80_000_000_000},
     {"name": "Larry Ellison",      "net_worth_usd": 190_000_000_000, "annual_growth_usd":  50_000_000_000},
     {"name": "Bill Gates",         "net_worth_usd": 110_000_000_000, "annual_growth_usd":  10_000_000_000},
+    {"name": "Donald Trump",       "net_worth_usd":   6_000_000_000, "annual_growth_usd":   1_500_000_000},
 ]
 
 # Approximate conversion rates to USD
