@@ -639,6 +639,48 @@ h1,h2,h3{
   box-shadow: 0 0 0 4px var(--focus-ring);
 }
 
+/* Radio pill group */
+.radio-group{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.radio{
+  display: contents;
+}
+
+.radio input[type="radio"]{
+  display: none;
+}
+
+.radio label{
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  user-select: none;
+}
+
+.radio label:hover{
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.radio input[type="radio"]:checked + label{
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
 /* Expenses: show ONE layout at a time */
 .desktop-only{ display:block; }
 .mobile-only{ display:none; }
