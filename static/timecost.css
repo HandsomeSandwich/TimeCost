@@ -319,6 +319,7 @@ h1,h2,h3{
   max-width:980px;
   margin:0 auto;
   padding:28px 16px 48px;
+  overflow-x: hidden;
 }
 
 .page{ max-width:720px; margin:0 auto; }
@@ -330,6 +331,9 @@ h1,h2,h3{
   border-radius: 22px;
   padding: 24px;
   box-shadow: 0 12px 28px rgba(0,0,0,.06);
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 /* ============================
@@ -696,7 +700,11 @@ h1,h2,h3{
   .mobile-only{ display:block; }
 }
 
-.table-wrap{ overflow-x:auto; }
+.table-wrap{
+  overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
+}
 
 .expense-table{
   width: 100%;
@@ -1299,6 +1307,11 @@ h1,h2,h3{
   .wealth-table thead th:first-child,
   .wealth-table td:first-child{
     max-width: 90px;
+  }
+  /* Hide Growth column on mobile — Person, Net Worth, To your 1 fit cleanly */
+  .wealth-table th:nth-child(3),
+  .wealth-table td:nth-child(3){
+    display: none;
   }
 }
 
