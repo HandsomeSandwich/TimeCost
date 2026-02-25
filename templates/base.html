@@ -19,6 +19,10 @@
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <meta name="theme-color" content="#bc6c25">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TimeCost">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.svg') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='timecost.css', v='20260225o') }}">
   {% if config.get('GOOGLE_SITE_VERIFICATION') %}
   <meta name="google-site-verification" content="{{ config['GOOGLE_SITE_VERIFICATION'] }}" />
@@ -37,7 +41,7 @@
 
       <nav class="nav" aria-label="Primary">
         <a href="{{ url_for('calculator') }}"><i data-lucide="calculator" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;"></i> Calculator</a>
-        <a href="{{ url_for('dinaro_landing') }}"><i data-lucide="coins" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;"></i> Dinaro</a>
+        <a href="{{ url_for('dinaro.dinaro_landing') }}"><i data-lucide="coins" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;"></i> Dinaro</a>
 
         <details class="nav-details">
           <summary><i data-lucide="wrench" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;"></i> Tools</summary>
@@ -105,7 +109,7 @@
     <div class="nav-drawer" id="navDrawer">
       <a href="{{ url_for('landing') }}">Home</a>
       <a href="{{ url_for('calculator') }}">Calculator</a>
-      <a href="{{ url_for('dinaro_landing') }}">Dinaro</a>
+      <a href="{{ url_for('dinaro.dinaro_landing') }}">Dinaro</a>
 
       <div class="drawer-section">
         <div class="drawer-title">Tools</div>

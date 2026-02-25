@@ -58,3 +58,12 @@ function syncResponsiveInputs() {
 
 window.addEventListener("DOMContentLoaded", syncResponsiveInputs);
 window.addEventListener("resize", syncResponsiveInputs);
+
+// PWA Install Prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Potentially show a custom install button here if needed
+  console.log('Install prompt ready');
+});

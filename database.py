@@ -101,7 +101,10 @@ def init_db() -> None:
         rate_per_hour {num_col} NOT NULL DEFAULT 4,
         family_code TEXT UNIQUE,
         class_code TEXT,
-        is_classroom INTEGER NOT NULL DEFAULT 0
+        is_classroom INTEGER NOT NULL DEFAULT 0,
+        interest_rate {num_col} NOT NULL DEFAULT 0,
+        interest_threshold {num_col} NOT NULL DEFAULT 100,
+        tax_rate {num_col} NOT NULL DEFAULT 0
     )
     """
 
@@ -123,7 +126,9 @@ def init_db() -> None:
         pin_hash TEXT NOT NULL,
         pin_salt TEXT NOT NULL,
         balance {num_col} NOT NULL DEFAULT 0,
-        view_mode TEXT NOT NULL DEFAULT 'visual'
+        view_mode TEXT NOT NULL DEFAULT 'visual',
+        last_interest_at TEXT,
+        last_tax_at TEXT
     )
     """
 
@@ -134,7 +139,8 @@ def init_db() -> None:
         title TEXT NOT NULL,
         default_hours {num_col} NOT NULL DEFAULT 0.5,
         active INTEGER NOT NULL DEFAULT 1,
-        recurrence TEXT NOT NULL DEFAULT 'none'
+        recurrence TEXT NOT NULL DEFAULT 'none',
+        chore_type TEXT NOT NULL DEFAULT 'income'
     )
     """
 
@@ -251,98 +257,36 @@ def init_db() -> None:
                     )
                 )
 
-            if "hourly_rate" not in col_names and "rate" in col_names:
-                # You can't rename columns in older SQLite easily without table rebuild,
-                # so just keep using hourly_rate going forward.
-                # (If you need a real migration later, we can do it safely.)
-                pass
-
-            # dinaro_families: add family_code column if missing
-            if "family_code" not in col_names:
-                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN family_code TEXT"))
-
-            # dinaro_families: add classroom columns if missing
+            # dinaro_families
             cols = conn.execute(text("PRAGMA table_info(dinaro_families)")).mappings().all()
             col_names = {c["name"] for c in cols}
+            if "family_code" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN family_code TEXT"))
             if "class_code" not in col_names:
                 conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN class_code TEXT"))
             if "is_classroom" not in col_names:
                 conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN is_classroom INTEGER NOT NULL DEFAULT 0"))
+            if "interest_rate" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN interest_rate DOUBLE PRECISION NOT NULL DEFAULT 0"))
+            if "interest_threshold" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN interest_threshold DOUBLE PRECISION NOT NULL DEFAULT 100"))
+            if "tax_rate" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN tax_rate DOUBLE PRECISION NOT NULL DEFAULT 0"))
 
-            # dinaro_children: add view_mode if missing
+            # dinaro_children
             cols = conn.execute(text("PRAGMA table_info(dinaro_children)")).mappings().all()
             col_names = {c["name"] for c in cols}
             if "view_mode" not in col_names:
                 conn.execute(text("ALTER TABLE dinaro_children ADD COLUMN view_mode TEXT NOT NULL DEFAULT 'visual'"))
+            if "last_interest_at" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_children ADD COLUMN last_interest_at TEXT"))
+            if "last_tax_at" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_children ADD COLUMN last_tax_at TEXT"))
 
-            # dinaro_chores: add recurrence if missing
+            # dinaro_chores
             cols = conn.execute(text("PRAGMA table_info(dinaro_chores)")).mappings().all()
             col_names = {c["name"] for c in cols}
             if "recurrence" not in col_names:
                 conn.execute(text("ALTER TABLE dinaro_chores ADD COLUMN recurrence TEXT NOT NULL DEFAULT 'none'"))
-
-            # --- Migration: clams_* -> dinaro_* (one-time copy) ---
-            clams_table = conn.execute(
-                text("SELECT name FROM sqlite_master WHERE type='table' AND name='clams_families'")
-            ).mappings().first()
-            if clams_table:
-                dinaro_count = conn.execute(
-                    text("SELECT COUNT(*) AS c FROM dinaro_families")
-                ).mappings().first()["c"]
-                if dinaro_count == 0:
-                    conn.execute(
-                        text(
-                            "INSERT INTO dinaro_families (id, name, rate_per_hour) "
-                            "SELECT id, name, rate_per_hour FROM clams_families"
-                        )
-                    )
-                    conn.execute(
-                        text(
-                            "INSERT INTO dinaro_parents (id, family_id, name, pin_hash, pin_salt) "
-                            "SELECT id, family_id, name, pin_hash, pin_salt FROM clams_parents"
-                        )
-                    )
-                    conn.execute(
-                        text(
-                            "INSERT INTO dinaro_children (id, family_id, name, pin_hash, pin_salt, balance) "
-                            "SELECT id, family_id, name, pin_hash, pin_salt, balance FROM clams_children"
-                        )
-                    )
-                    conn.execute(
-                        text(
-                            "INSERT INTO dinaro_chores (id, family_id, title, default_hours, active) "
-                            "SELECT id, family_id, title, default_hours, active FROM clams_chores"
-                        )
-                    )
-                    conn.execute(
-                        text(
-                            "INSERT INTO dinaro_chore_logs "
-                            "(id, child_id, chore_id, work_date, overtime_hours, requested_hours, "
-                            "approved_hours, status, created_at) "
-                            "SELECT id, child_id, chore_id, work_date, overtime_hours, requested_hours, "
-                            "approved_hours, status, created_at FROM clams_chore_logs"
-                        )
-                    )
-                    conn.execute(
-                        text(
-                            "INSERT INTO dinaro_requests "
-                            "(id, child_id, item_name, item_cost_dinaro, offer_dinaro, parent_counter_dinaro, "
-                            "status, parent_note, child_note, created_at, closed_at, final_dinaro) "
-                            "SELECT id, child_id, item_name, item_cost_clams, offer_clams, parent_counter_clams, "
-                            "status, parent_note, child_note, created_at, closed_at, final_clams "
-                            "FROM clams_requests"
-                        )
-                    )
-                    conn.execute(
-                        text(
-                            "INSERT INTO dinaro_goals (id, child_id, title, target_dinaro) "
-                            "SELECT id, child_id, title, target_clams FROM clams_goals"
-                        )
-                    )
-                    conn.execute(
-                        text(
-                            "INSERT INTO dinaro_ledger "
-                            "(id, child_id, delta, reason, created_at, request_id, log_id) "
-                            "SELECT id, child_id, delta, reason, created_at, request_id, log_id FROM clams_ledger"
-                        )
-                    )
+            if "chore_type" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_chores ADD COLUMN chore_type TEXT NOT NULL DEFAULT 'income'"))

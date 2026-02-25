@@ -23,7 +23,7 @@
         </div>
         <div class="actions">
           <button class="btn btn-primary" type="submit">Continue</button>
-          <a class="btn" href="{{ url_for('dinaro_landing') }}">Back</a>
+          <a class="btn" href="{{ url_for('dinaro.dinaro_landing') }}">Back</a>
         </div>
       </form>
     {% else %}
@@ -47,7 +47,7 @@
 
         <div class="actions">
           <button class="btn btn-primary" type="submit">Enter</button>
-          <form method="post" action="{{ url_for('dinaro_child_reset_family') }}" class="inline">
+          <form method="post" action="{{ url_for('dinaro.dinaro_child_reset_family') }}" class="inline">
             <button class="btn" type="submit">Not your family?</button>
           </form>
         </div>

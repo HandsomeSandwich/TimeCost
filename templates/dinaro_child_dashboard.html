@@ -26,16 +26,30 @@
   </header>
 
   <div style="text-align: center; margin-bottom: 24px;">
-    <form method="post" action="{{ url_for('dinaro_child_logout') }}" class="inline">
+    <form method="post" action="{{ url_for('dinaro.dinaro_child_logout') }}" class="inline">
       <button class="btn" type="submit">{% if child.view_mode == 'visual' %}👋 Log out{% else %}Log out{% endif %}</button>
     </form>
   </div>
 
   {% if child.view_mode == 'visual' %}
     {# VISUAL MODE: BIG BUTTONS AND EMOJIS #}
+  
+  {% if interest_rate > 0 or tax_rate > 0 %}
+  <section class="panel quirky-earn" style="margin-bottom: 24px; border: 2px solid var(--accent); background: var(--accent-soft); padding: 12px;">
+    <div style="display: flex; gap: 12px; align-items: center; justify-content: center; font-weight: 600;">
+      {% if interest_rate > 0 %}
+        <span>🏦 Interest: {{ interest_rate }}% (if over {{ interest_threshold }})</span>
+      {% endif %}
+      {% if tax_rate > 0 %}
+        <span>💸 Parent Tax: {{ tax_rate }}%</span>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
   <section class="panel" style="margin-bottom: 24px; border: 2px solid var(--accent);">
     <h2 class="card-title" style="font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
-      <i data-lucide="check-square" style="color:var(--accent);"></i> Daily To-Do
+      <i data-lucide="check-square" style="color:var(--accent);"></i> Your To-Do List
     </h2>
     <div class="stack">
       {% for chore in todo_list %}
@@ -44,14 +58,30 @@
             <div style="font-weight:700; font-size: 1.1rem;">{{ chore.title }}</div>
             <div class="muted" style="font-size: 0.85rem;">{{ chore.recurrence|capitalize }} · {{ chore.default_hours }} hr</div>
           </div>
-          <form method="post" action="{{ url_for('dinaro_child_log_chore') }}">
+          <form method="post" action="{{ url_for('dinaro.dinaro_child_log_chore') }}" style="display: flex; gap: 8px; align-items: center;">
             <input type="hidden" name="chore_id" value="{{ chore.id }}">
+            <div style="text-align: right;">
+              <label class="muted" style="font-size: 0.75rem; display: block;">Extra hours?</label>
+              <input type="number" name="overtime_hours" step="0.25" placeholder="0" style="width: 60px; padding: 4px; font-size: 0.9rem;">
+            </div>
             <button class="btn btn-primary" type="submit" style="padding: 8px 16px;">Done! ✅</button>
           </form>
         </div>
-      {% else %}
-        <p class="muted">All caught up! Great job! 🌟</p>
       {% endfor %}
+
+      {% for chore in completed_today %}
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center; padding: 16px; opacity: 0.7; background: var(--bg);">
+          <div>
+            <div style="font-weight:700; font-size: 1.1rem; text-decoration: line-through;">{{ chore.title }}</div>
+            <div class="muted" style="font-size: 0.85rem;">Finished today! 🌟</div>
+          </div>
+          <div style="color: var(--accent); font-weight: 800;">PENDING</div>
+        </div>
+      {% endfor %}
+
+      {% if not todo_list and not completed_today %}
+        <p class="muted">All caught up! Great job! 🌟</p>
+      {% endif %}
     </div>
   </section>
 
@@ -90,13 +120,18 @@
           <p class="muted">Nothing here yet!</p>
         {% endfor %}
       </div>
+      {% if ledger|length > 5 %}
+        <div style="text-align: center; margin-top: 16px;">
+          <a href="{{ url_for('dinaro.dinaro_child_history') }}" class="btn">View All History 📜</a>
+        </div>
+      {% endif %}
     </section>
 
   <section class="panel" style="margin-bottom: 24px;">
     <h2 class="card-title" style="font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
       <i data-lucide="hammer" style="color:var(--accent);"></i> Finish a job!
     </h2>
-      <form method="post" action="{{ url_for('dinaro_child_log_chore') }}" class="stack">
+      <form method="post" action="{{ url_for('dinaro.dinaro_child_log_chore') }}" class="stack">
         <div class="field">
           <label style="font-size: 1.1rem;">What did you do?</label>
           <select name="chore_id" required style="font-size: 1.1rem; padding: 16px;">
@@ -105,6 +140,10 @@
               <option value="{{ chore.id }}">{{ chore.title }} ({{ chore.default_hours }} hr)</option>
             {% endfor %}
           </select>
+        </div>
+        <div class="field">
+          <label style="font-size: 1.1rem;">Did you work any extra hours? (Optional)</label>
+          <input type="number" name="overtime_hours" step="0.25" placeholder="0" style="font-size: 1.1rem; padding: 16px;">
         </div>
         <button class="btn btn-primary" type="submit" style="font-size: 1.2rem; padding: 18px;">✅ I finished it!</button>
       </form>
@@ -119,7 +158,7 @@
         <div class="card" style="margin-top:10px; padding: 20px;">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 8px;">
             <div style="font-weight:700; font-size: 1.3rem;">{{ goal.title }}</div>
-            <form method="post" action="{{ url_for('dinaro_child_delete_goal', goal_id=goal.id) }}" onsubmit="return confirm('Delete this goal?')">
+            <form method="post" action="{{ url_for('dinaro.dinaro_child_delete_goal', goal_id=goal.id) }}" onsubmit="return confirm('Delete this goal?')">
               <button class="btn btn-danger" style="padding: 4px 10px; font-size: 1rem; border-radius: 50%;" type="submit">×</button>
             </form>
           </div>
@@ -165,7 +204,7 @@
 
           <div style="margin-top: 16px;">
             {% if can_afford %}
-              <form method="post" action="{{ url_for('dinaro_child_add_request') }}">
+              <form method="post" action="{{ url_for('dinaro.dinaro_child_add_request') }}">
                 <input type="hidden" name="spendable_id" value="{{ item.id }}">
                 <button class="btn btn-primary" type="submit" style="width: 100%; padding: 12px; font-size: 1rem;">🛍️ Buy Now!</button>
               </form>
@@ -198,6 +237,20 @@
 
   {% else %}
     {# TEEN MODE: PERCENTAGES, LISTS, DETAILED DATA #}
+
+    {% if interest_rate > 0 or tax_rate > 0 %}
+    <section class="panel" style="margin-bottom: 20px; border: 1px dashed var(--accent); padding: 10px; font-size: 0.9rem;">
+      <div style="display: flex; justify-content: space-around;">
+        {% if interest_rate > 0 %}
+          <div><strong>Savings Bonus:</strong> {{ interest_rate }}% daily (Threshold: {{ interest_threshold }} dinaro)</div>
+        {% endif %}
+        {% if tax_rate > 0 %}
+          <div><strong>Family Subscription:</strong> {{ tax_rate }}% daily tax</div>
+        {% endif %}
+      </div>
+    </section>
+    {% endif %}
+
     <section class="panel" style="margin-bottom: 20px; border: 2px solid var(--accent);">
       <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
         <i data-lucide="award"></i> Achievements
@@ -232,12 +285,17 @@
           </div>
         {% endfor %}
       </div>
+      {% if ledger|length > 10 %}
+        <div style="text-align: center; margin-top: 12px;">
+          <a href="{{ url_for('dinaro.dinaro_child_history') }}" class="btn btn-sm">View Full History</a>
+        </div>
+      {% endif %}
     </section>
 
     <div class="grid-2">
       <section class="panel">
         <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
-          <i data-lucide="check-square"></i> To-Do List
+          <i data-lucide="check-square"></i> Your To-Do List
         </h2>
         <div class="stack">
           {% for chore in todo_list %}
@@ -246,20 +304,32 @@
                 <div style="font-weight:600;">{{ chore.title }}</div>
                 <div class="muted" style="font-size:0.8rem;">{{ chore.recurrence|capitalize }}</div>
               </div>
-              <form method="post" action="{{ url_for('dinaro_child_log_chore') }}">
+              <form method="post" action="{{ url_for('dinaro.dinaro_child_log_chore') }}">
                 <input type="hidden" name="chore_id" value="{{ chore.id }}">
                 <button class="btn btn-primary btn-sm" type="submit">Log Done</button>
               </form>
             </div>
-          {% else %}
-            <p class="muted">Nothing on your list!</p>
           {% endfor %}
+
+          {% for chore in completed_today %}
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; opacity: 0.6;">
+              <div>
+                <div style="font-weight:600; text-decoration: line-through;">{{ chore.title }}</div>
+                <div class="muted" style="font-size:0.8rem;">Done today</div>
+              </div>
+              <span class="badge">Pending Approval</span>
+            </div>
+          {% endfor %}
+
+          {% if not todo_list and not completed_today %}
+            <p class="muted">Nothing on your list!</p>
+          {% endif %}
         </div>
       </section>
 
       <section class="panel">
         <h2 class="card-title">Log Chore</h2>
-        <form method="post" action="{{ url_for('dinaro_child_log_chore') }}" class="stack">
+        <form method="post" action="{{ url_for('dinaro.dinaro_child_log_chore') }}" class="stack">
           <div class="field">
             <label>Chore</label>
             <select name="chore_id" required>
@@ -278,7 +348,7 @@
 
       <section class="panel">
         <h2 class="card-title">Savings Goals</h2>
-        <form method="post" action="{{ url_for('dinaro_child_add_goal') }}" class="stack">
+        <form method="post" action="{{ url_for('dinaro.dinaro_child_add_goal') }}" class="stack">
           <div class="field">
             <label>New Goal</label>
             <input type="text" name="goal_title" placeholder="New PC, Car, Savings..." required>
@@ -302,7 +372,7 @@
               <span style="font-weight: 600;">{{ goal.title }}</span>
               <div style="display:flex; align-items:center; gap:10px;">
                 <span class="muted" style="font-size: 0.9rem;">{{ progress|round(1) }}%</span>
-                <form method="post" action="{{ url_for('dinaro_child_delete_goal', goal_id=goal.id) }}" onsubmit="return confirm('Delete this goal?')">
+                <form method="post" action="{{ url_for('dinaro.dinaro_child_delete_goal', goal_id=goal.id) }}" onsubmit="return confirm('Delete this goal?')">
                   <button class="btn btn-danger" style="padding: 2px 6px; font-size: 0.7rem;" type="submit">Delete</button>
                 </form>
               </div>
@@ -342,7 +412,7 @@
             </div>
 
             {% if can_afford %}
-              <form method="post" action="{{ url_for('dinaro_child_add_request') }}">
+              <form method="post" action="{{ url_for('dinaro.dinaro_child_add_request') }}">
                 <input type="hidden" name="spendable_id" value="{{ item.id }}">
                 <button class="btn btn-primary" type="submit" style="padding: 6px 12px; font-size: 0.85rem;">Buy 🛍️</button>
               </form>
@@ -356,7 +426,7 @@
       </div>
 
       <h2 class="card-title">Custom Spending Request</h2>
-      <form method="post" action="{{ url_for('dinaro_child_add_request') }}" class="grid-2">
+      <form method="post" action="{{ url_for('dinaro.dinaro_child_add_request') }}" class="grid-2">
         <div class="field">
           <label>Item</label>
           <select name="spendable_id" required>

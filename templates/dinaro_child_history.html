@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Transaction History{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header" style="text-align: center; margin-bottom: 24px;">
+    {% if child.view_mode == 'visual' %}
+      <div style="font-size: 3rem; margin-bottom: 8px;"><i data-lucide="history" style="width:64px; height:64px;"></i></div>
+      <h1 style="font-size: 2.5rem; margin-bottom: 4px;">Money History</h1>
+      <p class="muted">All the times you earned or spent Dinaro!</p>
+    {% else %}
+      <h1 style="margin-bottom: 0;">{{ child.name }}'s Transaction History</h1>
+      <p class="muted" style="margin-top: 4px;">Full record of your earnings and spending.</p>
+    {% endif %}
+  </header>
+
+  <div style="text-align: center; margin-bottom: 24px;">
+    <a href="{{ url_for('dinaro.dinaro_child_dashboard') }}" class="btn">
+      {% if child.view_mode == 'visual' %}⬅️ Back to Dashboard{% else %}Back to Dashboard{% endif %}
+    </a>
+  </div>
+
+  <section class="panel" style="border: 2px solid var(--accent);">
+    <div class="stack">
+      {% for entry in ledger %}
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center; padding: 16px;">
+          <div>
+            <div style="font-size: 1.1rem; font-weight: 600;">
+              {% if child.view_mode == 'visual' %}
+                {{ "🎉" if entry.delta > 0 else "🛍️" }} {{ entry.reason or "Transaction" }}
+              {% else %}
+                {{ entry.reason or "Transaction" }}
+              {% endif %}
+            </div>
+            <div class="muted" style="font-size: 0.85rem;">
+              {{ entry.created_at[:16].replace('T', ' ') }}
+            </div>
+          </div>
+          <div style="font-weight:800; font-size: 1.2rem; color: {% if entry.delta > 0 %}#2ecc71{% else %}#e74c3c{% endif %};">
+            {{ "+" if entry.delta > 0 else "" }}{{ "%.2f"|format(entry.delta) }}
+          </div>
+        </div>
+      {% else %}
+        <p class="muted" style="text-align: center;">No transactions found yet!</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div style="text-align: center; margin-top: 24px;">
+    <a href="{{ url_for('dinaro.dinaro_child_dashboard') }}" class="btn">
+      {% if child.view_mode == 'visual' %}⬅️ Back to Dashboard{% else %}Back to Dashboard{% endif %}
+    </a>
+  </div>
+</div>
+{% endblock %}

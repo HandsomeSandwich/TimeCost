@@ -16,8 +16,8 @@
       <div style="font-weight:600;">Family mode</div>
       <div class="muted">Parents guide at home with chores, goals, and requests.</div>
       <div class="actions" style="margin-top:10px;">
-        <a class="btn btn-primary" href="{{ url_for('dinaro_setup') }}">Family setup</a>
-        <a class="btn" href="{{ url_for('dinaro_parent_login') }}">Parent login</a>
+        <a class="btn btn-primary" href="{{ url_for('dinaro.dinaro_setup') }}">Family setup</a>
+        <a class="btn" href="{{ url_for('dinaro.dinaro_parent_login') }}">Parent login</a>
       </div>
     </div>
   </section>
@@ -29,7 +29,7 @@
       </h2>
       <p class="muted">Manage chores, approve overtime, and negotiate requests.</p>
       <div class="actions">
-        <a class="btn btn-primary" href="{{ url_for('dinaro_parent_login') }}">Parent login</a>
+        <a class="btn btn-primary" href="{{ url_for('dinaro.dinaro_parent_login') }}">Parent login</a>
       </div>
     </section>
 
@@ -39,7 +39,7 @@
       </h2>
       <p class="muted">Log chores, track dinaro, and request things you want.</p>
       <div class="actions">
-        <a class="btn btn-primary" href="{{ url_for('dinaro_child_login') }}">Child login</a>
+        <a class="btn btn-primary" href="{{ url_for('dinaro.dinaro_child_login') }}">Child login</a>
       </div>
     </section>
   </div>
