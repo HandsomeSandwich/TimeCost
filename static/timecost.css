@@ -1068,3 +1068,69 @@ h1,h2,h3{
   line-height: 1.7;
   padding: 0.5rem 0 1rem;
 }
+
+/* ============================
+   Wealth Gap Comparison
+============================ */
+.wealth-gap{
+  margin-top: 1.5rem;
+}
+
+.wealth-table-wrap{
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.wealth-table{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.wealth-table thead th{
+  background: var(--accent-soft);
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.wealth-table tbody tr{
+  border-top: 1px solid var(--border);
+}
+
+.wealth-table tbody tr:hover{
+  background: var(--accent-soft);
+}
+
+.wealth-table td{
+  padding: 10px 14px;
+  vertical-align: middle;
+}
+
+.wealth-row-you td{
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
+.wealth-time{
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.wealth-time-growth{
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.wealth-note{
+  font-size: 0.78rem;
+  margin-top: 0.75rem;
+  line-height: 1.6;
+}

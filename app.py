@@ -18,6 +18,64 @@ DEFAULT_CURRENCY = "£"
 ALLOWED_CURRENCIES = {"$", "£", "€", "¥", "₹", "₩", "₽"}
 
 # ----------------------------
+# Wealth comparison data
+# ----------------------------
+# Net worth and annual growth in USD (approximate, Feb 2026)
+BILLIONAIRES = [
+    {"name": "Elon Musk",          "net_worth_usd": 400_000_000_000, "annual_growth_usd": 150_000_000_000},
+    {"name": "Jeff Bezos",         "net_worth_usd": 240_000_000_000, "annual_growth_usd":  60_000_000_000},
+    {"name": "Mark Zuckerberg",    "net_worth_usd": 210_000_000_000, "annual_growth_usd":  80_000_000_000},
+    {"name": "Larry Ellison",      "net_worth_usd": 190_000_000_000, "annual_growth_usd":  50_000_000_000},
+    {"name": "Bill Gates",         "net_worth_usd": 110_000_000_000, "annual_growth_usd":  10_000_000_000},
+]
+
+# Approximate conversion rates to USD
+CURRENCY_TO_USD = {
+    "£": 1.27,
+    "$": 1.00,
+    "€": 1.08,
+    "¥": 0.0067,
+    "₹": 0.012,
+    "₩": 0.00073,
+    "₽": 0.011,
+}
+
+WORKING_HOURS_PER_YEAR = 40 * 52  # 2080
+
+
+def format_wealth_time(hours: float) -> str:
+    """Format a very small (or large) number of hours into a human-readable string."""
+    seconds = hours * 3600
+    if seconds < 0.001:
+        return f"{seconds * 1000:.3f} milliseconds"
+    if seconds < 1:
+        return f"{seconds:.2f} seconds"
+    if seconds < 60:
+        return f"{seconds:.1f} seconds"
+    if seconds < 3600:
+        minutes = seconds / 60
+        return f"{minutes:.1f} minutes"
+    if hours < 24:
+        return f"{hours:.1f} hours"
+    return f"{hours / 24:.1f} days"
+
+
+def wealth_comparison(item_cost: float, currency: str) -> list[dict]:
+    """Return per-billionaire time-to-afford rows for a given item cost."""
+    usd_rate = CURRENCY_TO_USD.get(currency, 1.0)
+    item_cost_usd = item_cost * usd_rate
+    rows = []
+    for b in BILLIONAIRES:
+        hourly_net_worth  = b["net_worth_usd"]  / WORKING_HOURS_PER_YEAR
+        hourly_growth     = b["annual_growth_usd"] / WORKING_HOURS_PER_YEAR
+        rows.append({
+            "name":          b["name"],
+            "by_net_worth":  format_wealth_time(item_cost_usd / hourly_net_worth),
+            "by_growth":     format_wealth_time(item_cost_usd / hourly_growth),
+        })
+    return rows
+
+# ----------------------------
 # App setup
 # ----------------------------
 app = Flask(__name__)
@@ -528,6 +586,11 @@ def calculator():
             result = "Invalid input"
             time_cost = {"ok": False, "error": "Invalid input.", "human": ""}
 
+    # Build wealth comparison only when we have a valid numeric result
+    wealth_rows = None
+    if isinstance(result, float) and result > 0:
+        wealth_rows = wealth_comparison(float(item_cost), session.get("currency", DEFAULT_CURRENCY))
+
     return render_template(
         "calculator.html",
         result=result,
@@ -540,6 +603,7 @@ def calculator():
         workday_text=workday_text,
         display_wage_type=display_wage_type,
         display_wage_amount=display_wage_amount,
+        wealth_rows=wealth_rows,
     )
 
 

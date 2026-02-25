@@ -186,6 +186,56 @@
     {% endif %}
 
   </form>
+
+  {% if wealth_rows %}
+  <section class="panel wealth-gap">
+    <h2 class="card-title" style="display:flex;align-items:center;gap:8px;">
+      <i data-lucide="scale" style="color:var(--accent);"></i>
+      Wealth comparison
+    </h2>
+    <p class="muted" style="margin-bottom:1rem;">
+      The same {{ currency }}{{ item_cost }} costs very different amounts of time depending on who's buying.
+      Billionaire figures are approximate (USD equivalent, Feb 2026).
+    </p>
+
+    <div class="wealth-table-wrap">
+      <table class="wealth-table">
+        <thead>
+          <tr>
+            <th>Person</th>
+            <th>By net worth</th>
+            <th>By annual growth</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="wealth-row-you">
+            <td><strong>You</strong></td>
+            <td colspan="2">
+              {% if time_cost and time_cost.ok %}
+                {{ time_cost.human }}
+              {% else %}
+                {{ (result or 0)|round(2) }} hours
+              {% endif %}
+            </td>
+          </tr>
+          {% for b in wealth_rows %}
+          <tr>
+            <td>{{ b.name }}</td>
+            <td class="wealth-time">{{ b.by_net_worth }}</td>
+            <td class="wealth-time wealth-time-growth">{{ b.by_growth }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="muted wealth-note">
+      Net worth rate = total wealth ÷ 2,080 working hours/year.
+      Annual growth rate = last year's wealth increase ÷ 2,080 hours.
+    </p>
+  </section>
+  {% endif %}
+
 </div>
 
 {% endblock %}
