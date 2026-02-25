@@ -74,6 +74,20 @@ def format_wealth_count(n: float) -> str:
     return f"{n/1_000_000_000:,.1f}bn"
 
 
+def result_visual(hours: float) -> dict:
+    """Return contextual bar data for the result visual."""
+    if hours <= 8:
+        return {"pct": round(hours / 8 * 100, 1), "unit": "workday", "overflow": False}
+    elif hours <= 40:
+        return {"pct": round(hours / 40 * 100, 1), "unit": "work week", "overflow": False}
+    elif hours <= 160:
+        return {"pct": round(hours / 160 * 100, 1), "unit": "work month", "overflow": False}
+    elif hours <= 2080:
+        return {"pct": round(hours / 2080 * 100, 1), "unit": "work year", "overflow": False}
+    else:
+        return {"pct": 100, "unit": "work years", "years": round(hours / 2080, 1), "overflow": True}
+
+
 def wealth_comparison(item_cost: float, currency: str, user_hourly: float) -> list[dict]:
     """Return per-billionaire time-to-afford rows for a given item cost."""
     usd_rate = CURRENCY_TO_USD.get(currency, 1.0)
@@ -603,10 +617,12 @@ def calculator():
             result = "Invalid input"
             time_cost = {"ok": False, "error": "Invalid input.", "human": ""}
 
-    # Build wealth comparison only when we have a valid numeric result
+    # Build wealth comparison and result visual only when we have a valid numeric result
     wealth_rows = None
+    visual = None
     if isinstance(result, float) and result > 0:
         wealth_rows = wealth_comparison(float(item_cost), session.get("currency", DEFAULT_CURRENCY), hourly_rate)
+        visual = result_visual(result)
 
     return render_template(
         "calculator.html",
@@ -621,6 +637,7 @@ def calculator():
         display_wage_type=display_wage_type,
         display_wage_amount=display_wage_amount,
         wealth_rows=wealth_rows,
+        visual=visual,
     )
 
 

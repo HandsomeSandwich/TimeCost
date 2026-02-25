@@ -173,14 +173,27 @@
         </p>
 
         {% if time_cost and time_cost.ok %}
-          <p style="margin:0;">
-            {{ c.thats }} <strong>{{ time_cost.human }}</strong><br>
-            <span class="muted">{{ workday_text }}</span>
-
-            {% if workday_text %} <span class="muted">({{ workday_text }})</span>{% endif %}.
+          <p style="margin:0 0 14px;">
+            {{ c.thats }} <strong>{{ time_cost.human }}</strong>
+            {% if workday_text %}<br><span class="muted">{{ workday_text }}</span>{% endif %}.
           </p>
         {% else %}
           <p class="muted">{{ c.invalid }}</p>
+        {% endif %}
+
+        {% if visual %}
+        <div class="result-visual">
+          <div class="result-bar-track">
+            <div class="result-bar-fill" style="width:{{ visual.pct }}%"></div>
+          </div>
+          <p class="result-bar-label">
+            {% if visual.overflow %}
+              {{ visual.years }} {{ visual.unit }}
+            {% else %}
+              <strong>{{ visual.pct }}%</strong> of a {{ visual.unit }}
+            {% endif %}
+          </p>
+        </div>
         {% endif %}
       </section>
     {% endif %}
