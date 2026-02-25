@@ -59,6 +59,65 @@ document.addEventListener("DOMContentLoaded", function () {
     if (totalCostInlineEl) totalCostInlineEl.textContent = tC;
     if (totalTimeInlineEl) totalTimeInlineEl.textContent = tT;
     if (totalHidden) totalHidden.value = tC;
+
+    updateComparison(totalCost);
+  }
+
+  // ── Wealth comparison ────────────────────────────────────────────
+  const BILLIONAIRES = {{ billionaires_data | tojson }};
+  const CURRENCY_TO_USD = {{ currency_to_usd | tojson }};
+  const USER_CURRENCY = {{ currency | tojson }};
+
+  function fmtWealthTime(hours) {
+    const s = hours * 3600;
+    if (s < 0.001) return (s * 1000).toFixed(3) + ' ms';
+    if (s < 1)     return s.toFixed(2) + ' seconds';
+    if (s < 60)    return s.toFixed(1) + ' seconds';
+    if (hours < 1) return (s / 60).toFixed(1) + ' minutes';
+    if (hours < 24) return hours.toFixed(1) + ' hours';
+    return (hours / 24).toFixed(1) + ' days';
+  }
+
+  function fmtCount(n) {
+    if (n < 1)             return '<1';
+    if (n < 1000)          return n.toFixed(0);
+    if (n < 1_000_000)     return (n / 1000).toFixed(1) + 'k';
+    if (n < 1_000_000_000) return (n / 1_000_000).toFixed(1) + 'm';
+    return (n / 1_000_000_000).toFixed(1) + 'bn';
+  }
+
+  function updateComparison(totalCost) {
+    const section = document.getElementById('staplesComparison');
+    if (!section) return;
+    if (totalCost <= 0) { section.style.display = 'none'; return; }
+
+    section.style.display = '';
+
+    const rate    = hourlyRate();
+    const usdRate = CURRENCY_TO_USD[USER_CURRENCY] || 1.0;
+    const totalUsd = totalCost * usdRate;
+    const userTime = rate > 0 ? fmtWealthTime(totalCost / rate) : '—';
+
+    const sub = document.getElementById('staplesCompSubtitle');
+    if (sub) sub.textContent =
+      `Your basket (${USER_CURRENCY}${totalCost.toFixed(2)}) costs ${userTime} of work. ` +
+      `Billionaire figures are approximate (USD equivalent, {{ now_month_year }}).`;
+
+    let html = `<tr class="wealth-row-you"><td><strong>You</strong></td><td colspan="3">${userTime}</td></tr>`;
+    BILLIONAIRES.forEach(b => {
+      const netTime    = fmtWealthTime(totalUsd / b.hourly_net_worth);
+      const growthTime = fmtWealthTime(totalUsd / b.hourly_growth);
+      const canBuy     = rate > 0 ? fmtCount(b.hourly_net_worth / (rate * usdRate)) : '—';
+      html += `<tr>
+        <td>${b.name}</td>
+        <td class="wealth-time">${netTime}</td>
+        <td class="wealth-time wealth-time-growth">${growthTime}</td>
+        <td class="wealth-time wealth-can-buy">${canBuy}</td>
+      </tr>`;
+    });
+
+    const tbody = document.getElementById('staplesCompBody');
+    if (tbody) tbody.innerHTML = html;
   }
 
   function addRowListeners(row) {
@@ -219,5 +278,27 @@ document.addEventListener("DOMContentLoaded", function () {
     </section>
 
   </form>
+
+  <section class="panel wealth-gap" id="staplesComparison" style="display:none;">
+    <h2 class="card-title">
+      <i data-lucide="scale" style="color:var(--accent);"></i> Wealth comparison
+    </h2>
+    <p class="muted" id="staplesCompSubtitle"></p>
+    <div class="wealth-table-wrap">
+      <table class="wealth-table">
+        <thead>
+          <tr>
+            <th>Person</th><th>Net worth</th><th>Growth</th><th>To your 1</th>
+          </tr>
+        </thead>
+        <tbody id="staplesCompBody"></tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:0.78rem; margin-top:1rem;">
+      Net worth rate = total wealth ÷ 2,080 working hours/year.
+      Annual growth rate = last year's wealth increase ÷ 2,080 hours.
+    </p>
+  </section>
+
 </div>
 {% endblock %}
