@@ -178,6 +178,7 @@ def inject_globals():
         "is_parent": session.get("piggy_parent", False),
         "guide": session.get("guide", "lorelai"),
         "plausible_domain": os.environ.get("PLAUSIBLE_DOMAIN", ""),
+        "now_month_year": datetime.now().strftime("%b %Y"),
     }
 
 
