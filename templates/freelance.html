@@ -123,33 +123,33 @@
       {% if entries|length == 0 %}
         <p class="muted">No outings logged for this range. Suspiciously well-behaved.</p>
       {% else %}
-        <div style="overflow:auto;">
-          <table style="width:100%; border-collapse: collapse; min-width: 780px;">
+        <div class="table-wrap">
+          <table class="expense-table">
             <thead>
-              <tr style="text-align:left; border-bottom:1px solid var(--border);">
-                <th style="padding:10px 8px;">Date</th>
-                <th style="padding:10px 8px;">Job</th>
-                <th style="padding:10px 8px;">Hours</th>
-                <th style="padding:10px 8px;">Rate</th>
-                <th style="padding:10px 8px;">Total</th>
-                <th style="padding:10px 8px;">Notes</th>
-                <th style="padding:10px 8px;"></th>
+              <tr>
+                <th>Date</th>
+                <th>Job</th>
+                <th>Hours</th>
+                <th>Rate</th>
+                <th>Total</th>
+                <th>Notes</th>
+                <th></th>
               </tr>
             </thead>
 
             <tbody>
               {% for e in entries %}
-              <tr style="border-bottom:1px solid var(--border);">
-                <td style="padding:10px 8px; white-space:nowrap;">{{ e.work_date }}</td>
-                <td style="padding:10px 8px;">
+              <tr>
+                <td style="white-space:nowrap;">{{ e.work_date }}</td>
+                <td>
                   <div style="font-weight:600;">{{ e.job_name }}</div>
                   {% if e.client %}<div style="color:var(--muted); font-size:0.9rem;">{{ e.client }}</div>{% endif %}
                 </td>
-                <td style="padding:10px 8px;">{{ "%.2f"|format(e.hours) }}</td>
-                <td style="padding:10px 8px;">{{ currency }}{{ "%.2f"|format(e.rate) }}</td>
-                <td style="padding:10px 8px; font-weight:600;">{{ currency }}{{ "%.2f"|format(e.total) }}</td>
-                <td style="padding:10px 8px; color:var(--muted); max-width: 260px;">{{ e.notes }}</td>
-                <td style="padding:10px 8px; text-align:right;">
+                <td>{{ "%.2f"|format(e.hours) }}</td>
+                <td>{{ currency }}{{ "%.2f"|format(e.rate) }}</td>
+                <td style="font-weight:600;">{{ currency }}{{ "%.2f"|format(e.total) }}</td>
+                <td style="color:var(--muted); max-width:260px;">{{ e.notes }}</td>
+                <td class="action">
                   <form method="post" action="{{ url_for('freelance_delete_entry', entry_id=e.id) }}" onsubmit="return confirm('Delete this entry?');">
                     <button class="btn" type="submit">Delete</button>
                   </form>
