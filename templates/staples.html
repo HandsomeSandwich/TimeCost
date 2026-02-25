@@ -118,6 +118,44 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const tbody = document.getElementById('staplesCompBody');
     if (tbody) tbody.innerHTML = html;
+
+    // ── Build visual bars ──────────────────────────────────────────
+    const barsEl = document.getElementById('staplesCompBars');
+    if (!barsEl || rate <= 0) { if (barsEl) barsEl.innerHTML = ''; return; }
+
+    const barData = BILLIONAIRES.map(b => ({
+      name: b.name.split(' ').pop(),          // surname only for compact labels
+      canBuy: b.hourly_net_worth / (rate * usdRate),
+      timeHrs: totalUsd / b.hourly_net_worth   // hours
+    })).sort((a, b) => b.canBuy - a.canBuy);
+
+    const maxCanBuy = Math.max(...barData.map(d => d.canBuy));
+
+    let barsHtml = '<p class="wealth-bars-title">While you buy <strong>1</strong>, they buy&hellip;</p>';
+
+    barData.forEach((d, i) => {
+      const pct = Math.max(maxCanBuy > 0 ? (d.canBuy / maxCanBuy * 100) : 0, 2);
+      barsHtml += `
+        <div class="wealth-bar-row" style="animation-delay:${i * 0.08}s">
+          <span class="wealth-bar-name">${d.name}</span>
+          <div class="wealth-bar-track">
+            <div class="wealth-bar-fill" style="width:${pct.toFixed(2)}%"></div>
+          </div>
+          <span class="wealth-bar-count">${fmtCount(d.canBuy)}</span>
+        </div>`;
+    });
+
+    // "You" row at the bottom — essentially invisible bar, the point is the contrast
+    barsHtml += `
+      <div class="wealth-bar-row wealth-bar-you">
+        <span class="wealth-bar-name">You</span>
+        <div class="wealth-bar-track">
+          <div class="wealth-bar-fill wealth-bar-fill-you" style="width:2px"></div>
+        </div>
+        <span class="wealth-bar-count">1</span>
+      </div>`;
+
+    barsEl.innerHTML = barsHtml;
   }
 
   function addRowListeners(row) {
@@ -294,6 +332,8 @@ document.addEventListener("DOMContentLoaded", function () {
         <tbody id="staplesCompBody"></tbody>
       </table>
     </div>
+    <div id="staplesCompBars"></div>
+
     <p class="muted" style="font-size:0.78rem; margin-top:1rem;">
       Net worth rate = total wealth ÷ 2,080 working hours/year.
       Annual growth rate = last year's wealth increase ÷ 2,080 hours.

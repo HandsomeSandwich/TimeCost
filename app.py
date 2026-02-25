@@ -99,10 +99,12 @@ def wealth_comparison(item_cost: float, currency: str, user_hourly: float) -> li
         # How many of the item can they buy while the user earns enough for one?
         can_buy = hourly_net_worth / (user_hourly * usd_rate) if user_hourly > 0 else 0
         rows.append({
-            "name":         b["name"],
-            "by_net_worth": format_wealth_time(item_cost_usd / hourly_net_worth),
-            "by_growth":    format_wealth_time(item_cost_usd / hourly_growth),
-            "can_buy":      format_wealth_count(can_buy),
+            "name":             b["name"],
+            "hourly_net_worth": hourly_net_worth,
+            "by_net_worth":     format_wealth_time(item_cost_usd / hourly_net_worth),
+            "by_growth":        format_wealth_time(item_cost_usd / hourly_growth),
+            "can_buy_num":      can_buy,
+            "can_buy":          format_wealth_count(can_buy),
         })
     return rows
 
