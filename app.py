@@ -61,18 +61,34 @@ def format_wealth_time(hours: float) -> str:
     return f"{hours / 24:.1f} days"
 
 
-def wealth_comparison(item_cost: float, currency: str) -> list[dict]:
+def format_wealth_count(n: float) -> str:
+    """Format a large multiplier into a readable string."""
+    if n < 1:
+        return "<1"
+    if n < 1_000:
+        return f"{n:,.0f}"
+    if n < 1_000_000:
+        return f"{n/1_000:,.1f}k"
+    if n < 1_000_000_000:
+        return f"{n/1_000_000:,.1f}m"
+    return f"{n/1_000_000_000:,.1f}bn"
+
+
+def wealth_comparison(item_cost: float, currency: str, user_hourly: float) -> list[dict]:
     """Return per-billionaire time-to-afford rows for a given item cost."""
     usd_rate = CURRENCY_TO_USD.get(currency, 1.0)
     item_cost_usd = item_cost * usd_rate
     rows = []
     for b in BILLIONAIRES:
-        hourly_net_worth  = b["net_worth_usd"]  / WORKING_HOURS_PER_YEAR
-        hourly_growth     = b["annual_growth_usd"] / WORKING_HOURS_PER_YEAR
+        hourly_net_worth = b["net_worth_usd"] / WORKING_HOURS_PER_YEAR
+        hourly_growth    = b["annual_growth_usd"] / WORKING_HOURS_PER_YEAR
+        # How many of the item can they buy while the user earns enough for one?
+        can_buy = hourly_net_worth / (user_hourly * usd_rate) if user_hourly > 0 else 0
         rows.append({
-            "name":          b["name"],
-            "by_net_worth":  format_wealth_time(item_cost_usd / hourly_net_worth),
-            "by_growth":     format_wealth_time(item_cost_usd / hourly_growth),
+            "name":         b["name"],
+            "by_net_worth": format_wealth_time(item_cost_usd / hourly_net_worth),
+            "by_growth":    format_wealth_time(item_cost_usd / hourly_growth),
+            "can_buy":      format_wealth_count(can_buy),
         })
     return rows
 
@@ -590,7 +606,7 @@ def calculator():
     # Build wealth comparison only when we have a valid numeric result
     wealth_rows = None
     if isinstance(result, float) and result > 0:
-        wealth_rows = wealth_comparison(float(item_cost), session.get("currency", DEFAULT_CURRENCY))
+        wealth_rows = wealth_comparison(float(item_cost), session.get("currency", DEFAULT_CURRENCY), hourly_rate)
 
     return render_template(
         "calculator.html",

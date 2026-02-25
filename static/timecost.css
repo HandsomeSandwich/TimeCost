@@ -1170,6 +1170,7 @@ h1,h2,h3{
   font-variant-numeric: tabular-nums;
   color: var(--accent);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .wealth-time-growth{
@@ -1206,4 +1207,21 @@ h1,h2,h3{
 .site-footer-sep{
   margin: 0 0.5rem;
   color: var(--muted);
+}
+
+@media (max-width: 480px){
+  .wealth-table thead th,
+  .wealth-table td{
+    padding: 8px 8px;
+    font-size: 0.82rem;
+  }
+  .wealth-table thead th:first-child,
+  .wealth-table td:first-child{
+    max-width: 90px;
+  }
+}
+
+.wealth-can-buy{
+  color: var(--text);
+  font-weight: 700;
 }

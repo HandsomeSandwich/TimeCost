@@ -203,14 +203,15 @@
         <thead>
           <tr>
             <th>Person</th>
-            <th>By net worth</th>
-            <th>By annual growth</th>
+            <th>Net worth</th>
+            <th>Growth</th>
+            <th>Buys while you earn 1</th>
           </tr>
         </thead>
         <tbody>
           <tr class="wealth-row-you">
             <td><strong>You</strong></td>
-            <td colspan="2">
+            <td colspan="3">
               {% if time_cost and time_cost.ok %}
                 {{ time_cost.human }}
               {% else %}
@@ -223,6 +224,7 @@
             <td>{{ b.name }}</td>
             <td class="wealth-time">{{ b.by_net_worth }}</td>
             <td class="wealth-time wealth-time-growth">{{ b.by_growth }}</td>
+            <td class="wealth-time wealth-can-buy">{{ b.can_buy }}</td>
           </tr>
           {% endfor %}
         </tbody>
