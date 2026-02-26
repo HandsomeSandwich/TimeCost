@@ -137,9 +137,15 @@ def populate_dummy_data():
     cursor.execute(f"DELETE FROM staples WHERE owner_key = {placeholder}", ("JohnnyRose",))
     staples = [
         ("Oat Milk", 4.50),
-        ("Rose Apothecary Wine", 25.0),
-        ("Moira's Wig Travel Case", 120.0),
-        ("David's Face Cream", 85.0)
+        ("Bread", 2.50),
+        ("Eggs (Dozen)", 4.00),
+        ("Coffee (Bag)", 12.00),
+        ("Rice (Bag)", 5.00),
+        ("Butter", 3.50),
+        ("Cheese", 6.00),
+        ("Chicken (lb)", 4.50),
+        ("Apples (lb)", 2.00),
+        ("Toilet Paper (Pack)", 8.00)
     ]
     for name, cost in staples:
         cursor.execute(f"""
