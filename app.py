@@ -61,50 +61,18 @@ def format_wealth_time(hours: float) -> str:
     return f"{hours / 24:.1f} days"
 
 
-def format_wealth_count(n: float) -> str:
-    """Format a large multiplier into a readable string."""
-    if n < 1:
-        return "<1"
-    if n < 1_000:
-        return f"{n:,.0f}"
-    if n < 1_000_000:
-        return f"{n/1_000:,.1f}k"
-    if n < 1_000_000_000:
-        return f"{n/1_000_000:,.1f}m"
-    return f"{n/1_000_000_000:,.1f}bn"
-
-
-def result_visual(hours: float) -> dict:
-    """Return contextual bar data for the result visual."""
-    if hours <= 8:
-        return {"pct": round(hours / 8 * 100, 1), "unit": "workday", "overflow": False}
-    elif hours <= 40:
-        return {"pct": round(hours / 40 * 100, 1), "unit": "work week", "overflow": False}
-    elif hours <= 160:
-        return {"pct": round(hours / 160 * 100, 1), "unit": "work month", "overflow": False}
-    elif hours <= 2080:
-        return {"pct": round(hours / 2080 * 100, 1), "unit": "work year", "overflow": False}
-    else:
-        return {"pct": 100, "unit": "work years", "years": round(hours / 2080, 1), "overflow": True}
-
-
-def wealth_comparison(item_cost: float, currency: str, user_hourly: float) -> list[dict]:
+def wealth_comparison(item_cost: float, currency: str) -> list[dict]:
     """Return per-billionaire time-to-afford rows for a given item cost."""
     usd_rate = CURRENCY_TO_USD.get(currency, 1.0)
     item_cost_usd = item_cost * usd_rate
     rows = []
     for b in BILLIONAIRES:
-        hourly_net_worth = b["net_worth_usd"] / WORKING_HOURS_PER_YEAR
-        hourly_growth    = b["annual_growth_usd"] / WORKING_HOURS_PER_YEAR
-        # How many of the item can they buy while the user earns enough for one?
-        can_buy = hourly_net_worth / (user_hourly * usd_rate) if user_hourly > 0 else 0
+        hourly_net_worth  = b["net_worth_usd"]  / WORKING_HOURS_PER_YEAR
+        hourly_growth     = b["annual_growth_usd"] / WORKING_HOURS_PER_YEAR
         rows.append({
-            "name":             b["name"],
-            "hourly_net_worth": hourly_net_worth,
-            "by_net_worth":     format_wealth_time(item_cost_usd / hourly_net_worth),
-            "by_growth":        format_wealth_time(item_cost_usd / hourly_growth),
-            "can_buy_num":      can_buy,
-            "can_buy":          format_wealth_count(can_buy),
+            "name":          b["name"],
+            "by_net_worth":  format_wealth_time(item_cost_usd / hourly_net_worth),
+            "by_growth":     format_wealth_time(item_cost_usd / hourly_growth),
         })
     return rows
 
@@ -125,9 +93,9 @@ from PiggyBank import piggybank_bp
 import PiggyBank.routes
 app.register_blueprint(piggybank_bp, url_prefix="/piggybank")
 
-# --- Dinaro (Blueprint scaffold) ---
+# --- Dinaro (Blueprint — all routes live in dinaro/routes.py) ---
 from dinaro import dinaro_bp
-app.register_blueprint(dinaro_bp)
+app.register_blueprint(dinaro_bp, url_prefix="/dinaro")
 
 # Initialize DB on startup
 try:
@@ -136,6 +104,11 @@ try:
     _dinaro_ensure_family_codes()
 except Exception as e:
     print("Database init error:", e)
+
+# Import shared helpers from dinaro for use in Personal profiles etc.
+from dinaro.routes import (
+    _pin_hash, _make_pin, _verify_pin, _dinaro_now,
+)
 
 
 # ----------------------------
@@ -180,7 +153,6 @@ def inject_globals():
         "is_parent": session.get("piggy_parent", False),
         "guide": session.get("guide", "lorelai"),
         "plausible_domain": os.environ.get("PLAUSIBLE_DOMAIN", ""),
-        "now_month_year": datetime.now().strftime("%b %Y"),
     }
 
 
@@ -296,49 +268,6 @@ def workday_equivalent(total_hours: float, hours_per_day: float = 8.0) -> str:
     return f"about {round(days, 1)} workdays"
 
 
-def equal_hours_including_personal(
-    personal_a: float,
-    personal_b: float,
-    shared_total: float,
-    rate_a: float,
-    rate_b: float,
-) -> dict:
-    personal_a = safe_float(personal_a, 0.0)
-    personal_b = safe_float(personal_b, 0.0)
-    shared_total = safe_float(shared_total, 0.0)
-    rate_a = safe_float(rate_a, 0.0)
-    rate_b = safe_float(rate_b, 0.0)
-
-    if shared_total < 0 or rate_a <= 0 or rate_b <= 0:
-        return {"ok": False}
-
-    # x = how much of SHARED Partner A pays
-    x = (rate_a * (personal_b + shared_total) - rate_b * personal_a) / (rate_a + rate_b)
-    a_shared = clamp(x, 0.0, shared_total)
-    b_shared = shared_total - a_shared
-
-    hours_a = (personal_a + a_shared) / rate_a if rate_a > 0 else 0.0
-    hours_b = (personal_b + b_shared) / rate_b if rate_b > 0 else 0.0
-
-    return {
-        "ok": True,
-        "a_shared": round(a_shared, 2),
-        "b_shared": round(b_shared, 2),
-        "hours_a": round(hours_a, 2),
-        "hours_b": round(hours_b, 2),
-        "target_hours": round((hours_a + hours_b) / 2.0, 2),
-        "clamped": not (0.0 < x < shared_total),
-    }
-
-
-from dinaro.routes import (
-    _pin_hash, _make_pin, _verify_pin, _dinaro_now, _dinaro_rate_for_family,
-    _dinaro_ensure_family_codes,
-    _dinaro_require_parent, _dinaro_require_child, _dinaro_parent_family_id, _dinaro_child_family_id,
-    safe_float as dinaro_safe_float
-)
-
-
 def _get_personal_profile() -> Optional[dict]:
     profile_id = session.get("personal_profile_id")
     if not profile_id:
@@ -377,6 +306,41 @@ def _parse_optional_number(value):
 
 def clamp(x: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, x))
+
+
+def equal_hours_including_personal(
+    personal_a: float,
+    personal_b: float,
+    shared_total: float,
+    rate_a: float,
+    rate_b: float,
+) -> dict:
+    personal_a = safe_float(personal_a, 0.0)
+    personal_b = safe_float(personal_b, 0.0)
+    shared_total = safe_float(shared_total, 0.0)
+    rate_a = safe_float(rate_a, 0.0)
+    rate_b = safe_float(rate_b, 0.0)
+
+    if shared_total < 0 or rate_a <= 0 or rate_b <= 0:
+        return {"ok": False}
+
+    # x = how much of SHARED Partner A pays
+    x = (rate_a * (personal_b + shared_total) - rate_b * personal_a) / (rate_a + rate_b)
+    a_shared = clamp(x, 0.0, shared_total)
+    b_shared = shared_total - a_shared
+
+    hours_a = (personal_a + a_shared) / rate_a if rate_a > 0 else 0.0
+    hours_b = (personal_b + b_shared) / rate_b if rate_b > 0 else 0.0
+
+    return {
+        "ok": True,
+        "a_shared": round(a_shared, 2),
+        "b_shared": round(b_shared, 2),
+        "hours_a": round(hours_a, 2),
+        "hours_b": round(hours_b, 2),
+        "target_hours": round((hours_a + hours_b) / 2.0, 2),
+        "clamped": not (0.0 < x < shared_total),
+    }
 
 
 def get_effective_hourly_rate() -> Optional[float]:
@@ -620,12 +584,10 @@ def calculator():
             result = "Invalid input"
             time_cost = {"ok": False, "error": "Invalid input.", "human": ""}
 
-    # Build wealth comparison and result visual only when we have a valid numeric result
+    # Build wealth comparison only when we have a valid numeric result
     wealth_rows = None
-    visual = None
     if isinstance(result, float) and result > 0:
-        wealth_rows = wealth_comparison(float(item_cost), session.get("currency", DEFAULT_CURRENCY), hourly_rate)
-        visual = result_visual(result)
+        wealth_rows = wealth_comparison(float(item_cost), session.get("currency", DEFAULT_CURRENCY))
 
     return render_template(
         "calculator.html",
@@ -640,7 +602,6 @@ def calculator():
         display_wage_type=display_wage_type,
         display_wage_amount=display_wage_amount,
         wealth_rows=wealth_rows,
-        visual=visual,
     )
 
 
@@ -975,8 +936,6 @@ def couple():
     total = sum(safe_float(r.get("amount"), 0.0) for r in rows)
 
     # ---- 2) Define what counts as "shared"
-    # For now: House & Light is shared (mortgage/utilities).
-    # You can expand later with a "shared" checkbox column.
     shared_categories = {"House & Light"}
     shared_total = sum(
         safe_float(r.get("amount"), 0.0)
@@ -988,15 +947,12 @@ def couple():
     personal_total = max(0.0, total - shared_total)
 
     # ---- 3) Partner hourly rates
-    # A comes from your Personal page/session
     rate_a = get_effective_hourly_rate() or 0.0
 
     # B entered via form (for now)
     rate_b = safe_float(request.form.get("partner_hourly"), 0.0) if request.method == "POST" else 0.0
 
     # ---- 4) Personal split assumption (temporary)
-    # Until we add per-row "owner", we assume personal_total is split by who paid it.
-    # For now: let user enter their own personal spend share %.
     a_personal = safe_float(request.form.get("my_personal"), 0.0) if request.method == "POST" else 0.0
     b_personal = max(0.0, personal_total - a_personal)
 
@@ -1178,35 +1134,18 @@ def staples():
         eff = get_effective_hourly_rate()
         hr = f"{eff:.2f}" if eff and eff > 0 else ""
 
-    billionaires_data = [
-        {
-            "name": b["name"],
-            "hourly_net_worth": round(b["net_worth_usd"] / WORKING_HOURS_PER_YEAR, 4),
-            "hourly_growth":    round(b["annual_growth_usd"] / WORKING_HOURS_PER_YEAR, 4),
-        }
-        for b in BILLIONAIRES
-    ]
-
-    return render_template(
-        "staples.html",
-        hourlyRate=hr,
-        currency=currency,
-        billionaires_data=billionaires_data,
-        currency_to_usd=CURRENCY_TO_USD,
-    )
+    return render_template("staples.html", hourlyRate=hr, currency=currency)
 
 
 # ----------------------------
 # Routes: Freelance
-# Table columns assumed:
-# id, entry_date, client, hours, hourly_rate, notes
 # ----------------------------
 @app.route("/freelance", methods=["GET", "POST"])
 def freelance():
     range_key = (request.args.get("range") or "month").strip().lower()
     start_date = _freelance_range_to_start(range_key)
 
-    date_col = "entry_date"
+    date_col = "work_date"
 
     # POST: Use this effective rate in TimeCost
     if request.method == "POST":
@@ -1248,7 +1187,7 @@ def freelance():
                 f"""
                 SELECT
                   id,
-                  entry_date AS work_date,
+                  work_date,
                   hours,
                   hourly_rate AS rate,
                   (hours * hourly_rate) AS total,
@@ -1256,7 +1195,7 @@ def freelance():
                   client AS job_name
                 FROM freelance_entries
                 WHERE {date_col} >= :start
-                ORDER BY entry_date DESC, id DESC
+                ORDER BY work_date DESC, id DESC
                 """
             ),
             {"start": start_date},
@@ -1309,7 +1248,7 @@ def freelance():
         "freelance.html",
         currency=_currency(),
         range_key=range_key,
-        jobs=[],  # template expects this; keep harmlessly empty for now
+        jobs=[],
         entries=entries,
         total_hours=total_hours,
         total_earned=total_earned,
@@ -1323,11 +1262,6 @@ def freelance():
 
 @app.post("/freelance/add_job")
 def freelance_add_job():
-    """
-    Your current DB schema does not have freelance_jobs.
-    Template has an "Add job" form; to avoid breaking it,
-    we just redirect back. (Next step: remove job form or add jobs table.)
-    """
     return redirect(url_for("freelance"))
 
 
@@ -1335,7 +1269,6 @@ def freelance_add_job():
 def freelance_add_entry():
     client = (request.form.get("client") or "").strip()
 
-    # Respect privacy: empty means private
     if not client:
         client = "Private"
 
@@ -1352,13 +1285,13 @@ def freelance_add_entry():
             text(
                 """
                 INSERT INTO freelance_entries
-                  (entry_date, client, hours, hourly_rate, notes)
+                  (work_date, client, hours, hourly_rate, notes)
                 VALUES
-                  (:entry_date, :client, :hours, :hourly_rate, :notes)
+                  (:work_date, :client, :hours, :hourly_rate, :notes)
                 """
             ),
             {
-                "entry_date": work_date,
+                "work_date": work_date,
                 "client": client,
                 "hours": hours,
                 "hourly_rate": rate,
@@ -1376,7 +1309,6 @@ def freelance_delete_entry(entry_id: int):
     return redirect(url_for("freelance"))
 
 def _require_user_key() -> str:
-    # You already set this in ensure_identity()
     return session["user_key"]
 
 def _current_household_id() -> Optional[int]:
@@ -1389,11 +1321,6 @@ def _current_household_id() -> Optional[int]:
 
 @app.route("/household", methods=["GET", "POST"])
 def household():
-    """
-    Minimal household join/create.
-    - Create: generates an invite code, creates household, adds you as member, stores household_id in session.
-    - Join: user enters invite code, we look it up, add them, store household_id in session.
-    """
     user_key = _require_user_key()
 
     if request.method == "POST":
@@ -1408,8 +1335,6 @@ def household():
                     {"c": invite_code},
                 ).mappings().first()
 
-                # SQLite doesn't support RETURNING on older versions.
-                # If RETURNING fails for you locally, swap to: insert then SELECT last_insert_rowid().
                 household_id = row["id"] if row else None
 
                 if household_id is None:
@@ -1455,7 +1380,6 @@ def household():
             session["household_invite_code"] = code
             return redirect(url_for("expenses"))
 
-    # GET: show current state (template later)
     invite_code = session.get("household_invite_code")
     return render_template("household.html", household_id=_current_household_id(), invite_code=invite_code)
 

@@ -8,7 +8,7 @@
       <div style="font-size: 3rem; margin-bottom: 8px;"><i data-lucide="piggy-bank" style="width:64px; height:64px;"></i></div>
       <h1 style="font-size: 2.5rem; margin-bottom: 4px;">Hi, {{ child.name }}!</h1>
       <div class="panel quirky-earn" style="display: inline-block; padding: 16px 32px; border: 3px solid var(--accent); border-radius: 24px;">
-        <div style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;" class="muted">Your Money</div>
+        <div style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;" class="muted">Your {% if family.is_classroom %}Dinaro{% else %}Money{% endif %}</div>
         <div style="font-size: 2.2rem; font-weight: 800; color: var(--accent);">{{ "%.2f"|format(child.balance or 0) }} dinaro</div>
       </div>
     {% else %}
@@ -18,7 +18,7 @@
           <p class="muted" style="margin-top: 4px;">{{ rate_per_hour }} dinaro/hr</p>
         </div>
         <div class="panel quirky-earn" style="padding: 12px 24px; text-align: right;">
-          <div class="muted" style="font-size: 0.85rem;">Current Balance</div>
+          <div class="muted" style="font-size: 0.85rem;">{% if family.is_classroom %}Current Balance{% else %}Current Balance{% endif %}</div>
           <div style="font-size: 1.5rem; font-weight: 700;">{{ "%.2f"|format(child.balance or 0) }} dinaro</div>
         </div>
       </div>
@@ -49,7 +49,7 @@
 
   <section class="panel" style="margin-bottom: 24px; border: 2px solid var(--accent);">
     <h2 class="card-title" style="font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
-      <i data-lucide="check-square" style="color:var(--accent);"></i> Your To-Do List
+      <i data-lucide="check-square" style="color:var(--accent);"></i> Your {% if family.is_classroom %}Tasks{% else %}To-Do List{% endif %}
     </h2>
     <div class="stack">
       {% for chore in todo_list %}
@@ -97,14 +97,14 @@
             <div class="muted" style="font-size: 0.75rem;">{{ badge.desc }}</div>
           </div>
         {% else %}
-          <p class="muted">Do more jobs to earn badges!</p>
+          <p class="muted">{% if family.is_classroom %}Do more tasks to earn badges!{% else %}Do more jobs to earn badges!{% endif %}</p>
         {% endfor %}
       </div>
     </section>
 
   <section class="panel" style="margin-bottom: 24px; border: 2px solid var(--accent);">
     <h2 class="card-title" style="font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
-      <i data-lucide="history" style="color:var(--accent);"></i> Last things that happened
+      <i data-lucide="history" style="color:var(--accent);"></i> {% if family.is_classroom %}Recent events{% else %}Last things that happened{% endif %}
     </h2>
       <div class="stack">
         {% for entry in ledger[:5] %}
@@ -129,13 +129,13 @@
 
   <section class="panel" style="margin-bottom: 24px;">
     <h2 class="card-title" style="font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
-      <i data-lucide="hammer" style="color:var(--accent);"></i> Finish a job!
+      <i data-lucide="hammer" style="color:var(--accent);"></i> Finish a {% if family.is_classroom %}task{% else %}job{% endif %}!
     </h2>
       <form method="post" action="{{ url_for('dinaro.dinaro_child_log_chore') }}" class="stack">
         <div class="field">
           <label style="font-size: 1.1rem;">What did you do?</label>
           <select name="chore_id" required style="font-size: 1.1rem; padding: 16px;">
-            <option value="">Pick a job...</option>
+            <option value="">Pick a {% if family.is_classroom %}task{% else %}job{% endif %}...</option>
             {% for chore in chores %}
               <option value="{{ chore.id }}">{{ chore.title }} ({{ chore.default_hours }} hr)</option>
             {% endfor %}
@@ -253,7 +253,7 @@
 
     <section class="panel" style="margin-bottom: 20px; border: 2px solid var(--accent);">
       <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
-        <i data-lucide="award"></i> Achievements
+        <i data-lucide="check-square"></i> Your {% if family.is_classroom %}Tasks{% else %}To-Do List{% endif %}
       </h2>
       <div style="display: flex; gap: 12px; overflow-x: auto;">
         {% for badge in badges %}
@@ -328,10 +328,10 @@
       </section>
 
       <section class="panel">
-        <h2 class="card-title">Log Chore</h2>
+        <h2 class="card-title">Log {% if family.is_classroom %}Task{% else %}Chore{% endif %}</h2>
         <form method="post" action="{{ url_for('dinaro.dinaro_child_log_chore') }}" class="stack">
           <div class="field">
-            <label>Chore</label>
+            <label>{% if family.is_classroom %}Task{% else %}Chore{% endif %}</label>
             <select name="chore_id" required>
               {% for chore in chores %}
                 <option value="{{ chore.id }}">{{ chore.title }} ({{ chore.default_hours }}h)</option>

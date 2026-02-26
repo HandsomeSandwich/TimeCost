@@ -16,7 +16,7 @@
     {% if family.family_code %}
       <div class="pill" style="margin-top: 8px; background: var(--accent-soft); color: var(--accent); font-weight: 700;">
         <i data-lucide="shield" style="width:14px; height:14px; vertical-align:middle; margin-right:4px;"></i>
-        Family Login Code: {{ family.family_code }}
+        {% if family.is_classroom %}Classroom Login Code{% else %}Family Login Code{% endif %}: {{ family.family_code }}
       </div>
     {% endif %}
   </header>
@@ -31,6 +31,78 @@
     </h2>
     <div style="height: 250px; margin-top: 10px;">
       <canvas id="trendsChart"></canvas>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top:14px; border: 2px solid var(--accent);">
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="bell" style="color:var(--accent);"></i> {% if family.is_classroom %}Student Requests & Alerts{% else %}Kid Requests & Alerts{% endif %}
+    </h2>
+    <div class="stack">
+      {% for log in pending_logs %}
+        <div class="card" style="border-left: 4px solid #f1c40f;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong>{{ log.child_name }}</strong> finished <strong>{{ log.chore_title }}</strong>
+              <div class="muted">
+                {{ log.work_date }} · 
+                {% if log.overtime_hours > 0 %}
+                  {{ log.default_hours }} + {{ log.overtime_hours }} overtime = {{ log.total_hours }} hr
+                {% else %}
+                  {{ log.total_hours }} hr
+                {% endif %}
+                 · {{ "%.2f"|format(log.total_hours * rate_per_hour) }} dinaro
+              </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <form method="post" action="{{ url_for('dinaro.dinaro_parent_approve_log', log_id=log.id) }}">
+                <button class="btn btn-primary btn-sm" type="submit">Approve</button>
+              </form>
+              <form method="post" action="{{ url_for('dinaro.dinaro_parent_deny_log', log_id=log.id) }}">
+                <button class="btn btn-sm" type="submit">Deny</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+
+      {% for req in pending_requests %}
+        <div class="card" style="border-left: 4px solid var(--accent);">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong>{{ req.child_name }}</strong> wants <strong>{{ req.title }}</strong>
+              <div class="muted">
+                {{ "%.2f"|format(req.cost_dinaro) }} dinaro · {{ req.created_at[:10] }}
+              </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <form method="post" action="{{ url_for('dinaro.dinaro_parent_accept_request', request_id=req.id) }}">
+                <button class="btn btn-primary btn-sm" type="submit">Accept</button>
+              </form>
+              <button class="btn btn-sm" onclick="document.getElementById('counterReq{{ req.id }}').style.display='block'">Counter</button>
+              <form method="post" action="{{ url_for('dinaro.dinaro_parent_decline_request', request_id=req.id) }}">
+                <button class="btn btn-sm btn-danger" type="submit">Decline</button>
+              </form>
+            </div>
+          </div>
+          <div id="counterReq{{ req.id }}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+             <form method="post" action="{{ url_for('dinaro.dinaro_parent_counter_request', request_id=req.id) }}" class="stack">
+               <div class="field">
+                 <label>New Cost (dinaro)</label>
+                 <input type="number" step="0.25" name="counter_cost" value="{{ req.cost_dinaro }}" required>
+               </div>
+               <div class="actions">
+                 <button class="btn btn-primary btn-sm" type="submit">Send Counter</button>
+                 <button class="btn btn-sm" type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'">Cancel</button>
+               </div>
+             </form>
+          </div>
+        </div>
+      {% endfor %}
+
+      {% if not pending_logs and not pending_requests %}
+        <p class="muted">No pending requests or logs. Everything is up to date.</p>
+      {% endif %}
     </div>
   </section>
 
@@ -65,11 +137,11 @@
       <i data-lucide="settings" style="color:var(--accent);"></i> Preferences
     </h2>
     <div class="muted" style="margin-bottom:10px;">
-      Quick start: add kids, add chores, then approve the first logs.
+      Quick start: add {% if family.is_classroom %}students, add tasks{% else %}kids, add chores{% endif %}, then approve the first logs.
     </div>
     <form method="post" action="{{ url_for('dinaro.dinaro_parent_settings') }}" class="grid-2">
       <div class="field">
-        <label for="familyName">Family name</label>
+        <label for="familyName">{% if family.is_classroom %}Space name{% else %}Family name{% endif %}</label>
         <input id="familyName" name="family_name" type="text" value="{{ family.name or '' }}">
       </div>
       <div class="field">
@@ -88,7 +160,7 @@
         <p class="help">Min. balance to earn interest.</p>
       </div>
       <div class="field">
-        <label for="tax_rate">Parent Tax / Subscription (%)</label>
+        <label for="tax_rate">{% if family.is_classroom %}Teacher Tax / Subscription (%){% else %}Parent Tax / Subscription (%){% endif %}</label>
         <input id="tax_rate" name="tax_rate" type="number" step="0.1" value="{{ family.tax_rate or 0 }}">
         <p class="help">Daily deduction from balance.</p>
       </div>
@@ -345,15 +417,15 @@
     <div class="muted" style="margin-bottom:8px;">Add items {% if family.is_classroom %}students{% else %}kids{% endif %} can spend their Dinaro on.</div>
     <form method="post" action="{{ url_for('dinaro.dinaro_parent_add_spendable') }}" class="grid-2" style="margin-bottom:12px;">
       <div class="field">
-        <label>Item name</label>
+        <label>{% if family.is_classroom %}Reward{% else %}Item{% endif %} name</label>
         <input type="text" name="spendable_title" required>
       </div>
       <div class="field">
-        <label>Cost (Dinaro)</label>
+        <label>Cost (dinaro)</label>
         <input type="number" name="cost_dinaro" step="0.25" required>
       </div>
       <div class="actions">
-        <button class="btn" type="submit">Add item</button>
+        <button class="btn" type="submit">Add {% if family.is_classroom %}reward{% else %}item{% endif %}</button>
       </div>
     </form>
     <div class="grid-2">
@@ -375,11 +447,11 @@
           <div id="editSpendable{{ item.id }}" class="panel" style="display:none; margin-top:12px; border:1px solid var(--accent);">
             <form method="post" action="{{ url_for('dinaro.dinaro_parent_edit_spendable', spendable_id=item.id) }}" class="stack">
               <div class="field">
-                <label>Item name</label>
+                <label>{% if family.is_classroom %}Reward{% else %}Item{% endif %} name</label>
                 <input type="text" name="spendable_title" value="{{ item.title }}" required>
               </div>
               <div class="field">
-                <label>Cost (Dinaro)</label>
+                <label>Cost (dinaro)</label>
                 <input type="number" name="cost_dinaro" step="0.25" value="{{ item.cost_dinaro }}" required>
               </div>
               <div class="actions">

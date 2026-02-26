@@ -218,7 +218,7 @@ def _dinaro_child_family_id(child_id: int) -> int:
 # Dinaro Routes
 # ----------------------------
 
-@dinaro_bp.get("/dinaro")
+@dinaro_bp.get("/")
 def dinaro_landing():
     if session.get("dinaro_parent_id"):
         return redirect(url_for("dinaro.dinaro_parent_dashboard"))
@@ -227,7 +227,7 @@ def dinaro_landing():
     return render_template("dinaro_landing.html")
 
 
-@dinaro_bp.route("/dinaro/setup", methods=["GET", "POST"])
+@dinaro_bp.route("/setup", methods=["GET", "POST"])
 def dinaro_setup():
     conn = get_connection()
     try:
@@ -242,6 +242,7 @@ def dinaro_setup():
         parent_name = (request.form.get("parent_name") or "").strip()
         pin = (request.form.get("parent_pin") or "").strip()
         pin_confirm = (request.form.get("parent_pin_confirm") or "").strip()
+        is_classroom = 1 if request.form.get("is_classroom") == "on" else 0
 
         if not parent_name or not pin or pin != pin_confirm:
             return render_template("dinaro_setup.html", error="Please check name and matching PIN.")
@@ -251,10 +252,10 @@ def dinaro_setup():
         with engine.begin() as conn:
             row = conn.execute(
                 text(
-                    "INSERT INTO dinaro_families (name, rate_per_hour, family_code) "
-                    "VALUES (:name, :rate, :code) RETURNING id"
+                    "INSERT INTO dinaro_families (name, rate_per_hour, family_code, is_classroom) "
+                    "VALUES (:name, :rate, :code, :ic) RETURNING id"
                 ),
-                {"name": family_name or None, "rate": 4, "code": _dinaro_make_family_code()},
+                {"name": family_name or None, "rate": 4, "code": _dinaro_make_family_code(), "ic": is_classroom},
             ).mappings().first()
             family_id = row["id"] if row else None
             if family_id is None:
@@ -277,7 +278,7 @@ def dinaro_setup():
     return render_template("dinaro_setup.html")
 
 
-@dinaro_bp.route("/dinaro/parent/login", methods=["GET", "POST"])
+@dinaro_bp.route("/parent/login", methods=["GET", "POST"])
 def dinaro_parent_login():
     conn = get_connection()
     try:
@@ -315,13 +316,13 @@ def dinaro_parent_login():
     return render_template("dinaro_parent_login.html", parents=parents)
 
 
-@dinaro_bp.post("/dinaro/parent/logout")
+@dinaro_bp.post("/parent/logout")
 def dinaro_parent_logout():
     session.pop("dinaro_parent_id", None)
     return redirect(url_for("dinaro.dinaro_landing"))
 
 
-@dinaro_bp.get("/dinaro/parent")
+@dinaro_bp.get("/parent")
 def dinaro_parent_dashboard():
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -492,7 +493,7 @@ def dinaro_parent_dashboard():
     )
 
 
-@dinaro_bp.post("/dinaro/parent/settings")
+@dinaro_bp.post("/parent/settings")
 def dinaro_parent_settings():
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -528,7 +529,7 @@ def dinaro_parent_settings():
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/child/add")
+@dinaro_bp.post("/parent/child/add")
 def dinaro_parent_add_child():
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -552,7 +553,7 @@ def dinaro_parent_add_child():
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/child/<int:child_id>/edit")
+@dinaro_bp.post("/parent/child/<int:child_id>/edit")
 def dinaro_parent_edit_child(child_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -586,7 +587,7 @@ def dinaro_parent_edit_child(child_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/child/<int:child_id>/mode")
+@dinaro_bp.post("/parent/child/<int:child_id>/mode")
 def dinaro_parent_update_child_mode(child_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -604,7 +605,7 @@ def dinaro_parent_update_child_mode(child_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/child/<int:child_id>/delete")
+@dinaro_bp.post("/parent/child/<int:child_id>/delete")
 def dinaro_parent_delete_child(child_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -619,7 +620,7 @@ def dinaro_parent_delete_child(child_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/parent/add")
+@dinaro_bp.post("/parent/parent/add")
 def dinaro_parent_add_parent():
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -643,7 +644,7 @@ def dinaro_parent_add_parent():
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/parent/<int:parent_id>/edit")
+@dinaro_bp.post("/parent/parent/<int:parent_id>/edit")
 def dinaro_parent_edit_parent(parent_id: int):
     p_id = _dinaro_require_parent()
     if not p_id:
@@ -677,7 +678,7 @@ def dinaro_parent_edit_parent(parent_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/parent/<int:parent_id>/delete")
+@dinaro_bp.post("/parent/parent/<int:parent_id>/delete")
 def dinaro_parent_delete_parent(parent_id: int):
     p_id = _dinaro_require_parent()
     if not p_id:
@@ -696,7 +697,7 @@ def dinaro_parent_delete_parent(parent_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/chore/add")
+@dinaro_bp.post("/parent/chore/add")
 def dinaro_parent_add_chore():
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -722,7 +723,7 @@ def dinaro_parent_add_chore():
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/chore/<int:chore_id>/edit")
+@dinaro_bp.post("/parent/chore/<int:chore_id>/edit")
 def dinaro_parent_edit_chore(chore_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -749,7 +750,7 @@ def dinaro_parent_edit_chore(chore_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/chore/<int:chore_id>/delete")
+@dinaro_bp.post("/parent/chore/<int:chore_id>/delete")
 def dinaro_parent_delete_chore(chore_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -764,7 +765,7 @@ def dinaro_parent_delete_chore(chore_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/spendable/add")
+@dinaro_bp.post("/parent/spendable/add")
 def dinaro_parent_add_spendable():
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -788,7 +789,7 @@ def dinaro_parent_add_spendable():
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/spendable/<int:spendable_id>/edit")
+@dinaro_bp.post("/parent/spendable/<int:spendable_id>/edit")
 def dinaro_parent_edit_spendable(spendable_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -812,7 +813,7 @@ def dinaro_parent_edit_spendable(spendable_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/spendable/<int:spendable_id>/delete")
+@dinaro_bp.post("/parent/spendable/<int:spendable_id>/delete")
 def dinaro_parent_delete_spendable(spendable_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -827,7 +828,7 @@ def dinaro_parent_delete_spendable(spendable_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/log/<int:log_id>/approve")
+@dinaro_bp.post("/parent/log/<int:log_id>/approve")
 def dinaro_parent_approve_log(log_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -871,7 +872,7 @@ def dinaro_parent_approve_log(log_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/log/<int:log_id>/deny")
+@dinaro_bp.post("/parent/log/<int:log_id>/deny")
 def dinaro_parent_deny_log(log_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -885,7 +886,7 @@ def dinaro_parent_deny_log(log_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/request/<int:request_id>/counter")
+@dinaro_bp.post("/parent/request/<int:request_id>/counter")
 def dinaro_parent_counter_request(request_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -910,7 +911,7 @@ def dinaro_parent_counter_request(request_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/request/<int:request_id>/accept")
+@dinaro_bp.post("/parent/request/<int:request_id>/accept")
 def dinaro_parent_accept_request(request_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -952,7 +953,7 @@ def dinaro_parent_accept_request(request_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/child/<int:child_id>/bonus")
+@dinaro_bp.post("/parent/child/<int:child_id>/bonus")
 def dinaro_parent_child_bonus(child_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -967,7 +968,7 @@ def dinaro_parent_child_bonus(child_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/goal/<int:goal_id>/edit")
+@dinaro_bp.post("/parent/goal/<int:goal_id>/edit")
 def dinaro_parent_edit_goal(goal_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -986,7 +987,7 @@ def dinaro_parent_edit_goal(goal_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/goal/<int:goal_id>/delete")
+@dinaro_bp.post("/parent/goal/<int:goal_id>/delete")
 def dinaro_parent_delete_goal(goal_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -1000,7 +1001,7 @@ def dinaro_parent_delete_goal(goal_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/parent/request/<int:request_id>/decline")
+@dinaro_bp.post("/parent/request/<int:request_id>/decline")
 def dinaro_parent_decline_request(request_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -1021,7 +1022,7 @@ def dinaro_parent_decline_request(request_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
-@dinaro_bp.route("/dinaro/child/login", methods=["GET", "POST"])
+@dinaro_bp.route("/child/login", methods=["GET", "POST"])
 def dinaro_child_login():
     family_code = session.get("dinaro_family_code")
     
@@ -1120,19 +1121,19 @@ def dinaro_child_login():
     return render_template("dinaro_child_login.html", kids=kids, family_code=family_code)
 
 
-@dinaro_bp.post("/dinaro/child/reset-family")
+@dinaro_bp.post("/child/reset-family")
 def dinaro_child_reset_family():
     session.pop("dinaro_family_code", None)
     return redirect(url_for("dinaro.dinaro_child_login"))
 
 
-@dinaro_bp.post("/dinaro/child/logout")
+@dinaro_bp.post("/child/logout")
 def dinaro_child_logout():
     session.pop("dinaro_child_id", None)
     return redirect(url_for("dinaro.dinaro_landing"))
 
 
-@dinaro_bp.get("/dinaro/child")
+@dinaro_bp.get("/child")
 def dinaro_child_dashboard():
     child_id = _dinaro_require_child()
     if not child_id:
@@ -1151,7 +1152,7 @@ def dinaro_child_dashboard():
         ).mappings().first()
         
         family = conn.execute(
-            text("SELECT interest_rate, interest_threshold, tax_rate FROM dinaro_families WHERE id = :id"),
+            text("SELECT interest_rate, interest_threshold, tax_rate, is_classroom FROM dinaro_families WHERE id = :id"),
             {"id": family_id},
         ).mappings().first()
 
@@ -1197,9 +1198,9 @@ def dinaro_child_dashboard():
     
     chore_count = sum(1 for e in ledger if "Chore approved" in (e["reason"] or ""))
     if chore_count >= 1:
-        badges.append({"emoji": "⚒️", "title": "First Job", "desc": "Earned your first Dinaro!"})
+        badges.append({"emoji": "⚒️", "title": "First Job" if not (family and family.get("is_classroom")) else "First Task", "desc": "Earned your first Dinaro!"})
     if chore_count >= 10:
-        badges.append({"emoji": "🏆", "title": "Master Worker", "desc": "10 jobs finished!"})
+        badges.append({"emoji": "🏆", "title": "Master Worker", "desc": "10 jobs finished!" if not (family and family.get("is_classroom")) else "10 tasks finished!"})
     
     bonus_count = sum(1 for e in ledger if "🎁" in (e["reason"] or ""))
     if bonus_count >= 1:
@@ -1243,6 +1244,7 @@ def dinaro_child_dashboard():
         requests=requests,
         ledger=ledger,
         rate_per_hour=rate,
+        family=family,
         badges=badges,
         interest_rate=family.get("interest_rate", 0),
         interest_threshold=family.get("interest_threshold", 100),
@@ -1250,7 +1252,7 @@ def dinaro_child_dashboard():
     )
 
 
-@dinaro_bp.get("/dinaro/child/history")
+@dinaro_bp.get("/child/history")
 def dinaro_child_history():
     child_id = _dinaro_require_child()
     if not child_id:
@@ -1277,7 +1279,7 @@ def dinaro_child_history():
     )
 
 
-@dinaro_bp.post("/dinaro/child/log-chore")
+@dinaro_bp.post("/child/log-chore")
 def dinaro_child_log_chore():
     child_id = _dinaro_require_child()
     if not child_id:
@@ -1320,7 +1322,7 @@ def dinaro_child_log_chore():
     return redirect(url_for("dinaro.dinaro_child_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/child/goal/add")
+@dinaro_bp.post("/child/goal/add")
 def dinaro_child_add_goal():
     child_id = _dinaro_require_child()
     if not child_id:
@@ -1339,7 +1341,7 @@ def dinaro_child_add_goal():
     return redirect(url_for("dinaro.dinaro_child_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/child/goal/<int:goal_id>/delete")
+@dinaro_bp.post("/child/goal/<int:goal_id>/delete")
 def dinaro_child_delete_goal(goal_id: int):
     child_id = _dinaro_require_child()
     if not child_id:
@@ -1353,7 +1355,7 @@ def dinaro_child_delete_goal(goal_id: int):
     return redirect(url_for("dinaro.dinaro_child_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/child/request/add")
+@dinaro_bp.post("/child/request/add")
 def dinaro_child_add_request():
     child_id = _dinaro_require_child()
     if not child_id:
@@ -1409,7 +1411,7 @@ def dinaro_child_add_request():
     return redirect(url_for("dinaro.dinaro_child_dashboard"))
 
 
-@dinaro_bp.post("/dinaro/child/request/<int:request_id>/update")
+@dinaro_bp.post("/child/request/<int:request_id>/update")
 def dinaro_child_update_request(request_id: int):
     child_id = _dinaro_require_child()
     if not child_id:
@@ -1434,7 +1436,7 @@ def dinaro_child_update_request(request_id: int):
     return redirect(url_for("dinaro.dinaro_child_dashboard"))
 
 
-@dinaro_bp.get("/dinaro/parent/export")
+@dinaro_bp.get("/parent/export")
 def dinaro_parent_export():
     parent_id = _dinaro_require_parent()
     if not parent_id:
@@ -1484,7 +1486,7 @@ def dinaro_parent_export():
     )
 
 
-@dinaro_bp.get("/dinaro/parent/export/child/<int:child_id>")
+@dinaro_bp.get("/parent/export/child/<int:child_id>")
 def dinaro_parent_export_child(child_id: int):
     parent_id = _dinaro_require_parent()
     if not parent_id:

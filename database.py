@@ -250,12 +250,22 @@ def init_db() -> None:
 
             if "work_date" not in col_names:
                 conn.execute(text("ALTER TABLE freelance_entries ADD COLUMN work_date TEXT"))
+            
+            if "entry_date" in col_names:
+                # Migrate data from entry_date to work_date if work_date is empty
                 conn.execute(
                     text(
-                        "UPDATE freelance_entries SET work_date = date('now') "
+                        "UPDATE freelance_entries SET work_date = entry_date "
                         "WHERE work_date IS NULL OR work_date = ''"
                     )
                 )
+
+            conn.execute(
+                text(
+                    "UPDATE freelance_entries SET work_date = date('now') "
+                    "WHERE work_date IS NULL OR work_date = ''"
+                )
+            )
 
             # dinaro_families
             cols = conn.execute(text("PRAGMA table_info(dinaro_families)")).mappings().all()

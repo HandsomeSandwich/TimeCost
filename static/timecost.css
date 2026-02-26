@@ -104,8 +104,8 @@ body[data-view="personality"][data-perspective="river"] {
   --topbar-chip-bg: rgba(67, 127, 245, 0.08);
 }
 
-/* Eddie Monsoon: Rich Purples, Champagne Gold, Fashion Luxe */
-body[data-view="personality"][data-perspective="eddie"] {
+/* Edie Monsoon: Rich Purples, Champagne Gold, Fashion Luxe */
+body[data-view="personality"][data-perspective="edie"] {
   --bg: #1a0b1c;
   --panel: #2d142c;
   --border: #511845;
@@ -754,6 +754,23 @@ h1,h2,h3{
   text-align: right;
   width: 1%;
   white-space: nowrap;
+}
+
+/* Utils */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 /* Expenses header row */

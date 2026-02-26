@@ -18,14 +18,21 @@
     <form method="post" class="stack">
       <div class="grid-2">
         <div class="field">
-          <label for="familyName">Family name (optional)</label>
-          <input id="familyName" type="text" name="family_name" placeholder="The Song Household">
+          <label for="familyName">Space name (optional)</label>
+          <input id="familyName" type="text" name="family_name" placeholder="The Song Household or Class 4B">
         </div>
 
         <div class="field">
-          <label for="parentName">Parent name</label>
+          <label for="parentName">Lead name (Teacher/Parent)</label>
           <input id="parentName" type="text" name="parent_name" required>
         </div>
+      </div>
+
+      <div class="field" style="margin-bottom: 20px;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" name="is_classroom">
+          <span>Enable Classroom Mode (Student/Teacher terminology)</span>
+        </label>
       </div>
 
       <div class="grid-2">
