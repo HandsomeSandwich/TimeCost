@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Household — TimeCost{% endblock %}
+
+{% block content %}
+<div class="page">
+
+  <header class="page-header">
+    <h1>Household</h1>
+    <p class="muted">
+      Link accounts so shared expenses show up for everyone in the household.
+    </p>
+  </header>
+
+  {% if household_id %}
+  <section class="panel">
+    <h2 class="card-title" style="display:flex;align-items:center;gap:8px;">
+      <i data-lucide="home" style="color:var(--accent);"></i> You're in a household
+    </h2>
+
+    {% if invite_code %}
+    <p style="margin:0 0 10px;">
+      Share this code so others can join:
+    </p>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <code style="font-size:1.3rem;letter-spacing:0.05em;padding:8px 14px;background:var(--surface);border-radius:8px;border:1px solid var(--border);">{{ invite_code }}</code>
+    </div>
+    {% endif %}
+
+    <p class="muted">
+      Expenses marked "Shared" will be visible to everyone in this household.
+    </p>
+
+    <div class="actions" style="margin-top:14px;">
+      <a href="{{ url_for('expenses') }}" class="btn btn-primary">Go to Expenses →</a>
+    </div>
+  </section>
+
+  {% else %}
+  <div class="grid-2" style="gap:1.5rem;">
+
+    <section class="panel">
+      <h2 class="card-title" style="display:flex;align-items:center;gap:8px;">
+        <i data-lucide="plus-circle" style="color:var(--accent);"></i> Create a household
+      </h2>
+      <p class="muted" style="margin-bottom:14px;">
+        Start a new household and get an invite code to share.
+      </p>
+      <form action="{{ url_for('household') }}" method="post">
+        <input type="hidden" name="action" value="create">
+        <button type="submit" class="btn btn-primary">Create household</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2 class="card-title" style="display:flex;align-items:center;gap:8px;">
+        <i data-lucide="log-in" style="color:var(--accent);"></i> Join a household
+      </h2>
+      <p class="muted" style="margin-bottom:14px;">
+        Got an invite code? Enter it below.
+      </p>
+      <form action="{{ url_for('household') }}" method="post" class="stack">
+        <input type="hidden" name="action" value="join">
+        <div class="field">
+          <label for="inviteCode">Invite code</label>
+          <input type="text" id="inviteCode" name="invite_code" placeholder="e.g. Ab3xY_9k" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Join</button>
+      </form>
+    </section>
+
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
