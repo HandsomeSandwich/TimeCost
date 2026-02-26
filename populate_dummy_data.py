@@ -109,7 +109,7 @@ def populate_dummy_data():
         """, (name, amount, cat, "JohnnyRose"))
 
     # 4. Freelance
-    cursor.execute(f"DELETE FROM freelance_entries WHERE client = {placeholder}", ("Rosebud Motel Group",))
+    cursor.execute(f"DELETE FROM freelance_entries WHERE owner_key = {placeholder}", ("JohnnyRose",))
     freelance_entries = [
         (datetime.now().strftime("%Y-%m-%d"), "Rosebud Motel Group", 5.0, 150.0, "Consulting on expansion"),
         ((datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d"), "Rosebud Motel Group", 3.0, 150.0, "Drafting business plan")
@@ -117,21 +117,21 @@ def populate_dummy_data():
     for d, client, hours, rate, notes in freelance_entries:
         if db_url.startswith("postgresql") or db_url.startswith("postgres://"):
             cursor.execute(f"""
-                INSERT INTO freelance_entries (work_date, client, hours, hourly_rate, notes)
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
-            """, (d, client, hours, rate, notes))
+                INSERT INTO freelance_entries (owner_key, work_date, client, hours, hourly_rate, notes)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+            """, ("JohnnyRose", d, client, hours, rate, notes))
         else:
             cursor.execute(f"""
-                INSERT INTO freelance_entries (work_date, entry_date, client, hours, hourly_rate, notes)
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
-            """, (d, d, client, hours, rate, notes))
+                INSERT INTO freelance_entries (owner_key, work_date, entry_date, client, hours, hourly_rate, notes)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+            """, ("JohnnyRose", d, d, client, hours, rate, notes))
 
     # 5. Goals
-    cursor.execute(f"DELETE FROM goals WHERE name = {placeholder}", ("Buy the Town",))
+    cursor.execute(f"DELETE FROM goals WHERE owner_key = {placeholder}", ("JohnnyRose",))
     cursor.execute(f"""
-        INSERT INTO goals (name, target, current)
-        VALUES ({placeholder}, {placeholder}, {placeholder})
-    """, ("Buy the Town", 1000000.0, 500.0))
+        INSERT INTO goals (owner_key, name, target, current)
+        VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})
+    """, ("JohnnyRose", "Buy the Town", 1000000.0, 500.0))
 
     # 6. Staples
     cursor.execute(f"DELETE FROM staples WHERE owner_key = {placeholder}", ("JohnnyRose",))

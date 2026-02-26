@@ -59,6 +59,7 @@ def init_db() -> None:
     goals_sql = f"""
     CREATE TABLE IF NOT EXISTS goals (
         id {id_col},
+        owner_key TEXT,
         name TEXT NOT NULL,
         target {num_col} NOT NULL,
         current {num_col} NOT NULL DEFAULT 0
@@ -68,6 +69,7 @@ def init_db() -> None:
     freelance_entries_sql = f"""
     CREATE TABLE IF NOT EXISTS freelance_entries (
         id {id_col},
+        owner_key TEXT,
         work_date DATE NOT NULL,
         client TEXT NOT NULL,
         hours {num_col} NOT NULL,
@@ -254,9 +256,18 @@ def init_db() -> None:
             if "household_id" not in col_names:
                 conn.execute(text("ALTER TABLE expenses ADD COLUMN household_id INTEGER"))
 
+            # goals
+            cols = conn.execute(text("PRAGMA table_info(goals)")).mappings().all()
+            col_names = {c["name"] for c in cols}
+            if "owner_key" not in col_names:
+                conn.execute(text("ALTER TABLE goals ADD COLUMN owner_key TEXT"))
+
             # freelance_entries legacy patch
             cols = conn.execute(text("PRAGMA table_info(freelance_entries)")).mappings().all()
             col_names = {c["name"] for c in cols}
+
+            if "owner_key" not in col_names:
+                conn.execute(text("ALTER TABLE freelance_entries ADD COLUMN owner_key TEXT"))
 
             if "work_date" not in col_names:
                 conn.execute(text("ALTER TABLE freelance_entries ADD COLUMN work_date TEXT"))
@@ -361,3 +372,21 @@ def init_db() -> None:
             """)).mappings().first()
             if not res:
                 conn.execute(text("ALTER TABLE dinaro_chores ADD COLUMN chore_type TEXT NOT NULL DEFAULT 'income'"))
+
+            # Check for owner_key in goals
+            res = conn.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name='goals' AND column_name='owner_key'
+            """)).mappings().first()
+            if not res:
+                conn.execute(text("ALTER TABLE goals ADD COLUMN owner_key TEXT"))
+
+            # Check for owner_key in freelance_entries
+            res = conn.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name='freelance_entries' AND column_name='owner_key'
+            """)).mappings().first()
+            if not res:
+                conn.execute(text("ALTER TABLE freelance_entries ADD COLUMN owner_key TEXT"))

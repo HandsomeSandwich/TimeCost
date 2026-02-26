@@ -820,16 +820,18 @@ def timebank():
 # ----------------------------
 @app.route("/expenses", methods=["GET", "POST"])
 def expenses():
+    owner_key = _personal_value("profile_name") or session.get("user_key")
+
     if request.method == "POST":
         # If user clicked "Add expense", insert a blank row and bounce back
         if "add" in request.form:
             with engine.begin() as conn:
                 conn.execute(
                     text(
-                        "INSERT INTO expenses (name, amount, category, scope) "
-                        "VALUES (:name, :amount, :category, :scope)"
+                        "INSERT INTO expenses (name, amount, category, scope, owner_key) "
+                        "VALUES (:name, :amount, :category, :scope, :owner_key)"
                     ),
-                    {"name": "", "amount": 0.0, "category": "House & Light", "scope": "personal"},
+                    {"name": "", "amount": 0.0, "category": "House & Light", "scope": "personal", "owner_key": owner_key},
                 )
             return redirect(url_for("expenses"))
 
@@ -840,7 +842,7 @@ def expenses():
         expense_scopes = request.form.getlist("expense_scope[]")
 
         with engine.begin() as conn:
-            conn.execute(text("DELETE FROM expenses"))
+            conn.execute(text("DELETE FROM expenses WHERE owner_key = :uk"), {"uk": owner_key})
 
             for name, amount, category, scope in zip_longest(
                 expense_names, expense_amounts, expense_categories, expense_scopes
@@ -860,10 +862,10 @@ def expenses():
 
                 conn.execute(
                     text(
-                        "INSERT INTO expenses (name, amount, category, scope) "
-                        "VALUES (:name, :amount, :category, :scope)"
+                        "INSERT INTO expenses (name, amount, category, scope, owner_key) "
+                        "VALUES (:name, :amount, :category, :scope, :owner_key)"
                     ),
-                    {"name": name, "amount": amt, "category": category, "scope": scope},
+                    {"name": name, "amount": amt, "category": category, "scope": scope, "owner_key": owner_key},
                 )
 
         return redirect(url_for("expenses"))
@@ -871,9 +873,13 @@ def expenses():
     # GET
     conn = get_connection()
     try:
-        saved_expenses = conn.execute(text("SELECT * FROM expenses ORDER BY id ASC")).mappings().all()
+        saved_expenses = conn.execute(
+            text("SELECT * FROM expenses WHERE owner_key = :uk ORDER BY id ASC"),
+            {"uk": owner_key}
+        ).mappings().all()
         category_totals = conn.execute(
-            text("SELECT category, COALESCE(SUM(amount), 0) AS total FROM expenses GROUP BY category")
+            text("SELECT category, COALESCE(SUM(amount), 0) AS total FROM expenses WHERE owner_key = :uk GROUP BY category"),
+            {"uk": owner_key}
         ).mappings().all()
         hourly_value = get_effective_hourly_rate() or 0.0
     finally:
@@ -890,21 +896,23 @@ def expenses():
 
 @app.post("/expenses/reset")
 def expenses_reset():
+    owner_key = _personal_value("profile_name") or session.get("user_key")
     with engine.begin() as conn:
-        conn.execute(text("DELETE FROM expenses"))
+        conn.execute(text("DELETE FROM expenses WHERE owner_key = :uk"), {"uk": owner_key})
     return redirect(url_for("expenses"))
 
 @app.route("/update_expense_category", methods=["POST"])
 def update_expense_category():
     expense_id = request.form.get("expense_id")
     new_category = request.form.get("new_category")
+    owner_key = _personal_value("profile_name") or session.get("user_key")
     if not expense_id or not new_category:
         return redirect(url_for("expenses"))
 
     with engine.begin() as conn:
         conn.execute(
-            text("UPDATE expenses SET category = :cat WHERE id = :id"),
-            {"cat": new_category, "id": int(expense_id)},
+            text("UPDATE expenses SET category = :cat WHERE id = :id AND owner_key = :uk"),
+            {"cat": new_category, "id": int(expense_id), "uk": owner_key},
         )
 
     return redirect(url_for("expenses"))
@@ -912,8 +920,9 @@ def update_expense_category():
 
 @app.route("/remove_expense/<int:index>", methods=["POST"])
 def remove_expense(index):
+    owner_key = _personal_value("profile_name") or session.get("user_key")
     with engine.begin() as conn:
-        conn.execute(text("DELETE FROM expenses WHERE id = :id"), {"id": index})
+        conn.execute(text("DELETE FROM expenses WHERE id = :id AND owner_key = :uk"), {"id": index, "uk": owner_key})
     return redirect(url_for("expenses"))
 
 @app.route("/couple", methods=["GET", "POST"])
@@ -1075,6 +1084,8 @@ def budget():
 # ----------------------------
 @app.route("/goals", methods=["GET", "POST"])
 def goals():
+    owner_key = _personal_value("profile_name") or session.get("user_key")
+
     if request.method == "POST":
         with engine.begin() as conn:
             if "new_goal" in request.form:
@@ -1084,8 +1095,8 @@ def goals():
 
                 if name:
                     conn.execute(
-                        text("INSERT INTO goals (name, target, current) VALUES (:n,:t,:c)"),
-                        {"n": name, "t": target, "c": current},
+                        text("INSERT INTO goals (owner_key, name, target, current) VALUES (:uk,:n,:t,:c)"),
+                        {"uk": owner_key, "n": name, "t": target, "c": current},
                     )
 
             elif "update_goal" in request.form:
@@ -1093,22 +1104,25 @@ def goals():
                 add_amount = safe_float(request.form.get("savings_to_add"), 0.0)
 
                 goal_row = conn.execute(
-                    text("SELECT current FROM goals WHERE id = :id"),
-                    {"id": goal_id},
+                    text("SELECT current FROM goals WHERE id = :id AND owner_key = :uk"),
+                    {"id": goal_id, "uk": owner_key},
                 ).mappings().first()
 
                 if goal_row:
                     new_total = safe_float(goal_row.get("current"), 0.0) + add_amount
                     conn.execute(
-                        text("UPDATE goals SET current = :c WHERE id = :id"),
-                        {"c": new_total, "id": goal_id},
+                        text("UPDATE goals SET current = :c WHERE id = :id AND owner_key = :uk"),
+                        {"c": new_total, "id": goal_id, "uk": owner_key},
                     )
 
         return redirect(url_for("goals"))
 
     conn = get_connection()
     try:
-        goals_rows = conn.execute(text("SELECT * FROM goals")).mappings().all()
+        goals_rows = conn.execute(
+            text("SELECT * FROM goals WHERE owner_key = :uk"),
+            {"uk": owner_key}
+        ).mappings().all()
     finally:
         conn.close()
 
@@ -1117,8 +1131,9 @@ def goals():
 
 @app.route("/delete_goal/<int:goal_id>", methods=["POST"])
 def delete_goal(goal_id):
+    owner_key = _personal_value("profile_name") or session.get("user_key")
     with engine.begin() as conn:
-        conn.execute(text("DELETE FROM goals WHERE id = :id"), {"id": goal_id})
+        conn.execute(text("DELETE FROM goals WHERE id = :id AND owner_key = :uk"), {"id": goal_id, "uk": owner_key})
     return redirect(url_for("goals"))
 
 
@@ -1169,10 +1184,30 @@ def staples():
 def staples_post():
     names = request.form.getlist("staple_name[]")
     costs = request.form.getlist("staple_cost[]")
+    rate = request.form.get("staple_hourly_rate")
     owner_key = _personal_value("profile_name") or session.get("user_key")
 
     if not owner_key:
         return redirect(url_for("staples"))
+
+    # Optional: Persist the rate to the session/profile if provided
+    if rate:
+        try:
+            f_rate = float(rate)
+            if f_rate > 0:
+                # If we have a profile, update it
+                profile_id = session.get("personal_profile_id")
+                if profile_id:
+                    with engine.begin() as conn:
+                        conn.execute(
+                            text("UPDATE personal_profiles SET hourly_rate = :hr, updated_at = :now WHERE id = :id"),
+                            {"hr": f_rate, "now": _dinaro_now(), "id": profile_id}
+                        )
+                else:
+                    # Fallback to session
+                    session["hourlyRate"] = f"{f_rate:.2f}"
+        except (ValueError, TypeError):
+            pass
 
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM staples WHERE owner_key = :uk"), {"uk": owner_key})
@@ -1191,6 +1226,7 @@ def staples_post():
 # ----------------------------
 @app.route("/freelance", methods=["GET", "POST"])
 def freelance():
+    owner_key = _personal_value("profile_name") or session.get("user_key")
     range_key = (request.args.get("range") or "month").strip().lower()
     start_date = _freelance_range_to_start(range_key)
 
@@ -1207,10 +1243,10 @@ def freelance():
                         f"""
                         SELECT hours, hourly_rate
                         FROM freelance_entries
-                        WHERE {date_col} >= :start
+                        WHERE {date_col} >= :start AND owner_key = :uk
                         """
                     ),
-                    {"start": start_date},
+                    {"start": start_date, "uk": owner_key},
                 ).mappings().all()
             finally:
                 conn.close()
@@ -1243,11 +1279,11 @@ def freelance():
                   notes,
                   client AS job_name
                 FROM freelance_entries
-                WHERE {date_col} >= :start
+                WHERE {date_col} >= :start AND owner_key = :uk
                 ORDER BY work_date DESC, id DESC
                 """
             ),
-            {"start": start_date},
+            {"start": start_date, "uk": owner_key},
         ).mappings().all()
 
     finally:
@@ -1316,6 +1352,7 @@ def freelance_add_job():
 
 @app.post("/freelance/add_entry")
 def freelance_add_entry():
+    owner_key = _personal_value("profile_name") or session.get("user_key")
     client = (request.form.get("client") or "").strip()
 
     if not client:
@@ -1334,12 +1371,13 @@ def freelance_add_entry():
             text(
                 """
                 INSERT INTO freelance_entries
-                  (work_date, client, hours, hourly_rate, notes)
+                  (owner_key, work_date, client, hours, hourly_rate, notes)
                 VALUES
-                  (:work_date, :client, :hours, :hourly_rate, :notes)
+                  (:uk, :work_date, :client, :hours, :hourly_rate, :notes)
                 """
             ),
             {
+                "uk": owner_key,
                 "work_date": work_date,
                 "client": client,
                 "hours": hours,
@@ -1353,8 +1391,12 @@ def freelance_add_entry():
 
 @app.post("/freelance/delete_entry/<int:entry_id>")
 def freelance_delete_entry(entry_id: int):
+    owner_key = _personal_value("profile_name") or session.get("user_key")
     with engine.begin() as conn:
-        conn.execute(text("DELETE FROM freelance_entries WHERE id = :id"), {"id": entry_id})
+        conn.execute(
+            text("DELETE FROM freelance_entries WHERE id = :id AND owner_key = :uk"),
+            {"id": entry_id, "uk": owner_key},
+        )
     return redirect(url_for("freelance"))
 
 def _require_user_key() -> str:
