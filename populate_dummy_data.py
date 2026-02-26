@@ -115,10 +115,16 @@ def populate_dummy_data():
         ((datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d"), "Rosebud Motel Group", 3.0, 150.0, "Drafting business plan")
     ]
     for d, client, hours, rate, notes in freelance_entries:
-        cursor.execute(f"""
-            INSERT INTO freelance_entries (work_date, entry_date, client, hours, hourly_rate, notes)
-            VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
-        """, (d, d, client, hours, rate, notes))
+        if db_url.startswith("postgresql") or db_url.startswith("postgres://"):
+            cursor.execute(f"""
+                INSERT INTO freelance_entries (work_date, client, hours, hourly_rate, notes)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+            """, (d, client, hours, rate, notes))
+        else:
+            cursor.execute(f"""
+                INSERT INTO freelance_entries (work_date, entry_date, client, hours, hourly_rate, notes)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+            """, (d, d, client, hours, rate, notes))
 
     # 5. Goals
     cursor.execute(f"DELETE FROM goals WHERE name = {placeholder}", ("Buy the Town",))
