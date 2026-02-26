@@ -136,7 +136,7 @@ def populate_dummy_data():
     # 6. Staples
     cursor.execute(f"DELETE FROM staples WHERE owner_key = {placeholder}", ("JohnnyRose",))
     staples = [
-        ("Motel Lease", 800.0),
+        ("Oat Milk", 4.50),
         ("Rose Apothecary Wine", 25.0),
         ("Moira's Wig Travel Case", 120.0),
         ("David's Face Cream", 85.0)
