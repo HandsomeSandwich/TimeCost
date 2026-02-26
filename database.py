@@ -300,3 +300,47 @@ def init_db() -> None:
                 conn.execute(text("ALTER TABLE dinaro_chores ADD COLUMN recurrence TEXT NOT NULL DEFAULT 'none'"))
             if "chore_type" not in col_names:
                 conn.execute(text("ALTER TABLE dinaro_chores ADD COLUMN chore_type TEXT NOT NULL DEFAULT 'income'"))
+        else:
+            # PostgreSQL migrations
+            # Check for interest_rate in dinaro_families
+            res = conn.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name='dinaro_families' AND column_name='interest_rate'
+            """)).mappings().first()
+            if not res:
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN interest_rate DOUBLE PRECISION NOT NULL DEFAULT 0"))
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN interest_threshold DOUBLE PRECISION NOT NULL DEFAULT 100"))
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN tax_rate DOUBLE PRECISION NOT NULL DEFAULT 0"))
+            
+            # Check for family_code in dinaro_families
+            res = conn.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name='dinaro_families' AND column_name='family_code'
+            """)).mappings().first()
+            if not res:
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN family_code TEXT UNIQUE"))
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN class_code TEXT"))
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN is_classroom INTEGER NOT NULL DEFAULT 0"))
+
+            # Check for view_mode in dinaro_children
+            res = conn.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name='dinaro_children' AND column_name='view_mode'
+            """)).mappings().first()
+            if not res:
+                conn.execute(text("ALTER TABLE dinaro_children ADD COLUMN view_mode TEXT NOT NULL DEFAULT 'visual'"))
+                conn.execute(text("ALTER TABLE dinaro_children ADD COLUMN last_interest_at TEXT"))
+                conn.execute(text("ALTER TABLE dinaro_children ADD COLUMN last_tax_at TEXT"))
+
+            # Check for recurrence in dinaro_chores
+            res = conn.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name='dinaro_chores' AND column_name='recurrence'
+            """)).mappings().first()
+            if not res:
+                conn.execute(text("ALTER TABLE dinaro_chores ADD COLUMN recurrence TEXT NOT NULL DEFAULT 'none'"))
+                conn.execute(text("ALTER TABLE dinaro_chores ADD COLUMN chore_type TEXT NOT NULL DEFAULT 'income'"))
