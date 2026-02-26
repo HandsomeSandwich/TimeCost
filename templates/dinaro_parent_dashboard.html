@@ -11,7 +11,14 @@
   <header class="page-header">
     <h1>{% if family.is_classroom %}Classroom Teacher{% else %}Dinaro Parent{% endif %}</h1>
     <p class="muted">
-      {{ family.name or "Family" }} · {{ rate_per_hour }} dinaro per hour
+      {% if perspective == "leslie" %}
+        Knope Household
+      {% elif perspective == "edie" %}
+        Monsoon Household
+      {% else %}
+        {{ family.name or "Family" }}
+      {% endif %}
+      · {{ rate_per_hour }} dinaro per hour
     </p>
     {% if family.family_code %}
       <div class="pill" style="margin-top: 8px; background: var(--accent-soft); color: var(--accent); font-weight: 700;">
