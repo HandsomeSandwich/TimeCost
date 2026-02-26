@@ -1145,10 +1145,11 @@ def staples():
 
     # GET view
     conn = get_connection()
+    owner_key = _personal_value("profile_name") or session.get("user_key")
     try:
         saved_staples = conn.execute(
             text("SELECT name, cost FROM staples WHERE owner_key = :uk"),
-            {"uk": _personal_value("profile_name", session.get("username"))}
+            {"uk": owner_key}
         ).mappings().all()
     finally:
         conn.close()
@@ -1168,7 +1169,7 @@ def staples():
 def staples_post():
     names = request.form.getlist("staple_name[]")
     costs = request.form.getlist("staple_cost[]")
-    owner_key = _personal_value("profile_name", session.get("username"))
+    owner_key = _personal_value("profile_name") or session.get("user_key")
 
     if not owner_key:
         return redirect(url_for("staples"))
