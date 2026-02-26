@@ -1134,7 +1134,23 @@ def staples():
         eff = get_effective_hourly_rate()
         hr = f"{eff:.2f}" if eff and eff > 0 else ""
 
-    return render_template("staples.html", hourlyRate=hr, currency=currency)
+    # Billionaires data for client-side JS
+    b_data = []
+    for b in BILLIONAIRES:
+        b_data.append({
+            "name": b["name"],
+            "hourly_net_worth": b["net_worth_usd"] / WORKING_HOURS_PER_YEAR,
+            "hourly_growth": b["annual_growth_usd"] / WORKING_HOURS_PER_YEAR
+        })
+
+    return render_template(
+        "staples.html",
+        hourlyRate=hr,
+        currency=currency,
+        billionaires_data=b_data,
+        currency_to_usd=CURRENCY_TO_USD,
+        now_month_year=datetime.now().strftime("%B %Y")
+    )
 
 
 # ----------------------------
