@@ -155,7 +155,7 @@ def ensure_identity():
 def inject_globals():
     return {
         "currency": session.get("currency", DEFAULT_CURRENCY),
-        "perspective": session.get("perspective", "river"),
+        "perspective": session.get("perspective", "leslie"),
         "is_parent": session.get("piggy_parent", False),
         "guide": session.get("guide", "lorelai"),
         "plausible_domain": os.environ.get("PLAUSIBLE_DOMAIN", ""),
@@ -1517,8 +1517,8 @@ def set_currency():
 @app.route("/set_perspective", methods=["POST"])
 def set_perspective():
     allowed = {"river", "leslie", "edie"}
-    p = request.form.get("perspective", "river")
-    session["perspective"] = p if p in allowed else "river"
+    p = request.form.get("perspective", "leslie")
+    session["perspective"] = p if p in allowed else "leslie"
     return redirect(request.referrer or url_for("calculator"))
 
 

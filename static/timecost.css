@@ -75,6 +75,8 @@ body[data-view="personality"][data-perspective="leslie"] {
   --muted: #5b6e84;
   --accent: #0077b6; /* Binder Blue */
   --accent-soft: #eef7ff;
+  --leslie-warm: #f59e0b; /* JJ's Diner sunshine */
+  --leslie-warm-soft: rgba(245, 158, 11, 0.08);
   --btn: #2d6a4f; /* Green Leadership */
   --btn2: #fefae0;
   --radius: 12px; /* More organized, less round */
@@ -83,6 +85,31 @@ body[data-view="personality"][data-perspective="leslie"] {
   --input-border-focus: #0077b6;
   --topbar-bg: rgba(253, 252, 240, 0.9);
   --topbar-chip-bg: #eef7ff;
+}
+
+/* Leslie hover warmth — she's helping */
+body[data-view="personality"][data-perspective="leslie"] .panel:hover {
+  border-color: var(--leslie-warm);
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.08), 0 1px 3px rgba(245, 158, 11, 0.1);
+}
+body[data-view="personality"][data-perspective="leslie"] .btn:hover,
+body[data-view="personality"][data-perspective="leslie"] .btn-secondary:hover {
+  border-color: var(--leslie-warm);
+  color: var(--leslie-warm);
+}
+body[data-view="personality"][data-perspective="leslie"] .landing-feature:hover {
+  border-color: var(--leslie-warm);
+  box-shadow: 0 2px 12px rgba(245, 158, 11, 0.12);
+}
+body[data-view="personality"][data-perspective="leslie"] .radio label:hover {
+  border-color: var(--leslie-warm);
+  color: var(--leslie-warm);
+}
+body[data-view="personality"][data-perspective="leslie"] .expense-table tbody tr:hover {
+  background: var(--leslie-warm-soft);
+}
+body[data-view="personality"][data-perspective="leslie"] .wealth-table tbody tr:hover {
+  background: var(--leslie-warm-soft);
 }
 
 /* River Song: Deep Space, Diary Blue, Archaeology Gold */
