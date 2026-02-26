@@ -61,18 +61,24 @@ def format_wealth_time(hours: float) -> str:
     return f"{hours / 24:.1f} days"
 
 
-def wealth_comparison(item_cost: float, currency: str) -> list[dict]:
+def wealth_comparison(item_cost: float, currency: str, user_hourly: float = 0.0) -> list[dict]:
     """Return per-billionaire time-to-afford rows for a given item cost."""
     usd_rate = CURRENCY_TO_USD.get(currency, 1.0)
     item_cost_usd = item_cost * usd_rate
+    # User's time in hours (for the "can_buy" ratio)
+    user_hours = (item_cost_usd / (user_hourly * usd_rate)) if user_hourly > 0 else 0.0
     rows = []
     for b in BILLIONAIRES:
         hourly_net_worth  = b["net_worth_usd"]  / WORKING_HOURS_PER_YEAR
         hourly_growth     = b["annual_growth_usd"] / WORKING_HOURS_PER_YEAR
+        b_hours = item_cost_usd / hourly_growth
+        can_buy_num = round(user_hours / b_hours, 1) if b_hours > 0 and user_hours > 0 else 0
         rows.append({
             "name":          b["name"],
             "by_net_worth":  format_wealth_time(item_cost_usd / hourly_net_worth),
             "by_growth":     format_wealth_time(item_cost_usd / hourly_growth),
+            "can_buy":       f"{can_buy_num:,.0f}" if can_buy_num >= 1 else f"{can_buy_num:,.1f}",
+            "can_buy_num":   can_buy_num,
         })
     return rows
 
@@ -587,7 +593,7 @@ def calculator():
     # Build wealth comparison only when we have a valid numeric result
     wealth_rows = None
     if isinstance(result, float) and result > 0:
-        wealth_rows = wealth_comparison(float(item_cost), session.get("currency", DEFAULT_CURRENCY))
+        wealth_rows = wealth_comparison(float(item_cost), session.get("currency", DEFAULT_CURRENCY), user_hourly=hourly_rate)
 
     return render_template(
         "calculator.html",
@@ -602,6 +608,7 @@ def calculator():
         display_wage_type=display_wage_type,
         display_wage_amount=display_wage_amount,
         wealth_rows=wealth_rows,
+        now_month_year=datetime.now().strftime("%B %Y"),
     )
 
 
@@ -728,9 +735,13 @@ def personal():
                     session["username"] = display_name or ""
                     return redirect(url_for("calculator"))
 
+    owner_key = _personal_value("profile_name") or session.get("user_key")
     conn = get_connection()
     try:
-        row = conn.execute(text("SELECT COALESCE(SUM(amount), 0) AS total FROM expenses")).mappings().first()
+        row = conn.execute(
+            text("SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE owner_key = :uk"),
+            {"uk": owner_key}
+        ).mappings().first()
         expenses_total = float(row["total"]) if row and row["total"] is not None else 0.0
     except Exception:
         expenses_total = 0.0
@@ -761,12 +772,14 @@ def personal():
 @app.route("/timebank", methods=["GET", "POST"])
 def timebank():
     currency = _currency()
+    owner_key = _personal_value("profile_name") or session.get("user_key")
 
     def fetch_savings_total() -> float:
         conn = get_connection()
         try:
             row = conn.execute(
-            text("SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE category = 'Nest Egg'")
+            text("SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE category = 'Nest Egg' AND owner_key = :uk"),
+            {"uk": owner_key}
             ).mappings().first()
             return float(row["total"]) if row and row["total"] is not None else 0.0
         finally:
@@ -775,7 +788,10 @@ def timebank():
     def fetch_all_expenses():
         conn = get_connection()
         try:
-            return conn.execute(text("SELECT amount, category FROM expenses")).mappings().all()
+            return conn.execute(
+                text("SELECT amount, category FROM expenses WHERE owner_key = :uk"),
+                {"uk": owner_key}
+            ).mappings().all()
         finally:
             conn.close()
 
@@ -934,10 +950,12 @@ def couple():
     """
 
     # ---- 1) Pull expenses from DB
+    owner_key = _personal_value("profile_name") or session.get("user_key")
     conn = get_connection()
     try:
         rows = conn.execute(
-            text("SELECT amount, category FROM expenses")
+            text("SELECT amount, category FROM expenses WHERE owner_key = :uk"),
+            {"uk": owner_key}
         ).mappings().all()
     finally:
         conn.close()
@@ -994,10 +1012,14 @@ def couple():
 @app.route("/budget", methods=["GET", "POST"])
 def budget():
     currency = _currency()
+    owner_key = _personal_value("profile_name") or session.get("user_key")
 
     conn = get_connection()
     try:
-        row = conn.execute(text("SELECT COALESCE(SUM(amount), 0) AS total FROM expenses")).mappings().first()
+        row = conn.execute(
+            text("SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE owner_key = :uk"),
+            {"uk": owner_key}
+        ).mappings().first()
         expenses_total = float(row["total"]) if row and row["total"] is not None else 0.0
     except Exception:
         expenses_total = 0.0
@@ -1007,7 +1029,10 @@ def budget():
     def fetch_goals():
         conn2 = get_connection()
         try:
-            return conn2.execute(text("SELECT * FROM goals")).mappings().all()
+            return conn2.execute(
+                text("SELECT * FROM goals WHERE owner_key = :uk"),
+                {"uk": owner_key}
+            ).mappings().all()
         except Exception:
             return []
         finally:
@@ -1433,8 +1458,10 @@ def household():
 
                 conn.execute(
                     text("""
-                        INSERT OR IGNORE INTO household_members (household_id, user_key, display_name)
-                        VALUES (:hid, :uk, :dn)
+                        INSERT INTO household_members (household_id, user_key, display_name)
+                        SELECT :hid, :uk, :dn WHERE NOT EXISTS (
+                            SELECT 1 FROM household_members WHERE household_id = :hid AND user_key = :uk
+                        )
                     """),
                     {"hid": household_id, "uk": user_key, "dn": (_personal_value("display_name", session.get("username")) or "Me")},
                 )
@@ -1461,8 +1488,10 @@ def household():
 
                 conn.execute(
                     text("""
-                        INSERT OR IGNORE INTO household_members (household_id, user_key, display_name)
-                        VALUES (:hid, :uk, :dn)
+                        INSERT INTO household_members (household_id, user_key, display_name)
+                        SELECT :hid, :uk, :dn WHERE NOT EXISTS (
+                            SELECT 1 FROM household_members WHERE household_id = :hid AND user_key = :uk
+                        )
                     """),
                     {"hid": household_id, "uk": user_key, "dn": (_personal_value("display_name", session.get("username")) or "Me")},
                 )
@@ -1487,7 +1516,7 @@ def set_currency():
 
 @app.route("/set_perspective", methods=["POST"])
 def set_perspective():
-    allowed = {"river", "leslie", "eddie"}
+    allowed = {"river", "leslie", "edie"}
     p = request.form.get("perspective", "river")
     session["perspective"] = p if p in allowed else "river"
     return redirect(request.referrer or url_for("calculator"))

@@ -226,6 +226,22 @@ def init_db() -> None:
     )
     """
 
+    households_sql = f"""
+    CREATE TABLE IF NOT EXISTS households (
+        id {id_col},
+        invite_code TEXT UNIQUE
+    )
+    """
+
+    household_members_sql = f"""
+    CREATE TABLE IF NOT EXISTS household_members (
+        id {id_col},
+        household_id INTEGER NOT NULL,
+        user_key TEXT NOT NULL,
+        display_name TEXT
+    )
+    """
+
     with engine.begin() as conn:
         conn.execute(text(expenses_sql))
         conn.execute(text(goals_sql))
@@ -242,6 +258,8 @@ def init_db() -> None:
         conn.execute(text(dinaro_ledger_sql))
         conn.execute(text(dinaro_spendables_sql))
         conn.execute(text(staples_sql))
+        conn.execute(text(households_sql))
+        conn.execute(text(household_members_sql))
 
         # --- SQLite-only: add missing columns on older local DBs ---
         if engine.dialect.name == "sqlite":
