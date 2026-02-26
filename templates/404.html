@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Lost in Time — TimeCost{% endblock %}
+
+{% block content %}
+
+{% set perspective = session.get("perspective", "leslie") %}
+
+{% set copy = {
+  "river": {
+    "heading": "This moment doesn't exist yet.",
+    "sub": "Time is rarely linear, but this page genuinely isn't here.",
+    "nudge": "Let's find somewhere that is."
+  },
+  "leslie": {
+    "heading": "This page took a personal day.",
+    "sub": "Which is totally valid! But it means there's nothing here right now.",
+    "nudge": "Let's get you back on track."
+  },
+  "edie": {
+    "heading": "Darling, there's nothing here.",
+    "sub": "This page has gone. Vanished. Possibly to the south of France.",
+    "nudge": "Try somewhere that exists."
+  }
+} %}
+
+{% set c = copy.get(perspective, copy["leslie"]) %}
+
+<div class="page" style="text-align:center;padding:4rem 1rem;">
+  <p style="font-size:4rem;font-family:var(--font-head);font-weight:600;color:var(--accent);margin:0;">404</p>
+  <h1 style="font-family:var(--font-head);margin:0.5rem 0 0.75rem;">{{ c.heading }}</h1>
+  <p class="muted" style="max-width:360px;margin:0 auto 1.5rem;">{{ c.sub }}</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+    <a class="btn btn-primary" href="{{ url_for('calculator') }}">{{ c.nudge }}</a>
+    <a class="btn" href="{{ url_for('landing') }}">Home</a>
+  </div>
+</div>
+{% endblock %}
