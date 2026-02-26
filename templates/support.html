@@ -78,6 +78,34 @@
 
   </div>
 
+  {% if not links.min15 and not links.hour1 and not links.halfday %}
+  <section class="subscribe-section" style="margin-bottom:1.5rem;">
+    {% if subscribed %}
+    <div class="subscribe-success">
+      <i data-lucide="check-circle" style="width:20px;height:20px;color:var(--accent);flex-shrink:0;"></i>
+      <span>You're in! We'll let you know when payments go live.</span>
+    </div>
+    {% else %}
+    <p class="landing-eyebrow">Payments aren't live yet</p>
+    <p class="muted subscribe-sub">Leave your email and we'll let you know when they are.</p>
+    <form class="subscribe-form" action="{{ url_for('subscribe') }}" method="post">
+      <input type="hidden" name="source" value="support" />
+      <div class="subscribe-row">
+        <input
+          class="subscribe-input"
+          type="email"
+          name="email"
+          placeholder="your@email.com"
+          required
+          autocomplete="email"
+        />
+        <button class="btn btn-primary subscribe-btn" type="submit">Notify me</button>
+      </div>
+    </form>
+    {% endif %}
+  </section>
+  {% endif %}
+
   <p class="support-footer-note muted">
     Payments go directly via Stripe. No account needed. No recurring charges.
     <br>

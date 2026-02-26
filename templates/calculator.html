@@ -8,39 +8,30 @@
 {% set copy = {
   "river": {
     "title": "What did this cost in work time?",
-    "intro": "Enter a price and your pay. I’ll translate it into hours of work.",
-    "explain": "This helps you feel the trade between money and time before you spend.",
-    "promise": "Result: you’ll see roughly how many work hours it takes to afford this.",
+    "intro": "Enter a price and your pay — I’ll show how many hours it costs.",
     "hours_line": "This comes to about",
     "thats": "Which is",
     "invalid": "Something here hasn’t settled yet.",
-    "live_title": "Live result",
     "err_cost": "I need the item price first.",
     "err_wage": "I need your pay amount to translate this.",
     "err_convert": "These numbers don’t resolve into an hourly rhythm yet."
   },
   "leslie": {
     "title": "What did this cost in work time?",
-    "intro": "Let’s turn a price into hours so you can make a powerful, informed decision.",
-    "explain": "This helps you decide if something is worth the hours it takes to earn it.",
-    "promise": "Result: you’ll see about how many work hours it takes to earn this purchase.",
+    "intro": "Enter a price and your pay — we’ll turn it into hours of work.",
     "hours_line": "This comes to about",
     "thats": "Which equals",
     "invalid": "Totally fine! One of the inputs just needs a quick fix.",
-    "live_title": "Live result",
     "err_cost": "Pop in the item price and we’re golden.",
     "err_wage": "Add your pay amount and we’ll do the time-math.",
     "err_convert": "These numbers need a moment to cooperate. They will."
   },
   "edie": {
     "title": "What did this cost in work time?",
-    "intro": "Tell me the price and your pay. I’ll tell you what it costs in hours of your life.",
-    "explain": "This shows you the hours you’re quietly agreeing to give up.",
-    "promise": "Result: approximate work hours required to afford this little adventure.",
+    "intro": "Tell me the price and your pay. I’ll tell you in hours of your life.",
     "hours_line": "This costs you about",
     "thats": "Which is",
     "invalid": "Darling. No. These numbers are a shambles.",
-    "live_title": "Live result",
     "err_cost": "That needs an actual price.",
     "err_wage": "That wage won’t do. Try again, properly.",
     "err_convert": "This conversion is having a nervous breakdown. Adjust accordingly."
@@ -53,17 +44,12 @@
   <header class="page-header">
     <h1>{{ c.title }}</h1>
     <p class="muted">{{ c.intro }}</p>
-    <p class="muted">{{ c.explain }}</p>
   </header>
 
   <form action="{{ url_for('calculator') }}" method="post" class="stack" id="calcForm">
 
     <section class="panel">
-      <div class="callout">
-        <strong>{{ c.promise }}</strong>
-      </div>
-
-      <div class="grid-2" style="margin-top:14px;">
+      <div class="grid-2">
         <div class="field">
           <label for="itemName">Item name (optional)</label>
           <input type="text" id="itemName" name="itemName" value="{{ item_name or '' }}">
@@ -139,7 +125,11 @@
   </small>
 
   <div class="actions">
-    <a href="{{ url_for('freelance') }}" class="btn btn-secondary" role="button">
+    <button type="submit" class="btn btn-primary" style="width:100%;">Calculate</button>
+  </div>
+
+  <small class="hint" style="text-align:center; display:block; margin-top:6px;">
+    <a href="{{ url_for('freelance') }}" style="color:var(--accent);">
       {% if session.get("wageSource") == "freelance" %}
         Freelance rate active ✓
       {% elif display_wage_amount %}
@@ -148,21 +138,11 @@
         Set freelance rate
       {% endif %}
     </a>
-
-    <button type="submit" class="btn btn-primary">Calculate</button>
-  </div>
+  </small>
 </section>
 
 
-    {% if result is none %}
-    <section class="panel" aria-live="polite">
-      <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
-        <i data-lucide="info" style="color:var(--accent);"></i> Result
-      </h2>
-        <p class="muted">{{ c.invalid }}</p>
-      </section>
-
-    {% elif result is not none %}
+    {% if result is not none %}
       <section class="panel" aria-live="polite">
         <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
           <i data-lucide="check-circle" style="color:var(--accent);"></i> Result{% if item_name %} for “{{ item_name }}”{% endif %}

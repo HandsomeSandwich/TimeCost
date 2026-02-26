@@ -42,13 +42,13 @@
         <details class="nav-details">
           <summary><i data-lucide="wrench" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;"></i> Tools</summary>
           <div class="nav-popover" aria-label="Tools">
-            <a href="{{ url_for('personal') }}">Personal</a>
-            <a href="{{ url_for('freelance') }}">Freelance</a>
-            <a href="{{ url_for('expenses') }}">Expenses</a>
-            <a href="{{ url_for('timebank') }}">Time Bank</a>
-            <a href="{{ url_for('budget') }}">Budget</a>
-            <a href="{{ url_for('goals') }}">Goals</a>
-            <a href="{{ url_for('staples') }}">Staples</a>
+            <a href="{{ url_for('personal') }}"><i data-lucide="user" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Personal</a>
+            <a href="{{ url_for('freelance') }}"><i data-lucide="briefcase" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Freelance</a>
+            <a href="{{ url_for('expenses') }}"><i data-lucide="receipt" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Expenses</a>
+            <a href="{{ url_for('timebank') }}"><i data-lucide="clock" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Time Bank</a>
+            <a href="{{ url_for('budget') }}"><i data-lucide="layout-dashboard" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Budget</a>
+            <a href="{{ url_for('goals') }}"><i data-lucide="target" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Goals</a>
+            <a href="{{ url_for('staples') }}"><i data-lucide="shopping-basket" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Staples</a>
           </div>
         </details>
       </nav>
@@ -103,19 +103,19 @@
 
     <!-- Mobile drawer -->
     <div class="nav-drawer" id="navDrawer">
-      <a href="{{ url_for('landing') }}">Home</a>
-      <a href="{{ url_for('calculator') }}">Calculator</a>
-      <a href="{{ url_for('dinaro.dinaro_landing') }}">Dinaro</a>
+      <a href="{{ url_for('landing') }}"><i data-lucide="home" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Home</a>
+      <a href="{{ url_for('calculator') }}"><i data-lucide="calculator" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Calculator</a>
+      <a href="{{ url_for('dinaro.dinaro_landing') }}"><i data-lucide="coins" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Dinaro</a>
 
       <div class="drawer-section">
         <div class="drawer-title">Tools</div>
-        <a href="{{ url_for('personal') }}">Personal</a>
-        <a href="{{ url_for('freelance') }}">Freelance</a>
-        <a href="{{ url_for('expenses') }}">Expenses</a>
-        <a href="{{ url_for('timebank') }}">Time Bank</a>
-        <a href="{{ url_for('budget') }}">Budget</a>
-        <a href="{{ url_for('goals') }}">Goals</a>
-        <a href="{{ url_for('staples') }}">Staples</a>
+        <a href="{{ url_for('personal') }}"><i data-lucide="user" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Personal</a>
+        <a href="{{ url_for('freelance') }}"><i data-lucide="briefcase" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Freelance</a>
+        <a href="{{ url_for('expenses') }}"><i data-lucide="receipt" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Expenses</a>
+        <a href="{{ url_for('timebank') }}"><i data-lucide="clock" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Time Bank</a>
+        <a href="{{ url_for('budget') }}"><i data-lucide="layout-dashboard" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Budget</a>
+        <a href="{{ url_for('goals') }}"><i data-lucide="target" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Goals</a>
+        <a href="{{ url_for('staples') }}"><i data-lucide="shopping-basket" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Staples</a>
       </div>
     </div>
   </header>
@@ -125,6 +125,7 @@
   </main>
 
   <footer class="site-footer">
+    <p class="muted" style="font-size:0.78rem; margin:0 0 0.5rem; letter-spacing:0.03em;">Time is the real currency</p>
     <a href="{{ url_for('support') }}">
       <i data-lucide="clock" style="width:14px;height:14px;vertical-align:middle;margin-right:5px;"></i>Buy me some time
     </a>

@@ -461,7 +461,8 @@ def support():
         "hour1": os.environ.get("STRIPE_LINK_1HOUR", ""),
         "halfday": os.environ.get("STRIPE_LINK_HALFDAY", ""),
     }
-    return render_template("support.html", links=links)
+    subscribed = request.args.get("subscribed") == "1"
+    return render_template("support.html", links=links, subscribed=subscribed)
 
 
 @app.route("/subscribe", methods=["POST"])
@@ -481,6 +482,8 @@ def subscribe():
             )
     except Exception:
         pass  # Duplicate email — silently succeed
+    if source == "support":
+        return redirect(url_for("support") + "?subscribed=1")
     return redirect(url_for("landing") + "?subscribed=1")
 
 

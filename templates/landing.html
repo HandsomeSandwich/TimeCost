@@ -25,6 +25,18 @@
     <div class="landing-ctas">
       <a class="btn btn-primary" href="{{ url_for('calculator') }}">Try the calculator →</a>
     </div>
+
+    <div style="display:flex; gap:8px; justify-content:center; margin-top:1.25rem; flex-wrap:wrap;">
+      <span class="muted" style="font-size:0.8rem; align-self:center; margin-right:4px;">Perspective:</span>
+      {% for name in ["river", "leslie", "edie"] %}
+      <form action="{{ url_for('set_perspective') }}" method="post" style="margin:0;">
+        <button type="submit" name="perspective" value="{{ name }}"
+                class="pill" style="font-size:0.78rem; padding:5px 12px; cursor:pointer;{% if perspective == name %} background:var(--accent); color:#fff; border-color:var(--accent);{% endif %}">
+          {{ name | capitalize }}
+        </button>
+      </form>
+      {% endfor %}
+    </div>
   </section>
 
   <!-- How it works -->
