@@ -30,6 +30,9 @@ def populate_dummy_data():
         cursor = conn.cursor()
         placeholder = "?"
 
+    # Clear existing dummy data to make it idempotent
+    cursor.execute(f"DELETE FROM dinaro_families WHERE family_code = {placeholder}", ("DUMMY1",))
+
     # 1. Create a Family
     pin_hash, pin_salt = _make_pin("1234")
     cursor.execute(f"""

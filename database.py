@@ -343,4 +343,11 @@ def init_db() -> None:
             """)).mappings().first()
             if not res:
                 conn.execute(text("ALTER TABLE dinaro_chores ADD COLUMN recurrence TEXT NOT NULL DEFAULT 'none'"))
+            
+            res = conn.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name='dinaro_chores' AND column_name='chore_type'
+            """)).mappings().first()
+            if not res:
                 conn.execute(text("ALTER TABLE dinaro_chores ADD COLUMN chore_type TEXT NOT NULL DEFAULT 'income'"))
