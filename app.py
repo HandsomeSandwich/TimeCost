@@ -318,44 +318,6 @@ def _parse_optional_number(value):
     except (TypeError, ValueError):
         return None
 
-def clamp(x: float, lo: float, hi: float) -> float:
-    return max(lo, min(hi, x))
-
-
-def equal_hours_including_personal(
-    personal_a: float,
-    personal_b: float,
-    shared_total: float,
-    rate_a: float,
-    rate_b: float,
-) -> dict:
-    personal_a = safe_float(personal_a, 0.0)
-    personal_b = safe_float(personal_b, 0.0)
-    shared_total = safe_float(shared_total, 0.0)
-    rate_a = safe_float(rate_a, 0.0)
-    rate_b = safe_float(rate_b, 0.0)
-
-    if shared_total < 0 or rate_a <= 0 or rate_b <= 0:
-        return {"ok": False}
-
-    # x = how much of SHARED Partner A pays
-    x = (rate_a * (personal_b + shared_total) - rate_b * personal_a) / (rate_a + rate_b)
-    a_shared = clamp(x, 0.0, shared_total)
-    b_shared = shared_total - a_shared
-
-    hours_a = (personal_a + a_shared) / rate_a if rate_a > 0 else 0.0
-    hours_b = (personal_b + b_shared) / rate_b if rate_b > 0 else 0.0
-
-    return {
-        "ok": True,
-        "a_shared": round(a_shared, 2),
-        "b_shared": round(b_shared, 2),
-        "hours_a": round(hours_a, 2),
-        "hours_b": round(hours_b, 2),
-        "target_hours": round((hours_a + hours_b) / 2.0, 2),
-        "clamped": not (0.0 < x < shared_total),
-    }
-
 
 def get_effective_hourly_rate() -> Optional[float]:
     # 0) freelance override if selected
@@ -949,70 +911,6 @@ def remove_expense(index):
         conn.execute(text("DELETE FROM expenses WHERE id = :id AND owner_key = :uk"), {"id": index, "uk": owner_key})
     return redirect(url_for("expenses"))
 
-@app.route("/couple", methods=["GET", "POST"])
-def couple():
-    """
-    Equal-hours split (including personal expenses).
-    Partner A = you (this session)
-    Partner B = your partner (entered manually for now)
-    """
-
-    # ---- 1) Pull expenses from DB
-    owner_key = _personal_value("profile_name") or session.get("user_key")
-    conn = get_connection()
-    try:
-        rows = conn.execute(
-            text("SELECT amount, category FROM expenses WHERE owner_key = :uk"),
-            {"uk": owner_key}
-        ).mappings().all()
-    finally:
-        conn.close()
-
-    total = sum(safe_float(r.get("amount"), 0.0) for r in rows)
-
-    # ---- 2) Define what counts as "shared"
-    shared_categories = {"House & Light"}
-    shared_total = sum(
-        safe_float(r.get("amount"), 0.0)
-        for r in rows
-        if (r.get("category") or "") in shared_categories
-    )
-
-    # Everything else is personal (including Nest Egg, Provisions, Odds)
-    personal_total = max(0.0, total - shared_total)
-
-    # ---- 3) Partner hourly rates
-    rate_a = get_effective_hourly_rate() or 0.0
-
-    # B entered via form (for now)
-    rate_b = safe_float(request.form.get("partner_hourly"), 0.0) if request.method == "POST" else 0.0
-
-    # ---- 4) Personal split assumption (temporary)
-    a_personal = safe_float(request.form.get("my_personal"), 0.0) if request.method == "POST" else 0.0
-    b_personal = max(0.0, personal_total - a_personal)
-
-    result = None
-    if request.method == "POST" and rate_a > 0 and rate_b > 0:
-        result = equal_hours_including_personal(
-            personal_a=a_personal,
-            personal_b=b_personal,
-            shared_total=shared_total,
-            rate_a=rate_a,
-            rate_b=rate_b,
-        )
-
-    return render_template(
-        "couple.html",
-        currency=_currency(),
-        total=round(total, 2),
-        shared_total=round(shared_total, 2),
-        personal_total=round(personal_total, 2),
-        rate_a=rate_a,
-        rate_b=rate_b,
-        a_personal=round(a_personal, 2),
-        b_personal=round(b_personal, 2),
-        result=result,
-    )
 
 # ----------------------------
 # Routes: Budget
