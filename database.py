@@ -215,6 +215,15 @@ def init_db() -> None:
     )
     """
 
+    staples_sql = f"""
+    CREATE TABLE IF NOT EXISTS staples (
+        id {id_col},
+        owner_key TEXT NOT NULL,
+        name TEXT NOT NULL,
+        cost {num_col} NOT NULL
+    )
+    """
+
     with engine.begin() as conn:
         conn.execute(text(expenses_sql))
         conn.execute(text(goals_sql))
@@ -230,6 +239,7 @@ def init_db() -> None:
         conn.execute(text(email_signups_sql))
         conn.execute(text(dinaro_ledger_sql))
         conn.execute(text(dinaro_spendables_sql))
+        conn.execute(text(staples_sql))
 
         # --- SQLite-only: add missing columns on older local DBs ---
         if engine.dialect.name == "sqlite":

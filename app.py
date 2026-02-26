@@ -1143,14 +1143,46 @@ def staples():
             "hourly_growth": b["annual_growth_usd"] / WORKING_HOURS_PER_YEAR
         })
 
+    # GET view
+    conn = get_connection()
+    try:
+        saved_staples = conn.execute(
+            text("SELECT name, cost FROM staples WHERE owner_key = :uk"),
+            {"uk": _personal_value("profile_name", session.get("username"))}
+        ).mappings().all()
+    finally:
+        conn.close()
+
     return render_template(
         "staples.html",
         hourlyRate=hr,
         currency=currency,
         billionaires_data=b_data,
         currency_to_usd=CURRENCY_TO_USD,
-        now_month_year=datetime.now().strftime("%B %Y")
+        now_month_year=datetime.now().strftime("%B %Y"),
+        saved_staples=saved_staples
     )
+
+
+@app.route("/staples", methods=["POST"])
+def staples_post():
+    names = request.form.getlist("staple_name[]")
+    costs = request.form.getlist("staple_cost[]")
+    owner_key = _personal_value("profile_name", session.get("username"))
+
+    if not owner_key:
+        return redirect(url_for("staples"))
+
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM staples WHERE owner_key = :uk"), {"uk": owner_key})
+        for n, c in zip(names, costs):
+            if n.strip():
+                conn.execute(
+                    text("INSERT INTO staples (owner_key, name, cost) VALUES (:uk, :n, :c)"),
+                    {"uk": owner_key, "n": n.strip(), "c": safe_float(c)}
+                )
+
+    return redirect(url_for("staples"))
 
 
 # ----------------------------
