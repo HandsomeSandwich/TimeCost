@@ -60,52 +60,6 @@
         </div>
       </div>
 
-      <details style="margin-top:14px;">
-        <summary>Careful: reset actions</summary>
-
-        <div class="card" style="margin-top:12px;">
-          <div class="card-title">Reset stored data</div>
-          <p class="muted" style="margin:0 0 12px;">
-            Use these only if you want a clean slate. This can’t be undone.
-          </p>
-
-          <div class="row-actions">
-            {# Optional: only include these if you actually have routes #}
-            {% if can_reset_session %}
-              <form method="POST" action="{{ url_for('reset_session') }}" class="inline">
-                <button type="submit" class="btn btn-danger"
-                  onclick="return confirm('Clear saved Personal info and preferences for this session?');">
-                  Clear session preferences
-                </button>
-              </form>
-            {% endif %}
-
-            {% if can_clear_expenses %}
-              <form method="POST" action="{{ url_for('clear_expenses') }}" class="inline">
-                <button type="submit" class="btn btn-danger"
-                  onclick="return confirm('Delete all saved expenses?');">
-                  Delete all expenses
-                </button>
-              </form>
-            {% endif %}
-
-            {% if can_clear_goals %}
-              <form method="POST" action="{{ url_for('clear_goals') }}" class="inline">
-                <button type="submit" class="btn btn-danger"
-                  onclick="return confirm('Delete all goals?');">
-                  Delete all goals
-                </button>
-              </form>
-            {% endif %}
-          </div>
-
-          {% if not (can_reset_session or can_clear_expenses or can_clear_goals) %}
-            <p class="muted" style="margin:0;">
-              No reset actions are enabled in this build.
-            </p>
-          {% endif %}
-        </div>
-      </details>
     {% endif %}
   </section>
 </div>
