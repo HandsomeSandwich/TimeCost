@@ -135,6 +135,7 @@ def populate_dummy_data():
 
     # 6. Staples
     cursor.execute(f"DELETE FROM staples WHERE owner_key = {placeholder}", ("JohnnyRose",))
+    cursor.execute(f"DELETE FROM staples WHERE owner_key = {placeholder}", ("Johnny Rose",))
     staples = [
         ("Oat Milk", 4.50),
         ("Bread", 2.50),
@@ -151,7 +152,7 @@ def populate_dummy_data():
         cursor.execute(f"""
             INSERT INTO staples (owner_key, name, cost)
             VALUES ({placeholder}, {placeholder}, {placeholder})
-        """, ("JohnnyRose", name, cost))
+        """, ("Johnny Rose", name, cost))
 
     conn.commit()
     conn.close()
