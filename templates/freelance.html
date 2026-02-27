@@ -11,21 +11,33 @@
           "subtitle": "A quiet record of hours worked, rates charged, and what it all comes to.",
           "use_btn": "Use this blended rate in TimeCost",
           "log_title": "Log a session",
-          "log_subtitle": "Date, client, hours, rate. That's all it needs."
+          "log_subtitle": "Date, client, hours, rate. That's all it needs.",
+          "ph_client": "Client name",
+          "ph_hours": "Hours worked",
+          "ph_rate": "Hourly rate",
+          "ph_notes": "Any notes"
         },
         "leslie": {
           "title": "Freelance Victory Log",
           "subtitle": "Every hour tracked is a win documented. Let's see the scoreboard.",
           "use_btn": "Use this blended rate in TimeCost",
           "log_title": "Log a session",
-          "log_subtitle": "Capture the details while they're fresh. Future-you will be grateful."
+          "log_subtitle": "Capture the details while they're fresh. Future-you will be grateful.",
+          "ph_client": "Who was this for?",
+          "ph_hours": "Hours worked",
+          "ph_rate": "Rate agreed",
+          "ph_notes": "How did it go?"
         },
         "edie": {
           "title": "Freelance Ledger",
           "subtitle": "The hours, the rates, and the cold arithmetic of what it earned you.",
           "use_btn": "Use this blended rate in TimeCost",
           "log_title": "Log a session",
-          "log_subtitle": "Date. Client. Hours. Rate. No embellishment required."
+          "log_subtitle": "Date. Client. Hours. Rate. No embellishment required.",
+          "ph_client": "The client",
+          "ph_hours": "Hours",
+          "ph_rate": "The rate",
+          "ph_notes": "Notes, if you must"
         }
       } %}
       {% set c = copy.get(perspective, copy["river"]) %}
@@ -114,24 +126,24 @@
 
           <div class="field">
             <label>Client</label>
-            <input type="text" name="client" placeholder="A private arrangement">
+            <input type="text" name="client" placeholder="{{ c.ph_client }}">
           </div>
         </div>
 
         <div class="grid-3">
           <div class="field">
             <label>Hours</label>
-            <input type="number" name="hours" step="0.25" min="0.25" placeholder="Time spent" required>
+            <input type="number" name="hours" step="0.25" min="0.25" placeholder="{{ c.ph_hours }}" required>
           </div>
 
           <div class="field">
             <label>Hourly rate ({{ currency }})</label>
-            <input type="number" name="rate" step="0.01" min="0.01" placeholder="Terms agreed" required>
+            <input type="number" name="rate" step="0.01" min="0.01" placeholder="{{ c.ph_rate }}" required>
           </div>
 
           <div class="field">
             <label>Notes</label>
-            <input type="text" name="notes" placeholder="Minor complications. Managed.">
+            <input type="text" name="notes" placeholder="{{ c.ph_notes }}">
           </div>
         </div>
 

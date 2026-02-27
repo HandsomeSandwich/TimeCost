@@ -7,19 +7,22 @@
     "title": "Expenses",
     "subtitle": "Ongoing costs. Quietly tracked.",
     "add_btn": "Add expense",
-    "save_btn": "Save"
+    "save_btn": "Save",
+    "placeholder": "Monthly rent"
   },
   "leslie": {
     "title": "Expense Squad",
-    "subtitle": "We are tracking every dollar so it can march in a straight line.",
+    "subtitle": "We are tracking every penny so it can march in a straight line.",
     "add_btn": "Add expense",
-    "save_btn": "Save the plan"
+    "save_btn": "Save the plan",
+    "placeholder": "Rent"
   },
   "edie": {
     "title": "Expense Confessional",
     "subtitle": "Lets list the little betrayals one by one.",
     "add_btn": "Add another",
-    "save_btn": "Save it"
+    "save_btn": "Save it",
+    "placeholder": "Rent, obviously"
   }
 } %}
 {% set c = copy.get(perspective, copy["river"]) %}
@@ -59,7 +62,7 @@
             {% if saved_expenses|length == 0 %}
               <tr>
                 <td>
-                  <input type="text" name="expense_name[]" value="" placeholder="Root cellar rent">
+                  <input type="text" name="expense_name[]" value="" placeholder="{{ c.placeholder }}">
                 </td>
                 <td>
                   <input type="number" step="0.01" name="expense_amount[]" value="0.00" placeholder="28.50">
@@ -86,7 +89,7 @@
               {% for e in saved_expenses %}
               <tr>
                 <td>
-                  <input type="text" name="expense_name[]" value="{{ e.name }}" placeholder="Root cellar rent">
+                  <input type="text" name="expense_name[]" value="{{ e.name }}" placeholder="{{ c.placeholder }}">
                 </td>
 
                 <td>
@@ -141,7 +144,7 @@
         {% if saved_expenses|length == 0 %}
           <div class="expense-card">
             <div class="expense-card-title">
-              <input type="text" name="expense_name[]" value="" placeholder="Lantern oil">
+              <input type="text" name="expense_name[]" value="" placeholder="{{ c.placeholder }}">
             </div>
 
             <div class="expense-card-grid">
@@ -174,7 +177,7 @@
           {% for e in saved_expenses %}
           <div class="expense-card">
             <div class="expense-card-title">
-              <input type="text" name="expense_name[]" value="{{ e.name }}" placeholder="Lantern oil">
+              <input type="text" name="expense_name[]" value="{{ e.name }}" placeholder="{{ c.placeholder }}">
             </div>
 
             <div class="expense-card-grid">
