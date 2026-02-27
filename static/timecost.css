@@ -351,6 +351,7 @@ h1,h2,h3{
 
 .page{ max-width:720px; margin:0 auto; }
 .page-wide{ max-width:980px; }
+.page-header{ margin-bottom:16px; }
 
 .panel{
   background: var(--panel);
@@ -365,6 +366,7 @@ h1,h2,h3{
 
 .onboarding-nudge{
   border-left: 3px solid var(--accent);
+  margin-bottom: 16px;
 }
 
 .callout{
