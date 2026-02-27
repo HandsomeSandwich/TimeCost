@@ -632,11 +632,29 @@ h1,h2,h3{
   box-shadow:0 0 0 4px var(--focus-ring);
 }
 
+.share-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
 .share-btn{
   gap:6px;
   font-size:0.85rem;
-  margin-top:12px;
 }
+.share-social{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:36px;
+  height:36px;
+  padding:0;
+  border-radius:50%;
+  opacity:0.7;
+  transition:opacity 0.2s;
+}
+.share-social:hover{ opacity:1; }
 
 /* Toast notification */
 .toast{

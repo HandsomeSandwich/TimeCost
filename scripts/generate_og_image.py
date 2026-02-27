@@ -5,19 +5,22 @@ Run:  pip install Pillow && python scripts/generate_og_image.py
 Output: static/og-image.png
 """
 
-import os, sys
+import os, math
 from PIL import Image, ImageDraw, ImageFont
 
 W, H = 1200, 630
 OUT = os.path.join(os.path.dirname(__file__), "..", "static", "og-image.png")
 
-# --- colours (from favicon / brand) ---
-BG_TOP = (31, 42, 51)       # #1f2a33
-BG_BOT = (74, 124, 130)     # #4a7c82
-GOLD   = (242, 210, 143)    # #f2d28f
+# --- colours ---
+BG_TOP = (24, 32, 38)       # dark navy top
+BG_BOT = (42, 58, 68)       # slightly lighter bottom
+GOLD   = (242, 210, 143)    # #f2d28f  brand accent
 WHITE  = (255, 255, 255)
-MUTED  = (180, 195, 200)
-CARD   = (38, 52, 62, 230)  # semi-transparent dark card
+MUTED  = (160, 175, 185)
+SOFT   = (120, 140, 150)
+BAR_BG = (55, 72, 85)       # bar track
+BAR_FG = (105, 165, 180)    # bar fill (teal)
+BAR_YOU = (242, 210, 143)   # your bar (gold)
 
 # --- gradient background ---
 img = Image.new("RGB", (W, H))
@@ -31,7 +34,51 @@ for y in range(H):
 
 draw = ImageDraw.Draw(img, "RGBA")
 
-# --- fonts (try system fonts, fall back to default) ---
+# --- faded clock background ---
+# Large ghostly clock face in the upper-right
+cx, cy = W - 220, H // 2 - 20   # centre of clock
+radius = 260
+clock_alpha = 18  # very faint
+
+# Outer ring
+for w in range(2):
+    draw.ellipse(
+        [cx - radius - w, cy - radius - w, cx + radius + w, cy + radius + w],
+        outline=(*WHITE[:3], clock_alpha),
+    )
+
+# Hour marks
+for h in range(12):
+    angle = math.radians(h * 30 - 90)
+    inner = radius - 20
+    outer = radius - 6
+    x1 = cx + int(inner * math.cos(angle))
+    y1 = cy + int(inner * math.sin(angle))
+    x2 = cx + int(outer * math.cos(angle))
+    y2 = cy + int(outer * math.sin(angle))
+    tick_w = 3 if h % 3 == 0 else 1
+    draw.line([(x1, y1), (x2, y2)], fill=(*WHITE[:3], clock_alpha + 6), width=tick_w)
+
+# Minute hand (pointing at ~10:10 for classic look)
+min_angle = math.radians(60 - 90)  # 10-minute position
+min_len = radius * 0.72
+draw.line(
+    [(cx, cy), (cx + int(min_len * math.cos(min_angle)), cy + int(min_len * math.sin(min_angle)))],
+    fill=(*WHITE[:3], clock_alpha + 4), width=2,
+)
+
+# Hour hand (pointing at ~10)
+hr_angle = math.radians(300 - 90)  # 10-o'clock position
+hr_len = radius * 0.48
+draw.line(
+    [(cx, cy), (cx + int(hr_len * math.cos(hr_angle)), cy + int(hr_len * math.sin(hr_angle)))],
+    fill=(*WHITE[:3], clock_alpha + 4), width=3,
+)
+
+# Centre dot
+draw.ellipse([cx - 4, cy - 4, cx + 4, cy + 4], fill=(*WHITE[:3], clock_alpha + 8))
+
+# --- fonts ---
 def load_font(names, size):
     for name in names:
         try:
@@ -40,69 +87,110 @@ def load_font(names, size):
             pass
     return ImageFont.load_default()
 
-font_bold_lg = load_font([
+FONT_PATHS = [
     "/System/Library/Fonts/Avenir Next.ttc",
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "arial.ttf",
-], 52)
-
-font_bold_md = load_font([
-    "/System/Library/Fonts/Avenir Next.ttc",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    "arial.ttf",
-], 36)
-
-font_reg = load_font([
+]
+FONT_PATHS_REG = [
     "/System/Library/Fonts/Avenir Next.ttc",
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     "arial.ttf",
-], 28)
+]
 
-font_sm = load_font([
-    "/System/Library/Fonts/Avenir Next.ttc",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    "arial.ttf",
-], 22)
+font_brand   = load_font(FONT_PATHS, 26)
+font_title   = load_font(FONT_PATHS, 48)
+font_price   = load_font(FONT_PATHS, 34)
+font_label   = load_font(FONT_PATHS_REG, 20)
+font_bar_lbl = load_font(FONT_PATHS_REG, 18)
+font_tagline = load_font(FONT_PATHS_REG, 22)
+font_sm      = load_font(FONT_PATHS_REG, 18)
 
-# --- draw rounded card background ---
-card_x, card_y = 80, 80
-card_w, card_h = W - 160, H - 160
-card_r = 28
-draw.rounded_rectangle(
-    [card_x, card_y, card_x + card_w, card_y + card_h],
-    radius=card_r,
-    fill=CARD,
-)
+# --- layout ---
+LEFT = 72
+RIGHT = W - 72
 
-# --- TimeCost wordmark (top-left of card) ---
-draw.text((card_x + 48, card_y + 40), "TimeCost", fill=GOLD, font=font_bold_md)
+# TimeCost brand top-left
+draw.text((LEFT, 42), "TimeCost", fill=GOLD, font=font_brand)
 
-# --- gold accent line ---
-line_y = card_y + 100
-draw.line([(card_x + 48, line_y), (card_x + 200, line_y)], fill=GOLD, width=3)
+# Gold accent line
+draw.line([(LEFT, 82), (LEFT + 120, 82)], fill=GOLD, width=2)
 
-# --- example calculation ---
-calc_y = card_y + 140
+# Main example
+draw.text((LEFT, 108), "A week in Paris", fill=WHITE, font=font_title)
 
-# Item name
-draw.text((card_x + 48, calc_y), "A week in Paris", fill=WHITE, font=font_bold_lg)
-
-# Price = time (two-colour line)
-arrow_y = calc_y + 72
 price_text = "\u00a32,200  =  "
-draw.text((card_x + 48, arrow_y), price_text, fill=GOLD, font=font_bold_md)
-price_bbox = draw.textbbox((card_x + 48, arrow_y), price_text, font=font_bold_md)
-draw.text((price_bbox[2], arrow_y), "146 hours of your life", fill=WHITE, font=font_bold_md)
+price_y = 172
+draw.text((LEFT, price_y), price_text, fill=GOLD, font=font_price)
+bbox = draw.textbbox((LEFT, price_y), price_text, font=font_price)
+draw.text((bbox[2], price_y), "146 hours of your life", fill=WHITE, font=font_price)
 
-# --- tagline ---
-tag_y = card_y + card_h - 80
-draw.text((card_x + 48, tag_y), "Time is the real currency", fill=MUTED, font=font_reg)
+# Divider
+div_y = 228
+draw.line([(LEFT, div_y), (RIGHT, div_y)], fill=(60, 78, 90), width=1)
 
-# --- domain (bottom-right) ---
-domain_text = "thetimecost.com"
-bbox = draw.textbbox((0, 0), domain_text, font=font_sm)
-tw = bbox[2] - bbox[0]
-draw.text((card_x + card_w - 48 - tw, tag_y + 6), domain_text, fill=GOLD, font=font_sm)
+# Wealth comparison section
+comp_y = 250
+draw.text((LEFT, comp_y), "While you work 146 hours, they work...", fill=MUTED, font=font_label)
+
+# Bar chart data
+bars = [
+    ("Elon Musk",       "0.05s", 1.0),
+    ("Jeff Bezos",      "0.09s", 0.40),
+    ("Mark Zuckerberg", "0.10s", 0.53),
+    ("Bill Gates",      "0.19s", 0.07),
+    ("You",             "146h 40m", None),
+]
+
+bar_x = LEFT + 180
+bar_right = RIGHT - 80
+bar_w = bar_right - bar_x
+bar_h = 24
+bar_start_y = 290
+
+for i, (name, time_str, pct) in enumerate(bars):
+    y = bar_start_y + i * 52
+
+    # Name label (right-aligned before bar)
+    name_bbox = draw.textbbox((0, 0), name, font=font_bar_lbl)
+    name_w = name_bbox[2] - name_bbox[0]
+    draw.text((bar_x - 16 - name_w, y + 2), name, fill=MUTED if pct is not None else GOLD, font=font_bar_lbl)
+
+    # Bar track
+    draw.rounded_rectangle(
+        [bar_x, y, bar_x + bar_w, y + bar_h],
+        radius=4,
+        fill=BAR_BG,
+    )
+
+    if pct is not None:
+        # Filled bar
+        fill_w = max(8, int(bar_w * pct))
+        draw.rounded_rectangle(
+            [bar_x, y, bar_x + fill_w, y + bar_h],
+            radius=4,
+            fill=BAR_FG,
+        )
+        # Time label after bar
+        draw.text((bar_x + fill_w + 10, y + 1), time_str, fill=WHITE, font=font_bar_lbl)
+    else:
+        # "You" bar — tiny gold sliver
+        draw.rounded_rectangle(
+            [bar_x, y, bar_x + 4, y + bar_h],
+            radius=2,
+            fill=BAR_YOU,
+        )
+        draw.text((bar_x + 16, y + 1), time_str, fill=GOLD, font=font_bar_lbl)
+
+# --- bottom bar ---
+bot_y = H - 56
+draw.line([(LEFT, bot_y - 16), (RIGHT, bot_y - 16)], fill=(60, 78, 90), width=1)
+draw.text((LEFT, bot_y), "Time is the real currency", fill=SOFT, font=font_tagline)
+
+domain = "thetimecost.com"
+d_bbox = draw.textbbox((0, 0), domain, font=font_sm)
+d_w = d_bbox[2] - d_bbox[0]
+draw.text((RIGHT - d_w, bot_y + 4), domain, fill=GOLD, font=font_sm)
 
 # --- save ---
 img.save(OUT, "PNG", optimize=True)
