@@ -205,7 +205,7 @@
         {% endif %}
 
         {% if time_cost and time_cost.ok %}
-        {% set share_text = (item_name or 'This item') ~ ' (' ~ currency ~ item_cost ~ ') costs ' ~ time_cost.human ~ ' of my work time' %}
+        {% set share_text = (item_name or 'This item') ~ ' (' ~ currency ~ item_cost ~ ') costs ' ~ time_cost.human ~ ' on a UK median wage. See how much life that purchase will cost you' %}
         {% set share_url = 'https://thetimecost.com/calculate' %}
         <div class="share-row">
           <button type="button" class="btn share-btn" id="shareResult"
