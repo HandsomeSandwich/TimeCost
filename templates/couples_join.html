@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Join Partnership — TimeCost{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Join a Partnership</h1>
+    <p class="muted">Enter the code your partner shared with you.</p>
+  </header>
+
+  <section class="panel">
+    {% if error %}
+      <div class="callout">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" class="stack">
+      <div class="field">
+        <label for="code">Partnership Code</label>
+        <input id="code" type="text" name="partnership_code" placeholder="e.g. A3X7KP" required style="text-transform:uppercase;">
+      </div>
+
+      <div class="field">
+        <label for="partnerName">Your name</label>
+        <input id="partnerName" type="text" name="partner_name" required>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="pin">PIN</label>
+          <input id="pin" type="password" name="pin" inputmode="numeric" required>
+        </div>
+        <div class="field">
+          <label for="pinConfirm">Confirm PIN</label>
+          <input id="pinConfirm" type="password" name="pin_confirm" inputmode="numeric" required>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="submit">Join Partnership</button>
+        <a href="{{ url_for('couples.couples_landing') }}" class="btn">Back</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

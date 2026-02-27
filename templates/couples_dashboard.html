@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+{% block title %}Our Household — TimeCost{% endblock %}
+
+{% block head %}
+  {{ super() }}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .split-bar { display:flex; height:36px; border-radius:18px; overflow:hidden; background:var(--border); margin:12px 0; }
+    .split-bar-a { background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:600; min-width:36px; transition:width .4s ease; }
+    .split-bar-b { background:#3498db; color:#fff; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:600; min-width:36px; transition:width .4s ease; }
+    .period-tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px; }
+    .period-tabs a { padding:4px 12px; border-radius:20px; font-size:0.8rem; text-decoration:none; color:var(--text); background:var(--bg-card); border:1px solid var(--border); }
+    .period-tabs a.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Our Household</h1>
+    <p class="muted">{{ partnership.name or "Partnership" }}</p>
+    <div class="pill" style="margin-top:8px; background:var(--accent-soft); color:var(--accent); font-weight:700;">
+      <i data-lucide="heart-handshake" style="width:14px; height:14px; vertical-align:middle; margin-right:4px;"></i>
+      Partnership Code: {{ partnership.partnership_code }}
+    </div>
+  </header>
+
+  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+    <form method="post" action="{{ url_for('couples.couples_logout') }}" class="inline">
+      <button class="btn" type="submit">Log out</button>
+    </form>
+    <a href="{{ url_for('couples.couples_export') }}" class="btn">
+      <i data-lucide="download" style="width:14px; height:14px; vertical-align:middle; margin-right:4px;"></i>Export CSV
+    </a>
+  </div>
+
+  {# ── Period selector ── #}
+  <div class="period-tabs" style="margin-top:14px;">
+    <a href="?period=this_week" class="{% if period == 'this_week' %}active{% endif %}">This Week</a>
+    <a href="?period=last_week" class="{% if period == 'last_week' %}active{% endif %}">Last Week</a>
+    <a href="?period=this_month" class="{% if period == 'this_month' %}active{% endif %}">This Month</a>
+    <a href="?period=all_time" class="{% if period == 'all_time' %}active{% endif %}">All Time</a>
+  </div>
+
+  {# ── Invisible Work Value ── #}
+  <section class="panel" style="margin-top:14px; border:2px solid var(--accent);">
+    <h2 class="card-title" style="display:flex; align-items:center; gap:8px;">
+      <i data-lucide="heart" style="color:var(--accent);"></i> Invisible Work Value
+    </h2>
+    <p style="font-size:1.1rem; margin-bottom:12px;">
+      Your household did <strong>{{ total_hours }} hours</strong> of invisible work
+      {% if total_value > 0 %}worth <strong>{{ currency }}{{ "%.2f"|format(total_value) }}</strong>{% endif %}
+    </p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      {% if partner_a %}
+      <div class="card" style="text-align:center; padding:14px;">
+        <div style="font-weight:700; font-size:1.1rem;">{{ partner_a.name }}</div>
+        <div style="font-size:1.6rem; font-weight:800; color:var(--accent); margin:4px 0;">{{ a_hours }}h</div>
+        <div class="muted" style="font-size:0.85rem;">{{ currency }}{{ "%.2f"|format(a_value) }}</div>
+      </div>
+      {% endif %}
+      {% if partner_b %}
+      <div class="card" style="text-align:center; padding:14px;">
+        <div style="font-weight:700; font-size:1.1rem;">{{ partner_b.name }}</div>
+        <div style="font-size:1.6rem; font-weight:800; color:#3498db; margin:4px 0;">{{ b_hours }}h</div>
+        <div class="muted" style="font-size:0.85rem;">{{ currency }}{{ "%.2f"|format(b_value) }}</div>
+      </div>
+      {% elif not partner_b %}
+      <div class="card" style="text-align:center; padding:14px; opacity:0.5;">
+        <div style="font-weight:700; font-size:1.1rem;">Partner 2</div>
+        <div class="muted">Not yet joined</div>
+      </div>
+      {% endif %}
+    </div>
+
+    {# Split bar #}
+    {% if total_mins > 0 and partner_a and partner_b %}
+    <div class="split-bar">
+      <div class="split-bar-a" style="width:{{ a_pct }}%;">{{ partner_a.name }} {{ a_pct }}%</div>
+      <div class="split-bar-b" style="width:{{ b_pct }}%;">{{ partner_b.name }} {{ b_pct }}%</div>
+    </div>
+    {% endif %}
+  </section>
+
+  {# ── Category Breakdown ── #}
+  {% if categories %}
+  <section class="panel" style="margin-top:14px;">
+    <h2 class="card-title" style="display:flex; align-items:center; gap:8px;">
+      <i data-lucide="pie-chart" style="color:var(--accent);"></i> By Category
+    </h2>
+    <div class="stack" style="gap:2px;">
+      {% for cat in categories %}
+      <div class="card" style="display:flex; justify-content:space-between; align-items:center; padding:8px 14px;">
+        <span style="font-weight:600; font-size:0.9rem;">{{ cat.name }}</span>
+        <div style="display:flex; gap:16px; font-size:0.85rem;">
+          {% if partner_a %}<span style="color:var(--accent); font-weight:600;">{{ cat.a_hours }}h</span>{% endif %}
+          {% if partner_b %}<span style="color:#3498db; font-weight:600;">{{ cat.b_hours }}h</span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ── 7-Day Trend ── #}
+  <section class="panel" style="margin-top:14px; border:2px solid var(--accent);">
+    <h2 class="card-title" style="display:flex; align-items:center; gap:8px;">
+      <i data-lucide="trending-up" style="color:var(--accent);"></i> 7-Day Trend (Hours)
+    </h2>
+    <div style="height:220px; margin-top:10px;">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </section>
+
+  {# ── Log Work ── #}
+  <section class="panel" style="margin-top:14px; border:2px solid var(--accent);">
+    <h2 class="card-title" style="display:flex; align-items:center; gap:8px;">
+      <i data-lucide="plus-circle" style="color:var(--accent);"></i> Log Work
+    </h2>
+    <form method="post" action="{{ url_for('couples.couples_log_work') }}" class="stack">
+      <div class="grid-2">
+        <div class="field">
+          <label>Pick a task</label>
+          <select name="task_id" id="taskSelect" onchange="
+            var opt = this.options[this.selectedIndex];
+            if (opt.value) {
+              document.getElementById('customTitle').style.display='none';
+              document.getElementById('logMinutes').value = opt.dataset.mins || 30;
+              document.getElementById('logCategory').value = opt.dataset.cat || 'Other';
+            } else {
+              document.getElementById('customTitle').style.display='block';
+            }
+          ">
+            <option value="">Custom / one-off...</option>
+            {% for task in tasks %}
+              <option value="{{ task.id }}" data-mins="{{ task.default_minutes }}" data-cat="{{ task.category }}">
+                {{ task.title }} ({{ task.default_minutes }}min)
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field" id="customTitle">
+          <label>Or describe what you did</label>
+          <input type="text" name="custom_title" placeholder="e.g. Organised the garage">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Category</label>
+          <select name="category" id="logCategory">
+            {% for cat in categories_list %}
+              <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Minutes</label>
+          <input type="number" name="minutes" id="logMinutes" value="30" min="1" required>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" name="work_date" value="{{ today or '' }}">
+        </div>
+        <div class="field">
+          <label>Note (optional)</label>
+          <input type="text" name="note" placeholder="Quick note...">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" type="submit">Log It</button>
+      </div>
+    </form>
+  </section>
+
+  {# ── Recent Activity ── #}
+  <section class="panel" style="margin-top:14px;">
+    <h2 class="card-title" style="display:flex; align-items:center; gap:8px;">
+      <i data-lucide="activity" style="color:var(--accent);"></i> Recent Activity
+    </h2>
+    {% if recent %}
+    <div class="stack" style="gap:2px;">
+      {% for log in recent %}
+      <div class="card" style="padding:8px 14px; display:flex; justify-content:space-between; align-items:center;
+                                {% if log.partner_id == partner_id %}border-left:3px solid var(--accent);{% else %}border-left:3px solid #3498db;{% endif %}">
+        <div style="min-width:0;">
+          <div style="font-weight:600; font-size:0.9rem;">
+            {{ log.partner_name }}
+            <span class="muted" style="font-weight:400;">· {{ log.task_title or log.custom_title or "Custom" }}</span>
+          </div>
+          <div class="muted" style="font-size:0.8rem;">
+            {{ log.work_date }} · {{ log.minutes }}min · {{ log.category }}
+            {% if log.note %} · {{ log.note }}{% endif %}
+          </div>
+        </div>
+        {% if log.partner_id == partner_id %}
+        <div style="display:flex; gap:4px; flex-shrink:0; margin-left:8px;">
+          <button class="btn btn-sm" style="font-size:0.7rem; padding:2px 6px;"
+                  onclick="let e=document.getElementById('editLog{{ log.id }}'); e.style.display=e.style.display==='none'?'flex':'none'">Edit</button>
+          <form method="post" action="{{ url_for('couples.couples_delete_log', log_id=log.id) }}" class="inline"
+                onsubmit="return confirm('Delete this log entry?')">
+            <button class="btn btn-danger btn-sm" type="submit" style="font-size:0.7rem; padding:2px 6px;">x</button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+      {% if log.partner_id == partner_id %}
+      <form id="editLog{{ log.id }}" method="post" action="{{ url_for('couples.couples_edit_log', log_id=log.id) }}"
+            style="display:none; gap:8px; align-items:end; flex-wrap:wrap; padding:8px 14px; background:var(--bg-card); border-radius:0 0 8px 8px;">
+        <div class="field" style="width:80px;">
+          <label style="font-size:0.75rem;">Minutes</label>
+          <input type="number" name="minutes" value="{{ log.minutes }}" min="1" required style="padding:4px; font-size:0.85rem;">
+        </div>
+        <div class="field" style="width:110px;">
+          <label style="font-size:0.75rem;">Date</label>
+          <input type="date" name="work_date" value="{{ log.work_date }}" style="padding:4px; font-size:0.85rem;">
+        </div>
+        <div class="field" style="flex:1; min-width:100px;">
+          <label style="font-size:0.75rem;">Note</label>
+          <input type="text" name="note" value="{{ log.note or '' }}" style="padding:4px; font-size:0.85rem;">
+        </div>
+        <button class="btn btn-primary btn-sm" type="submit" style="font-size:0.8rem;">Save</button>
+      </form>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% else %}
+      <p class="muted">No activity yet. Log your first task above!</p>
+    {% endif %}
+  </section>
+
+  {# ── Shared Task Menu ── #}
+  <section class="panel" style="margin-top:14px;">
+    <h2 class="card-title" style="display:flex; align-items:center; gap:8px;">
+      <i data-lucide="list" style="color:var(--accent);"></i> Shared Task Menu
+    </h2>
+    <div class="muted" style="margin-bottom:8px;">Both partners can add, edit, or remove tasks from this shared menu.</div>
+
+    <form method="post" action="{{ url_for('couples.couples_add_task') }}" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap; margin-bottom:12px;">
+      <div class="field" style="flex:2; min-width:120px;">
+        <label style="font-size:0.85rem;">Task name</label>
+        <input type="text" name="task_title" required style="padding:6px 10px;">
+      </div>
+      <div class="field" style="width:150px;">
+        <label style="font-size:0.85rem;">Category</label>
+        <select name="category" style="padding:6px 10px;">
+          {% for cat in categories_list %}
+            <option value="{{ cat }}">{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field" style="width:80px;">
+        <label style="font-size:0.85rem;">Minutes</label>
+        <input type="number" name="default_minutes" value="30" min="1" style="padding:6px 10px;">
+      </div>
+      <button class="btn" type="submit" style="white-space:nowrap;">+ Add</button>
+    </form>
+
+    {% if tasks %}
+    <div class="stack" style="gap:2px;">
+      {% set current_cat = namespace(val='') %}
+      {% for task in tasks %}
+        {% if task.category != current_cat.val %}
+          {% set current_cat.val = task.category %}
+          <div style="font-weight:700; font-size:0.8rem; color:var(--accent); margin-top:8px; margin-bottom:2px; text-transform:uppercase; letter-spacing:0.5px;">
+            {{ task.category }}
+          </div>
+        {% endif %}
+        <div class="card" style="padding:0; overflow:hidden;">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 14px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-weight:600; font-size:0.9rem;">{{ task.title }}</span>
+              <span class="muted" style="font-size:0.75rem;">{{ task.default_minutes }}min</span>
+            </div>
+            <div style="display:flex; gap:4px;">
+              <button class="btn btn-sm" style="font-size:0.7rem; padding:2px 6px;"
+                      onclick="let e=document.getElementById('editTask{{ task.id }}'); e.style.display=e.style.display==='none'?'flex':'none'">Edit</button>
+              <form method="post" action="{{ url_for('couples.couples_delete_task', task_id=task.id) }}" class="inline"
+                    onsubmit="return confirm('Remove this task from the menu?')">
+                <button class="btn btn-danger btn-sm" type="submit" style="font-size:0.7rem; padding:2px 6px;">x</button>
+              </form>
+            </div>
+          </div>
+          <form id="editTask{{ task.id }}" method="post" action="{{ url_for('couples.couples_edit_task', task_id=task.id) }}"
+                style="display:none; gap:8px; align-items:end; flex-wrap:wrap; padding:6px 14px; border-top:1px solid var(--border);">
+            <div class="field" style="flex:2; min-width:100px;">
+              <input type="text" name="task_title" value="{{ task.title }}" required style="padding:4px 8px; font-size:0.85rem;">
+            </div>
+            <div class="field" style="width:130px;">
+              <select name="category" style="padding:4px 8px; font-size:0.85rem;">
+                {% for cat in categories_list %}
+                  <option value="{{ cat }}" {% if cat == task.category %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field" style="width:70px;">
+              <input type="number" name="default_minutes" value="{{ task.default_minutes }}" min="1" style="padding:4px 8px; font-size:0.85rem;">
+            </div>
+            <button class="btn btn-primary btn-sm" type="submit" style="font-size:0.8rem;">Save</button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p class="muted">No tasks yet. Add some common household tasks above.</p>
+    {% endif %}
+  </section>
+
+  {# ── Settings ── #}
+  <section class="panel" style="margin-top:14px;">
+    <h2 class="card-title" style="display:flex; align-items:center; gap:8px;">
+      <i data-lucide="settings" style="color:var(--accent);"></i> Settings
+    </h2>
+    <form method="post" action="{{ url_for('couples.couples_settings') }}" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap;">
+      <div class="field" style="flex:2; min-width:120px;">
+        <label style="font-size:0.85rem;">Partnership name</label>
+        <input type="text" name="partnership_name" value="{{ partnership.name or '' }}" style="padding:6px 10px;">
+      </div>
+      <div class="field" style="width:100px;">
+        <label style="font-size:0.85rem;">Hourly rate</label>
+        <input type="number" name="hourly_rate" step="0.5" value="{{ rate }}" style="padding:6px 10px;">
+      </div>
+      <div class="field" style="width:60px;">
+        <label style="font-size:0.85rem;">Currency</label>
+        <input type="text" name="currency" value="{{ currency }}" maxlength="3" style="padding:6px 10px;">
+      </div>
+      <button class="btn btn-primary" type="submit">Save</button>
+    </form>
+    <p class="muted" style="margin-top:6px; font-size:0.8rem;">
+      The hourly rate is used to calculate the monetary value of household work. Default: UK Living Wage ({{ currency }}13.00/hr).
+    </p>
+  </section>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const ctx = document.getElementById('trendChart').getContext('2d');
+      const chartData = {{ chart_data|tojson }};
+      const styles = getComputedStyle(document.documentElement);
+      const accent = styles.getPropertyValue('--accent').trim() || '#bc6c25';
+      const colors = [accent, '#3498db'];
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartData.labels,
+          datasets: chartData.datasets.map((ds, i) => ({
+            label: ds.label,
+            data: ds.data,
+            borderColor: colors[i % colors.length],
+            backgroundColor: colors[i % colors.length] + '22',
+            fill: true,
+            tension: 0.3
+          }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          },
+          scales: {
+            x: { grid: { display: false } },
+            y: { beginAtZero: true, title: { display: true, text: 'Hours' } }
+          }
+        }
+      });
+    });
+  </script>
+</div>
+{% endblock %}

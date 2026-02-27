@@ -106,7 +106,8 @@ def init_db() -> None:
         is_classroom INTEGER NOT NULL DEFAULT 0,
         interest_rate {num_col} NOT NULL DEFAULT 0,
         interest_threshold {num_col} NOT NULL DEFAULT 100,
-        tax_rate {num_col} NOT NULL DEFAULT 0
+        tax_rate {num_col} NOT NULL DEFAULT 0,
+        show_leaderboard INTEGER NOT NULL DEFAULT 0
     )
     """
 
@@ -116,7 +117,8 @@ def init_db() -> None:
         family_id INTEGER NOT NULL,
         name TEXT NOT NULL,
         pin_hash TEXT NOT NULL,
-        pin_salt TEXT NOT NULL
+        pin_salt TEXT NOT NULL,
+        link_code TEXT
     )
     """
 
@@ -130,7 +132,8 @@ def init_db() -> None:
         balance {num_col} NOT NULL DEFAULT 0,
         view_mode TEXT NOT NULL DEFAULT 'visual',
         last_interest_at TEXT,
-        last_tax_at TEXT
+        last_tax_at TEXT,
+        approved INTEGER NOT NULL DEFAULT 1
     )
     """
 
@@ -242,6 +245,90 @@ def init_db() -> None:
     )
     """
 
+    dinaro_group_rewards_sql = f"""
+    CREATE TABLE IF NOT EXISTS dinaro_group_rewards (
+        id {id_col},
+        family_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        reward_dinaro {num_col} NOT NULL,
+        condition_type TEXT NOT NULL DEFAULT 'all_complete',
+        condition_chore_id INTEGER,
+        condition_target INTEGER,
+        condition_period TEXT NOT NULL DEFAULT 'daily',
+        active INTEGER NOT NULL DEFAULT 1,
+        last_awarded_at TEXT
+    )
+    """
+
+    push_subscriptions_sql = f"""
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id {id_col},
+        family_id INTEGER NOT NULL,
+        user_type TEXT NOT NULL,
+        user_id INTEGER NOT NULL,
+        endpoint TEXT NOT NULL,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    )
+    """
+
+    push_subscriptions_idx = """
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_push_sub_endpoint
+    ON push_subscriptions (endpoint)
+    """
+
+    # --- Couples: Making Invisible Work Visible ---
+    couples_partnerships_sql = f"""
+    CREATE TABLE IF NOT EXISTS couples_partnerships (
+        id {id_col},
+        name TEXT,
+        partnership_code TEXT UNIQUE,
+        currency TEXT NOT NULL DEFAULT '£',
+        hourly_rate {num_col} NOT NULL DEFAULT 13.00,
+        created_at TEXT NOT NULL
+    )
+    """
+
+    couples_partners_sql = f"""
+    CREATE TABLE IF NOT EXISTS couples_partners (
+        id {id_col},
+        partnership_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        pin_hash TEXT NOT NULL,
+        pin_salt TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    )
+    """
+
+    couples_tasks_sql = f"""
+    CREATE TABLE IF NOT EXISTS couples_tasks (
+        id {id_col},
+        partnership_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'Other',
+        default_minutes INTEGER NOT NULL DEFAULT 30,
+        active INTEGER NOT NULL DEFAULT 1,
+        created_by INTEGER,
+        created_at TEXT NOT NULL
+    )
+    """
+
+    couples_logs_sql = f"""
+    CREATE TABLE IF NOT EXISTS couples_logs (
+        id {id_col},
+        partnership_id INTEGER NOT NULL,
+        partner_id INTEGER NOT NULL,
+        task_id INTEGER,
+        custom_title TEXT,
+        category TEXT NOT NULL DEFAULT 'Other',
+        minutes INTEGER NOT NULL,
+        work_date TEXT NOT NULL,
+        note TEXT,
+        created_at TEXT NOT NULL
+    )
+    """
+
     with engine.begin() as conn:
         conn.execute(text(expenses_sql))
         conn.execute(text(goals_sql))
@@ -260,6 +347,13 @@ def init_db() -> None:
         conn.execute(text(staples_sql))
         conn.execute(text(households_sql))
         conn.execute(text(household_members_sql))
+        conn.execute(text(push_subscriptions_sql))
+        conn.execute(text(push_subscriptions_idx))
+        conn.execute(text(dinaro_group_rewards_sql))
+        conn.execute(text(couples_partnerships_sql))
+        conn.execute(text(couples_partners_sql))
+        conn.execute(text(couples_tasks_sql))
+        conn.execute(text(couples_logs_sql))
 
         # --- SQLite-only: add missing columns on older local DBs ---
         if engine.dialect.name == "sqlite":
@@ -339,6 +433,24 @@ def init_db() -> None:
                 conn.execute(text("ALTER TABLE dinaro_chores ADD COLUMN recurrence TEXT NOT NULL DEFAULT 'none'"))
             if "chore_type" not in col_names:
                 conn.execute(text("ALTER TABLE dinaro_chores ADD COLUMN chore_type TEXT NOT NULL DEFAULT 'income'"))
+
+            # dinaro_parents: link_code
+            cols = conn.execute(text("PRAGMA table_info(dinaro_parents)")).mappings().all()
+            col_names = {c["name"] for c in cols}
+            if "link_code" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_parents ADD COLUMN link_code TEXT"))
+
+            # dinaro_children: approved
+            cols = conn.execute(text("PRAGMA table_info(dinaro_children)")).mappings().all()
+            col_names = {c["name"] for c in cols}
+            if "approved" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_children ADD COLUMN approved INTEGER NOT NULL DEFAULT 1"))
+
+            # dinaro_families: show_leaderboard
+            cols = conn.execute(text("PRAGMA table_info(dinaro_families)")).mappings().all()
+            col_names = {c["name"] for c in cols}
+            if "show_leaderboard" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN show_leaderboard INTEGER NOT NULL DEFAULT 0"))
         else:
             # PostgreSQL migrations
             # Check for interest_rate in dinaro_families
@@ -390,6 +502,33 @@ def init_db() -> None:
             """)).mappings().first()
             if not res:
                 conn.execute(text("ALTER TABLE dinaro_chores ADD COLUMN chore_type TEXT NOT NULL DEFAULT 'income'"))
+
+            # dinaro_parents: link_code
+            res = conn.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='dinaro_parents' AND column_name='link_code'
+            """)).mappings().first()
+            if not res:
+                conn.execute(text("ALTER TABLE dinaro_parents ADD COLUMN link_code TEXT"))
+
+            # dinaro_children: approved
+            res = conn.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='dinaro_children' AND column_name='approved'
+            """)).mappings().first()
+            if not res:
+                conn.execute(text("ALTER TABLE dinaro_children ADD COLUMN approved INTEGER NOT NULL DEFAULT 1"))
+
+            # dinaro_families: show_leaderboard
+            res = conn.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='dinaro_families' AND column_name='show_leaderboard'
+            """)).mappings().first()
+            if not res:
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN show_leaderboard INTEGER NOT NULL DEFAULT 0"))
 
             # Check for owner_key in goals
             res = conn.execute(text("""

@@ -21,9 +21,35 @@
     {% endif %}
   </header>
 
-  <form method="post" action="{{ url_for('dinaro.dinaro_parent_logout') }}" class="inline">
-    <button class="btn" type="submit">Log out</button>
-  </form>
+  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+    <form method="post" action="{{ url_for('dinaro.dinaro_parent_logout') }}" class="inline">
+      <button class="btn" type="submit">Log out</button>
+    </form>
+    <button id="pushToggle" class="btn" type="button">
+      <i data-lucide="bell" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;"></i>
+      Enable notifications
+    </button>
+  </div>
+
+  {% if family.is_classroom %}
+  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px;">
+    {% if other_classes %}
+    <form method="post" action="{{ url_for('dinaro.dinaro_parent_switch_class') }}" style="display:inline-flex; gap:8px; align-items:center;">
+      <select name="target_parent_id" class="input" style="padding:6px 10px;">
+        <option value="">Switch class...</option>
+        {% for cls in other_classes %}
+          <option value="{{ cls.parent_id }}">{{ cls.class_name or "Unnamed class" }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Switch</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{{ url_for('dinaro.dinaro_parent_create_class') }}" style="display:inline-flex; gap:8px; align-items:center;">
+      <input type="text" name="class_name" placeholder="New class name" class="input" style="padding:6px 10px; width:140px;">
+      <button class="btn btn-sm" type="submit">+ New Class</button>
+    </form>
+  </div>
+  {% endif %}
 
   <section class="panel" style="margin-top:14px; border: 2px solid var(--accent);">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
@@ -33,6 +59,71 @@
       <canvas id="trendsChart"></canvas>
     </div>
   </section>
+
+  {% if family.is_classroom and pending_enrollments %}
+  <section class="panel" style="margin-top:14px; border: 2px solid #f1c40f;">
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="user-plus" style="color:#f1c40f;"></i> Pending Enrollments ({{ pending_enrollments|length }})
+    </h2>
+    <div class="stack">
+      {% for student in pending_enrollments %}
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-weight:600;">{{ student.name }}</div>
+          <div style="display:flex; gap:8px;">
+            <form method="post" action="{{ url_for('dinaro.dinaro_parent_approve_enrollment', child_id=student.id) }}">
+              <button class="btn btn-primary btn-sm" type="submit">Approve</button>
+            </form>
+            <form method="post" action="{{ url_for('dinaro.dinaro_parent_deny_enrollment', child_id=student.id) }}" onsubmit="return confirm('Deny this student?')">
+              <button class="btn btn-sm" type="submit" style="background:#e74c3c; color:#fff;">&times; Deny</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if family.is_classroom and analytics %}
+  <section class="panel" style="margin-top:14px; border: 2px solid var(--accent);">
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="bar-chart-2" style="color:var(--accent);"></i> Class Analytics
+    </h2>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:16px;">
+      <div class="card" style="text-align:center; padding:16px;">
+        <div class="muted" style="font-size:0.8rem; text-transform:uppercase;">Students</div>
+        <div style="font-size:1.8rem; font-weight:800; color:var(--accent);">{{ analytics.num_students }}</div>
+      </div>
+      <div class="card" style="text-align:center; padding:16px;">
+        <div class="muted" style="font-size:0.8rem; text-transform:uppercase;">Avg Balance</div>
+        <div style="font-size:1.8rem; font-weight:800; color:var(--accent);">{{ "%.1f"|format(analytics.avg_balance) }}</div>
+      </div>
+      <div class="card" style="text-align:center; padding:16px;">
+        <div class="muted" style="font-size:0.8rem; text-transform:uppercase;">Tasks Today</div>
+        <div style="font-size:1.8rem; font-weight:800; color:var(--accent);">{{ analytics.tasks_today }}</div>
+      </div>
+      <div class="card" style="text-align:center; padding:16px;">
+        <div class="muted" style="font-size:0.8rem; text-transform:uppercase;">Completion</div>
+        <div style="font-size:1.8rem; font-weight:800; color:var(--accent);">{{ analytics.completion_rate }}%</div>
+      </div>
+    </div>
+
+    <h3 class="card-title" style="font-size:0.95rem; margin-top:12px;">Leaderboard</h3>
+    <div class="stack">
+      {% for student in analytics.leaderboard %}
+      <div class="card" style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-weight:800; color:var(--accent); min-width:24px;">{{ loop.index }}</span>
+          <span style="font-weight:600;">{{ student.name }}</span>
+        </div>
+        <div style="display:flex; gap:16px; align-items:center;">
+          <span class="muted" style="font-size:0.85rem;">{{ student.tasks_week }} tasks/wk</span>
+          <span style="font-weight:700;">{{ "%.2f"|format(student.balance) }} dinaro</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
   <section class="panel" style="margin-top:14px; border: 2px solid var(--accent);">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
@@ -172,82 +263,105 @@
         </label>
       </div>
 
+      {% if family.is_classroom %}
+      <div class="field" style="grid-column: span 2;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" name="show_leaderboard" {% if family.show_leaderboard %}checked{% endif %}>
+          <span>Show leaderboard to students</span>
+        </label>
+      </div>
+      {% endif %}
+
       <div class="actions">
         <button class="btn btn-primary" type="submit">Save Settings</button>
       </div>
     </form>
   </section>
 
-  <section class="panel">
+  <section class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="users" style="color:var(--accent);"></i> {% if family.is_classroom %}Students{% else %}Kids{% endif %}
+      {% if kids %}<span class="muted" style="font-size:0.8rem; font-weight:400;">({{ kids|length }})</span>{% endif %}
     </h2>
-    <div class="grid-2">
+
+    {% if kids %}
+    <div class="stack" style="gap:2px;">
       {% for kid in kids %}
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <div style="font-weight:600;">{{ kid.name }}</div>
-              <div class="muted">Balance: {{ "%.2f"|format(kid.balance or 0) }} dinaro</div>
+        <div class="card" style="padding:0; overflow:hidden;">
+          {# ── Compact row: always visible ── #}
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; cursor:pointer;"
+               onclick="let d=document.getElementById('kidDetail{{ kid.id }}'); d.style.display=d.style.display==='none'?'block':'none'; this.querySelector('.kid-chevron').classList.toggle('open')">
+            <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+              <span class="kid-chevron" style="transition:transform .2s; font-size:0.7rem; color:var(--muted);">▶</span>
+              <span style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ kid.name }}</span>
               {% if kid.todo_total > 0 %}
-                <div style="margin-top:4px;">
-                  <span class="badge" style="{% if kid.todo_done == kid.todo_total %}background: #2ecc71; color: white;{% else %}background: var(--accent-soft); color: var(--accent);{% endif %} font-size: 0.75rem;">
-                    To-Do: {{ kid.todo_done }}/{{ kid.todo_total }}
-                  </span>
-                </div>
+                <span class="badge" style="{% if kid.todo_done == kid.todo_total %}background:#2ecc71;color:#fff;{% else %}background:var(--accent-soft);color:var(--accent);{% endif %} font-size:0.7rem; padding:1px 6px; flex-shrink:0;">
+                  {{ kid.todo_done }}/{{ kid.todo_total }}
+                </span>
               {% endif %}
-              <div style="margin-top:8px;">
-                <a href="{{ url_for('dinaro.dinaro_parent_export_child', child_id=kid.id) }}" class="btn btn-ghost btn-sm" style="font-size: 0.75rem; padding: 2px 6px;">
-                  <i data-lucide="download" style="width:12px; height:12px; vertical-align:middle; margin-right:2px;"></i> Export History
-                </a>
-              </div>
             </div>
-            <div style="display:flex; gap:8px;">
-              <button class="btn btn-sm" onclick="document.getElementById('editKid{{ kid.id }}').style.display='block'">Edit</button>
-              <form method="post" action="{{ url_for('dinaro.dinaro_parent_delete_child', child_id=kid.id) }}" class="inline" onsubmit="return confirm('Delete this {% if family.is_classroom %}student{% else %}child{% endif %}? This cannot be undone.')">
-                <button class="btn btn-danger btn-sm" type="submit">×</button>
-              </form>
+            <span style="font-weight:700; font-size:0.9rem; white-space:nowrap; margin-left:8px;">{{ "%.2f"|format(kid.balance or 0) }} <span class="muted" style="font-weight:400; font-size:0.75rem;">dinaro</span></span>
+          </div>
+
+          {# ── Expandable detail panel ── #}
+          <div id="kidDetail{{ kid.id }}" style="display:none; padding:0 14px 12px 38px; border-top:1px solid var(--border);">
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; align-items:center;">
               <form method="post" action="{{ url_for('dinaro.dinaro_parent_update_child_mode', child_id=kid.id) }}" class="inline">
-                <select name="view_mode" onchange="this.form.submit()" style="padding: 4px 8px; border-radius: 8px; font-size: 0.85em;">
-                  <option value="visual" {% if kid.view_mode == 'visual' %}selected{% endif %}>Visual ({% if family.is_classroom %}Students{% else %}Kids{% endif %})</option>
+                <select name="view_mode" onchange="this.form.submit()" style="padding:3px 6px; border-radius:6px; font-size:0.8em;">
+                  <option value="visual" {% if kid.view_mode == 'visual' %}selected{% endif %}>Visual</option>
                   <option value="teen" {% if kid.view_mode == 'teen' %}selected{% endif %}>Teen</option>
                 </select>
               </form>
+              <button class="btn btn-sm" style="font-size:0.75rem; padding:3px 8px;" onclick="event.stopPropagation(); let e=document.getElementById('editKid{{ kid.id }}'); e.style.display=e.style.display==='none'?'block':'none'">Edit</button>
+              <a href="{{ url_for('dinaro.dinaro_parent_export_child', child_id=kid.id) }}" class="btn btn-ghost btn-sm" style="font-size:0.75rem; padding:3px 8px;">
+                <i data-lucide="download" style="width:11px;height:11px;vertical-align:middle;margin-right:2px;"></i>Export
+              </a>
+              <button class="btn btn-sm" style="font-size:0.75rem; padding:3px 8px; color:var(--accent);" onclick="event.stopPropagation(); let b=document.getElementById('bonusKid{{ kid.id }}'); b.style.display=b.style.display==='none'?'block':'none'">🎁 Bonus</button>
+              <form method="post" action="{{ url_for('dinaro.dinaro_parent_delete_child', child_id=kid.id) }}" class="inline" onsubmit="return confirm('Delete this {% if family.is_classroom %}student{% else %}child{% endif %}? This cannot be undone.')">
+                <button class="btn btn-danger btn-sm" type="submit" style="font-size:0.75rem; padding:3px 8px;">×</button>
+              </form>
+            </div>
+
+            {# Edit form #}
+            <div id="editKid{{ kid.id }}" style="display:none; margin-top:10px; padding:10px; border:1px solid var(--border); border-radius:8px;">
+              <form method="post" action="{{ url_for('dinaro.dinaro_parent_edit_child', child_id=kid.id) }}" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap;">
+                <div class="field" style="flex:1; min-width:100px;">
+                  <label style="font-size:0.8rem;">Name</label>
+                  <input type="text" name="child_name" value="{{ kid.name }}" required style="padding:5px 8px; font-size:0.85rem;">
+                </div>
+                <div class="field" style="flex:1; min-width:100px;">
+                  <label style="font-size:0.8rem;">New PIN</label>
+                  <input type="password" name="child_pin" inputmode="numeric" placeholder="unchanged" style="padding:5px 8px; font-size:0.85rem;">
+                </div>
+                <button class="btn btn-primary btn-sm" type="submit" style="font-size:0.8rem;">Save</button>
+              </form>
+            </div>
+
+            {# Bonus form #}
+            <div id="bonusKid{{ kid.id }}" style="display:none; margin-top:10px; padding:10px; border:1px solid var(--border); border-radius:8px;">
+              <form method="post" action="{{ url_for('dinaro.dinaro_parent_child_bonus', child_id=kid.id) }}" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap;">
+                <div class="field" style="width:80px;">
+                  <label style="font-size:0.8rem;">Amount</label>
+                  <input type="number" name="bonus_amount" step="0.5" required style="padding:5px 8px; font-size:0.85rem;">
+                </div>
+                <div class="field" style="flex:1; min-width:120px;">
+                  <label style="font-size:0.8rem;">Note</label>
+                  <input type="text" name="bonus_note" placeholder="Great job!" style="padding:5px 8px; font-size:0.85rem;">
+                </div>
+                <button class="btn btn-primary btn-sm" type="submit" style="font-size:0.8rem;">Send 🎁</button>
+              </form>
             </div>
           </div>
-          <div id="editKid{{ kid.id }}" class="panel" style="display:none; margin-top:12px; border:1px solid var(--accent);">
-            <form method="post" action="{{ url_for('dinaro.dinaro_parent_edit_child', child_id=kid.id) }}" class="stack">
-              <div class="field">
-                <label>Name</label>
-                <input type="text" name="child_name" value="{{ kid.name }}" required>
-              </div>
-              <div class="field">
-                <label>New PIN (leave blank to keep current)</label>
-                <input type="password" name="child_pin" inputmode="numeric">
-              </div>
-              <div class="actions">
-                <button class="btn btn-primary" type="submit">Save</button>
-                <button class="btn" type="button" onclick="document.getElementById('editKid{{ kid.id }}').style.display='none'">Cancel</button>
-              </div>
-            </form>
-          </div>
-          <details style="margin-top:12px;">
-            <summary style="cursor:pointer; font-size:0.85rem; color:var(--accent);">🎁 Send Surprise Bonus</summary>
-            <form method="post" action="{{ url_for('dinaro.dinaro_parent_child_bonus', child_id=kid.id) }}" style="margin-top:8px; display:grid; gap:8px;">
-              <div class="field">
-                <input type="number" name="bonus_amount" step="0.5" placeholder="Amount" required style="padding:6px; font-size:0.85rem;">
-              </div>
-              <div class="field">
-                <input type="text" name="bonus_note" placeholder="Note (e.g. Great job today!)" style="padding:6px; font-size:0.85rem;">
-              </div>
-              <button class="btn btn-primary" type="submit" style="padding:6px; font-size:0.85rem;">Send 🎁</button>
-            </form>
-          </details>
         </div>
-      {% else %}
-        <p class="muted">No {% if family.is_classroom %}students{% else %}kids{% endif %} yet.</p>
       {% endfor %}
     </div>
+    {% else %}
+      <p class="muted">No {% if family.is_classroom %}students{% else %}kids{% endif %} yet.</p>
+    {% endif %}
+
+    <style>
+      .kid-chevron.open { transform: rotate(90deg); }
+    </style>
 
     <div class="grid-2" style="margin-top:12px;">
       <section class="panel">
@@ -317,7 +431,7 @@
     </div>
   </section>
 
-  <section class="panel">
+  <section class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="hammer" style="color:var(--accent);"></i> {% if family.is_classroom %}Tasks & Responsibilities{% else %}Chores{% endif %}
     </h2>
@@ -346,128 +460,204 @@
           <option value="expense">Expense (Recurring Deduction)</option>
         </select>
       </div>
+      {% if family.is_classroom and other_classes %}
+      <div class="field" style="grid-column: span 2;">
+        <label>Also add to other classes</label>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          {% for cls in other_classes %}
+            <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+              <input type="checkbox" name="broadcast_to_families" value="{{ cls.family_id }}">
+              {{ cls.class_name or "Unnamed" }}
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
       <div class="actions">
         <button class="btn" type="submit">Add {% if family.is_classroom %}task{% else %}chore{% endif %}</button>
       </div>
     </form>
-    <div class="grid-2">
+    {% if chores %}
+    <div class="stack" style="gap:2px;">
       {% for chore in chores %}
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <div style="font-weight:600;">{{ chore.title }}</div>
-              <div class="muted">
-                {{ chore.default_hours }} hr · {{ "%.2f"|format(chore.default_hours * rate_per_hour) }} dinaro
-                {% if chore.recurrence != 'none' %}
-                  <span class="badge" style="background:var(--accent-soft); color:var(--accent);">{{ chore.recurrence|capitalize }}</span>
-                {% endif %}
-                <span class="badge" style="{% if chore.chore_type == 'income' %}background:#2ecc71;{% else %}background:#e74c3c;{% endif %} color:white;">{{ chore.chore_type|capitalize }}</span>
-              </div>
+        <div class="card" style="padding:0; overflow:hidden;">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 14px;">
+            <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+              <span style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ chore.title }}</span>
+              <span class="muted" style="font-size:0.8rem; flex-shrink:0;">{{ chore.default_hours }}hr · {{ "%.2f"|format(chore.default_hours * rate_per_hour) }}d</span>
+              {% if chore.recurrence != 'none' %}
+                <span class="badge" style="background:var(--accent-soft); color:var(--accent); font-size:0.65rem; padding:1px 5px; flex-shrink:0;">{{ chore.recurrence|capitalize }}</span>
+              {% endif %}
+              <span class="badge" style="{% if chore.chore_type == 'income' %}background:#2ecc71;{% else %}background:#e74c3c;{% endif %} color:white; font-size:0.65rem; padding:1px 5px; flex-shrink:0;">{{ chore.chore_type|capitalize }}</span>
             </div>
-            <div style="display:flex; gap:8px;">
-              <button class="btn btn-sm" onclick="document.getElementById('editChore{{ chore.id }}').style.display='block'">Edit</button>
+            <div style="display:flex; gap:6px; flex-shrink:0; margin-left:8px;">
+              <button class="btn btn-sm" style="font-size:0.75rem; padding:3px 8px;" onclick="let e=document.getElementById('editChore{{ chore.id }}'); e.style.display=e.style.display==='none'?'block':'none'">Edit</button>
               <form method="post" action="{{ url_for('dinaro.dinaro_parent_delete_chore', chore_id=chore.id) }}" onsubmit="return confirm('Delete this {% if family.is_classroom %}task{% else %}chore{% endif %}?')">
-                <button class="btn btn-danger btn-sm" type="submit">×</button>
+                <button class="btn btn-danger btn-sm" type="submit" style="font-size:0.75rem; padding:3px 8px;">×</button>
               </form>
             </div>
           </div>
-
-          <div id="editChore{{ chore.id }}" class="panel" style="display:none; margin-top:12px; border:1px solid var(--accent);">
-            <form method="post" action="{{ url_for('dinaro.dinaro_parent_edit_chore', chore_id=chore.id) }}" class="stack">
-              <div class="field">
-                <label>{% if family.is_classroom %}Task{% else %}Chore{% endif %} name</label>
-                <input type="text" name="chore_title" value="{{ chore.title }}" required>
+          <div id="editChore{{ chore.id }}" style="display:none; padding:0 14px 12px; border-top:1px solid var(--border);">
+            <form method="post" action="{{ url_for('dinaro.dinaro_parent_edit_chore', chore_id=chore.id) }}" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap; margin-top:10px;">
+              <div class="field" style="flex:2; min-width:120px;">
+                <label style="font-size:0.8rem;">Name</label>
+                <input type="text" name="chore_title" value="{{ chore.title }}" required style="padding:5px 8px; font-size:0.85rem;">
               </div>
-              <div class="field">
-                <label>Default hours</label>
-                <input type="number" name="default_hours" step="0.25" value="{{ chore.default_hours }}" required>
+              <div class="field" style="width:80px;">
+                <label style="font-size:0.8rem;">Hours</label>
+                <input type="number" name="default_hours" step="0.25" value="{{ chore.default_hours }}" required style="padding:5px 8px; font-size:0.85rem;">
               </div>
-              <div class="field">
-                <label>Recurrence</label>
-                <select name="recurrence">
+              <div class="field" style="width:90px;">
+                <label style="font-size:0.8rem;">Recurrence</label>
+                <select name="recurrence" style="padding:5px 8px; font-size:0.85rem;">
                   <option value="none" {% if chore.recurrence == 'none' %}selected{% endif %}>One-time</option>
                   <option value="daily" {% if chore.recurrence == 'daily' %}selected{% endif %}>Daily</option>
                   <option value="weekly" {% if chore.recurrence == 'weekly' %}selected{% endif %}>Weekly</option>
                 </select>
               </div>
-              <div class="field">
-                <label>Type</label>
-                <select name="chore_type">
+              <div class="field" style="width:80px;">
+                <label style="font-size:0.8rem;">Type</label>
+                <select name="chore_type" style="padding:5px 8px; font-size:0.85rem;">
                   <option value="income" {% if chore.chore_type == 'income' %}selected{% endif %}>Income</option>
                   <option value="expense" {% if chore.chore_type == 'expense' %}selected{% endif %}>Expense</option>
                 </select>
               </div>
-              <div class="actions">
-                <button class="btn btn-primary" type="submit">Save</button>
-                <button class="btn" type="button" onclick="document.getElementById('editChore{{ chore.id }}').style.display='none'">Cancel</button>
-              </div>
+              <button class="btn btn-primary btn-sm" type="submit" style="font-size:0.8rem;">Save</button>
             </form>
           </div>
         </div>
-      {% else %}
-        <p class="muted">No {% if family.is_classroom %}tasks{% else %}chores{% endif %} yet.</p>
       {% endfor %}
     </div>
+    {% else %}
+      <p class="muted">No {% if family.is_classroom %}tasks{% else %}chores{% endif %} yet.</p>
+    {% endif %}
   </section>
 
-  <section class="panel">
+  <section class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="gift" style="color:var(--accent);"></i> {% if family.is_classroom %}Rewards & Privileges{% else %}Spendable Items (Rewards){% endif %}
     </h2>
-    <div class="muted" style="margin-bottom:8px;">Add items {% if family.is_classroom %}students{% else %}kids{% endif %} can spend their Dinaro on.</div>
-    <form method="post" action="{{ url_for('dinaro.dinaro_parent_add_spendable') }}" class="grid-2" style="margin-bottom:12px;">
-      <div class="field">
-        <label>{% if family.is_classroom %}Reward{% else %}Item{% endif %} name</label>
-        <input type="text" name="spendable_title" required>
+    <form method="post" action="{{ url_for('dinaro.dinaro_parent_add_spendable') }}" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap; margin-bottom:12px;">
+      <div class="field" style="flex:2; min-width:120px;">
+        <label style="font-size:0.85rem;">{% if family.is_classroom %}Reward{% else %}Item{% endif %} name</label>
+        <input type="text" name="spendable_title" required style="padding:6px 10px;">
       </div>
-      <div class="field">
-        <label>Cost (dinaro)</label>
-        <input type="number" name="cost_dinaro" step="0.25" required>
+      <div class="field" style="width:100px;">
+        <label style="font-size:0.85rem;">Cost (dinaro)</label>
+        <input type="number" name="cost_dinaro" step="0.25" required style="padding:6px 10px;">
       </div>
-      <div class="actions">
-        <button class="btn" type="submit">Add {% if family.is_classroom %}reward{% else %}item{% endif %}</button>
-      </div>
+      <button class="btn" type="submit" style="white-space:nowrap;">+ Add</button>
     </form>
-    <div class="grid-2">
+    {% if spendables %}
+    <div class="stack" style="gap:2px;">
       {% for item in spendables %}
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <div style="font-weight:600;">{{ item.title }}</div>
-              <div class="muted">{{ "%.2f"|format(item.cost_dinaro) }} dinaro</div>
+        <div class="card" style="padding:0; overflow:hidden;">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 14px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-weight:600;">{{ item.title }}</span>
+              <span class="muted" style="font-size:0.8rem;">{{ "%.2f"|format(item.cost_dinaro) }} dinaro</span>
             </div>
-            <div style="display:flex; gap:8px;">
-              <button class="btn btn-sm" onclick="document.getElementById('editSpendable{{ item.id }}').style.display='block'">Edit</button>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-sm" style="font-size:0.75rem; padding:3px 8px;" onclick="let e=document.getElementById('editSpendable{{ item.id }}'); e.style.display=e.style.display==='none'?'block':'none'">Edit</button>
               <form method="post" action="{{ url_for('dinaro.dinaro_parent_delete_spendable', spendable_id=item.id) }}" onsubmit="return confirm('Delete this item?')">
-                <button class="btn btn-danger btn-sm" type="submit">×</button>
+                <button class="btn btn-danger btn-sm" type="submit" style="font-size:0.75rem; padding:3px 8px;">×</button>
               </form>
             </div>
           </div>
-
-          <div id="editSpendable{{ item.id }}" class="panel" style="display:none; margin-top:12px; border:1px solid var(--accent);">
-            <form method="post" action="{{ url_for('dinaro.dinaro_parent_edit_spendable', spendable_id=item.id) }}" class="stack">
-              <div class="field">
-                <label>{% if family.is_classroom %}Reward{% else %}Item{% endif %} name</label>
-                <input type="text" name="spendable_title" value="{{ item.title }}" required>
+          <div id="editSpendable{{ item.id }}" style="display:none; padding:0 14px 12px; border-top:1px solid var(--border);">
+            <form method="post" action="{{ url_for('dinaro.dinaro_parent_edit_spendable', spendable_id=item.id) }}" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap; margin-top:10px;">
+              <div class="field" style="flex:2; min-width:120px;">
+                <label style="font-size:0.8rem;">{% if family.is_classroom %}Reward{% else %}Item{% endif %} name</label>
+                <input type="text" name="spendable_title" value="{{ item.title }}" required style="padding:5px 8px; font-size:0.85rem;">
               </div>
-              <div class="field">
-                <label>Cost (dinaro)</label>
-                <input type="number" name="cost_dinaro" step="0.25" value="{{ item.cost_dinaro }}" required>
+              <div class="field" style="width:100px;">
+                <label style="font-size:0.8rem;">Cost</label>
+                <input type="number" name="cost_dinaro" step="0.25" value="{{ item.cost_dinaro }}" required style="padding:5px 8px; font-size:0.85rem;">
               </div>
-              <div class="actions">
-                <button class="btn btn-primary" type="submit">Save</button>
-                <button class="btn" type="button" onclick="document.getElementById('editSpendable{{ item.id }}').style.display='none'">Cancel</button>
-              </div>
+              <button class="btn btn-primary btn-sm" type="submit" style="font-size:0.8rem;">Save</button>
             </form>
           </div>
         </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p class="muted">No spendable items yet.</p>
+    {% endif %}
+  </section>
+
+  {% if family.is_classroom %}
+  <section class="panel" style="margin-top:14px;">
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="trophy" style="color:var(--accent);"></i> Group Rewards
+    </h2>
+    <div class="muted" style="margin-bottom:8px;">Set goals the whole class can work toward together.</div>
+    <form method="post" action="{{ url_for('dinaro.dinaro_parent_add_group_reward') }}" class="grid-2" style="margin-bottom:12px;">
+      <div class="field">
+        <label>Reward title</label>
+        <input type="text" name="reward_title" placeholder="e.g. Pizza Party" required>
+      </div>
+      <div class="field">
+        <label>Dinaro per student</label>
+        <input type="number" name="reward_dinaro" step="0.5" required>
+      </div>
+      <div class="field">
+        <label>Condition type</label>
+        <select name="condition_type" id="groupConditionType" onchange="document.getElementById('allCompleteFields').style.display=this.value==='all_complete'?'block':'none'; document.getElementById('classTargetFields').style.display=this.value==='class_target'?'block':'none';">
+          <option value="all_complete">All students complete a task</option>
+          <option value="class_target">Class-wide target count</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Period</label>
+        <select name="condition_period">
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+        </select>
+      </div>
+      <div id="allCompleteFields" class="field" style="grid-column: span 2;">
+        <label>Task (all must complete)</label>
+        <select name="condition_chore_id">
+          <option value="">Choose a task...</option>
+          {% for chore in chores %}
+            <option value="{{ chore.id }}">{{ chore.title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div id="classTargetFields" class="field" style="grid-column: span 2; display:none;">
+        <label>Target number of completed tasks</label>
+        <input type="number" name="condition_target" placeholder="e.g. 20">
+      </div>
+      <div class="actions">
+        <button class="btn" type="submit">Add Group Reward</button>
+      </div>
+    </form>
+    <div class="stack">
+      {% for gr in group_rewards %}
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-weight:600;">{{ gr.title }}</div>
+            <div class="muted" style="font-size:0.85rem;">
+              {{ "%.2f"|format(gr.reward_dinaro) }} dinaro/student ·
+              {% if gr.condition_type == 'all_complete' %}
+                All complete "{{ gr.chore_title or '?' }}"
+              {% else %}
+                Class target: {{ gr.condition_target }} tasks
+              {% endif %}
+              · {{ gr.condition_period|capitalize }}
+            </div>
+          </div>
+          <form method="post" action="{{ url_for('dinaro.dinaro_parent_delete_group_reward', reward_id=gr.id) }}" onsubmit="return confirm('Remove this group reward?')">
+            <button class="btn btn-danger btn-sm" type="submit">×</button>
+          </form>
+        </div>
       {% else %}
-        <p class="muted">No spendable items yet.</p>
+        <p class="muted">No group rewards yet.</p>
       {% endfor %}
     </div>
   </section>
+  {% endif %}
 
-  <section class="panel">
+  <section class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="clock" style="color:var(--accent);"></i> Pending {% if family.is_classroom %}task{% else %}chore{% endif %} approvals
     </h2>
@@ -493,7 +683,7 @@
     {% endfor %}
   </section>
 
-  <section class="panel">
+  <section class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="shopping-cart" style="color:var(--accent);"></i> Requests
     </h2>
@@ -536,7 +726,7 @@
     {% endfor %}
   </section>
 
-  <section class="panel">
+  <section class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="target" style="color:var(--accent);"></i> Goals
     </h2>
@@ -624,5 +814,6 @@
       });
     });
   </script>
+  <script src="{{ url_for('static', filename='dinaro-push.js') }}" defer></script>
 </div>
 {% endblock %}

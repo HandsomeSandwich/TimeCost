@@ -103,6 +103,10 @@ app.register_blueprint(piggybank_bp, url_prefix="/piggybank")
 from dinaro import dinaro_bp
 app.register_blueprint(dinaro_bp, url_prefix="/dinaro")
 
+# --- Couples: Making Invisible Work Visible ---
+from couples import couples_bp
+app.register_blueprint(couples_bp, url_prefix="/couples")
+
 # Initialize DB on startup
 try:
     init_db()

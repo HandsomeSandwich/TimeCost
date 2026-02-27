@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Couples Login — TimeCost{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Couples Login</h1>
+    <p class="muted">Enter your partnership code and PIN.</p>
+  </header>
+
+  <section class="panel">
+    {% if error %}
+      <div class="callout">{{ error }}</div>
+    {% endif %}
+
+    {% if partnership_code and partners is defined and partners %}
+      {# Step 2: Select name + PIN #}
+      <form method="post" class="stack">
+        <input type="hidden" name="action" value="login">
+        <div class="field">
+          <label>Partner</label>
+          <select name="partner_id" required>
+            <option value="">Choose your name</option>
+            {% for p in partners %}
+              <option value="{{ p.id }}">{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>PIN</label>
+          <input type="password" name="pin" inputmode="numeric" required>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Enter</button>
+          <form method="post" action="{{ url_for('couples.couples_login') }}" style="display:inline;">
+            <button class="btn" type="button" onclick="fetch('{{ url_for('couples.couples_login') }}', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'action=clear_code'}).then(()=>window.location.reload())">Not your partnership?</button>
+          </form>
+        </div>
+      </form>
+    {% else %}
+      {# Step 1: Enter partnership code #}
+      <form method="post" class="stack">
+        <input type="hidden" name="action" value="find_partnership">
+        <div class="field">
+          <label for="code">Partnership Code</label>
+          <input id="code" type="text" name="partnership_code" placeholder="ENTER CODE" required style="text-transform:uppercase;">
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Continue</button>
+          <a href="{{ url_for('couples.couples_landing') }}" class="btn">Back</a>
+        </div>
+      </form>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

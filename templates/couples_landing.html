@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Couples — TimeCost{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Couples</h1>
+    <p class="muted">Making invisible work visible. Track the household labour that goes unnoticed.</p>
+  </header>
+
+  <div class="grid-2">
+    <section class="panel">
+      <h2 class="card-title" style="display:flex; align-items:center; gap:8px;">
+        <i data-lucide="plus-circle" style="color:var(--accent);"></i> Start a Partnership
+      </h2>
+      <p class="muted">Create a shared space and invite your partner to join.</p>
+      <div class="actions">
+        <a href="{{ url_for('couples.couples_setup') }}" class="btn btn-primary">Create Partnership</a>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="card-title" style="display:flex; align-items:center; gap:8px;">
+        <i data-lucide="user-plus" style="color:var(--accent);"></i> Join a Partnership
+      </h2>
+      <p class="muted">Got a code from your partner? Join their space.</p>
+      <div class="actions">
+        <a href="{{ url_for('couples.couples_join') }}" class="btn btn-primary">Join with Code</a>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel" style="margin-top:14px;">
+    <h2 class="card-title" style="display:flex; align-items:center; gap:8px;">
+      <i data-lucide="log-in" style="color:var(--accent);"></i> Already set up?
+    </h2>
+    <div class="actions">
+      <a href="{{ url_for('couples.couples_login') }}" class="btn">Log in</a>
+    </div>
+  </section>
+</div>
+{% endblock %}

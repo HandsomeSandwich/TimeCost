@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Create Partnership — TimeCost{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Create a Partnership</h1>
+    <p class="muted">Set up your shared space. You'll get a code to invite your partner.</p>
+  </header>
+
+  <section class="panel">
+    {% if error %}
+      <div class="callout">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" class="stack">
+      <div class="field">
+        <label for="partnershipName">Partnership name (optional)</label>
+        <input id="partnershipName" type="text" name="partnership_name" placeholder="e.g. The Smiths, Our Household">
+      </div>
+
+      <div class="field">
+        <label for="partnerName">Your name</label>
+        <input id="partnerName" type="text" name="partner_name" required>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="pin">PIN</label>
+          <input id="pin" type="password" name="pin" inputmode="numeric" required>
+        </div>
+        <div class="field">
+          <label for="pinConfirm">Confirm PIN</label>
+          <input id="pinConfirm" type="password" name="pin_confirm" inputmode="numeric" required>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="submit">Create Partnership</button>
+        <a href="{{ url_for('couples.couples_landing') }}" class="btn">Back</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

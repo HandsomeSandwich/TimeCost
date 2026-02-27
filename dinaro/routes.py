@@ -7,10 +7,11 @@ import io
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from flask import render_template, request, session, redirect, url_for, Response
+from flask import render_template, request, session, redirect, url_for, Response, jsonify
 from sqlalchemy import text
 
 from database import engine, get_db_connection as get_connection
+from dinaro.push import notify_parents, notify_child
 from . import dinaro_bp
 
 
@@ -214,6 +215,174 @@ def _dinaro_child_family_id(child_id: int) -> int:
         conn.close()
 
 
+def _dinaro_get_linked_families(parent_id: int) -> list:
+    """Return other classes this teacher manages (via link_code)."""
+    conn = get_connection()
+    try:
+        parent = conn.execute(
+            text("SELECT link_code, family_id FROM dinaro_parents WHERE id = :id"),
+            {"id": parent_id},
+        ).mappings().first()
+        if not parent or not parent["link_code"]:
+            return []
+        rows = conn.execute(
+            text(
+                "SELECT p.id AS parent_id, p.family_id, f.name AS class_name "
+                "FROM dinaro_parents p JOIN dinaro_families f ON f.id = p.family_id "
+                "WHERE p.link_code = :lc AND p.family_id != :current_fid ORDER BY f.name ASC"
+            ),
+            {"lc": parent["link_code"], "current_fid": parent["family_id"]},
+        ).mappings().all()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def _dinaro_class_analytics(family_id: int) -> dict:
+    """Return classroom analytics: leaderboard, avg_balance, tasks_today, completion_rate, num_students."""
+    conn = get_connection()
+    try:
+        kids = conn.execute(
+            text("SELECT id, name, balance FROM dinaro_children WHERE family_id = :fid AND approved = 1 ORDER BY balance DESC"),
+            {"fid": family_id},
+        ).mappings().all()
+
+        if not kids:
+            return {"leaderboard": [], "avg_balance": 0, "tasks_today": 0, "completion_rate": 0, "num_students": 0}
+
+        today = date.today().isoformat()
+        monday = (date.today() - timedelta(days=date.today().weekday())).isoformat()
+
+        tasks_today = conn.execute(
+            text("""
+                SELECT COUNT(*) AS cnt FROM dinaro_chore_logs l
+                JOIN dinaro_children c ON c.id = l.child_id
+                WHERE c.family_id = :fid AND l.work_date = :today AND l.status = 'approved'
+            """),
+            {"fid": family_id, "today": today},
+        ).mappings().first()["cnt"]
+
+        recurring_chores = conn.execute(
+            text("SELECT COUNT(*) AS cnt FROM dinaro_chores WHERE family_id = :fid AND active = 1 AND recurrence != 'none'"),
+            {"fid": family_id},
+        ).mappings().first()["cnt"]
+
+        leaderboard = []
+        for kid in kids:
+            tasks_week = conn.execute(
+                text("""
+                    SELECT COUNT(*) AS cnt FROM dinaro_chore_logs
+                    WHERE child_id = :cid AND work_date >= :monday AND status IN ('approved', 'pending')
+                """),
+                {"cid": kid["id"], "monday": monday},
+            ).mappings().first()["cnt"]
+            leaderboard.append({
+                "id": kid["id"],
+                "name": kid["name"],
+                "balance": float(kid["balance"] or 0),
+                "tasks_week": tasks_week,
+            })
+
+        total_possible = recurring_chores * len(kids)
+        total_done_today = conn.execute(
+            text("""
+                SELECT COUNT(*) AS cnt FROM dinaro_chore_logs l
+                JOIN dinaro_children c ON c.id = l.child_id
+                WHERE c.family_id = :fid AND l.work_date = :today AND l.status IN ('approved', 'pending')
+            """),
+            {"fid": family_id, "today": today},
+        ).mappings().first()["cnt"]
+
+        completion_rate = round((total_done_today / total_possible * 100), 1) if total_possible > 0 else 0
+        avg_balance = round(sum(float(k["balance"] or 0) for k in kids) / len(kids), 2)
+
+        return {
+            "leaderboard": leaderboard,
+            "avg_balance": avg_balance,
+            "tasks_today": tasks_today,
+            "completion_rate": completion_rate,
+            "num_students": len(kids),
+        }
+    finally:
+        conn.close()
+
+
+def _dinaro_check_group_rewards(family_id: int) -> None:
+    """Check and award group rewards after a chore is approved."""
+    conn = get_connection()
+    try:
+        rewards = conn.execute(
+            text("SELECT * FROM dinaro_group_rewards WHERE family_id = :fid AND active = 1"),
+            {"fid": family_id},
+        ).mappings().all()
+
+        if not rewards:
+            return
+
+        kids = conn.execute(
+            text("SELECT id, name FROM dinaro_children WHERE family_id = :fid AND approved = 1"),
+            {"fid": family_id},
+        ).mappings().all()
+
+        if not kids:
+            return
+
+        today = date.today().isoformat()
+        monday = (date.today() - timedelta(days=date.today().weekday())).isoformat()
+
+        for reward in rewards:
+            period = reward["condition_period"]
+            period_start = today if period == "daily" else monday
+
+            if reward["last_awarded_at"] and reward["last_awarded_at"] >= period_start:
+                continue
+
+            met = False
+
+            if reward["condition_type"] == "all_complete" and reward["condition_chore_id"]:
+                all_done = True
+                for kid in kids:
+                    has_log = conn.execute(
+                        text("""
+                            SELECT COUNT(*) AS cnt FROM dinaro_chore_logs
+                            WHERE child_id = :cid AND chore_id = :chid
+                            AND work_date >= :start AND status = 'approved'
+                        """),
+                        {"cid": kid["id"], "chid": reward["condition_chore_id"], "start": period_start},
+                    ).mappings().first()["cnt"]
+                    if has_log == 0:
+                        all_done = False
+                        break
+                met = all_done
+
+            elif reward["condition_type"] == "class_target" and reward["condition_target"]:
+                total = conn.execute(
+                    text("""
+                        SELECT COUNT(*) AS cnt FROM dinaro_chore_logs l
+                        JOIN dinaro_children c ON c.id = l.child_id
+                        WHERE c.family_id = :fid AND l.work_date >= :start AND l.status = 'approved'
+                    """),
+                    {"fid": family_id, "start": period_start},
+                ).mappings().first()["cnt"]
+                met = total >= int(reward["condition_target"])
+
+            if met:
+                reward_amount = float(reward["reward_dinaro"])
+                for kid in kids:
+                    _dinaro_add_ledger(int(kid["id"]), reward_amount, f"🏅 Group Reward: {reward['title']}")
+                    notify_child(family_id, int(kid["id"]),
+                                 "Group reward earned!",
+                                 f"Your class earned '{reward['title']}'! +{reward_amount:.2f} dinaro")
+
+                with engine.begin() as conn2:
+                    conn2.execute(
+                        text("UPDATE dinaro_group_rewards SET last_awarded_at = :today WHERE id = :id"),
+                        {"today": today, "id": reward["id"]},
+                    )
+    finally:
+        conn.close()
+
+
 # ----------------------------
 # Dinaro Routes
 # ----------------------------
@@ -332,11 +501,15 @@ def dinaro_parent_dashboard():
     conn = get_connection()
     try:
         family = conn.execute(
-            text("SELECT id, name, rate_per_hour, family_code, is_classroom, interest_rate, interest_threshold, tax_rate FROM dinaro_families WHERE id = :id"),
+            text("SELECT id, name, rate_per_hour, family_code, is_classroom, interest_rate, interest_threshold, tax_rate, show_leaderboard FROM dinaro_families WHERE id = :id"),
             {"id": family_id},
         ).mappings().first()
         kids = conn.execute(
-            text("SELECT id, name, balance, view_mode FROM dinaro_children WHERE family_id = :id ORDER BY name ASC"),
+            text("SELECT id, name, balance, view_mode FROM dinaro_children WHERE family_id = :id AND approved = 1 ORDER BY name ASC"),
+            {"id": family_id},
+        ).mappings().all()
+        pending_enrollments = conn.execute(
+            text("SELECT id, name FROM dinaro_children WHERE family_id = :id AND approved = 0 ORDER BY name ASC"),
             {"id": family_id},
         ).mappings().all()
         parents = conn.execute(
@@ -403,6 +576,18 @@ def dinaro_parent_dashboard():
                 JOIN dinaro_children ch ON ch.id = l.child_id
                 WHERE ch.family_id = :id
                 ORDER BY l.created_at DESC LIMIT 100
+                """
+            ),
+            {"id": family_id},
+        ).mappings().all()
+        group_rewards = conn.execute(
+            text(
+                """
+                SELECT gr.*, c.title AS chore_title
+                FROM dinaro_group_rewards gr
+                LEFT JOIN dinaro_chores c ON c.id = gr.condition_chore_id
+                WHERE gr.family_id = :id AND gr.active = 1
+                ORDER BY gr.id DESC
                 """
             ),
             {"id": family_id},
@@ -477,6 +662,9 @@ def dinaro_parent_dashboard():
         kid_dict["todo_total"] = total_count
         kids_with_progress.append(kid_dict)
 
+    # Classroom analytics
+    analytics = _dinaro_class_analytics(family_id) if family and family["is_classroom"] else None
+
     return render_template(
         "dinaro_parent_dashboard.html",
         family=family,
@@ -490,6 +678,10 @@ def dinaro_parent_dashboard():
         ledger=ledger,
         chart_data=chart_data,
         rate_per_hour=family["rate_per_hour"] if family else 4,
+        pending_enrollments=pending_enrollments,
+        other_classes=_dinaro_get_linked_families(parent_id) if family and family["is_classroom"] else [],
+        analytics=analytics,
+        group_rewards=group_rewards,
     )
 
 
@@ -506,6 +698,7 @@ def dinaro_parent_settings():
     interest_threshold = safe_float(request.form.get("interest_threshold"), 100.0)
     tax_rate = safe_float(request.form.get("tax_rate"), 0.0)
     is_classroom = 1 if request.form.get("is_classroom") == "on" else 0
+    show_leaderboard = 1 if request.form.get("show_leaderboard") == "on" else 0
 
     if rate <= 0:
         rate = 4.0
@@ -513,19 +706,114 @@ def dinaro_parent_settings():
     with engine.begin() as conn:
         conn.execute(
             text("""
-                UPDATE dinaro_families 
-                SET name = :name, rate_per_hour = :rate, 
+                UPDATE dinaro_families
+                SET name = :name, rate_per_hour = :rate,
                     interest_rate = :ir, interest_threshold = :it, tax_rate = :tr,
-                    is_classroom = :ic
+                    is_classroom = :ic, show_leaderboard = :sl
                 WHERE id = :id
             """),
             {
-                "name": name, "rate": rate, 
+                "name": name, "rate": rate,
                 "ir": interest_rate, "it": interest_threshold, "tr": tax_rate,
-                "ic": is_classroom,
+                "ic": is_classroom, "sl": show_leaderboard,
                 "id": family_id
             },
         )
+    return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+
+@dinaro_bp.post("/parent/class/create")
+def dinaro_parent_create_class():
+    """Create an additional class for a teacher (classroom mode only)."""
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+
+    family_id = _dinaro_parent_family_id(parent_id)
+    conn = get_connection()
+    try:
+        family = conn.execute(
+            text("SELECT is_classroom FROM dinaro_families WHERE id = :id"),
+            {"id": family_id},
+        ).mappings().first()
+        parent = conn.execute(
+            text("SELECT name, pin_hash, pin_salt, link_code FROM dinaro_parents WHERE id = :id"),
+            {"id": parent_id},
+        ).mappings().first()
+    finally:
+        conn.close()
+
+    if not family or not family["is_classroom"] or not parent:
+        return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+    class_name = (request.form.get("class_name") or "").strip() or None
+
+    # Generate link_code if the teacher doesn't have one yet
+    link_code = parent["link_code"]
+    if not link_code:
+        link_code = _dinaro_make_family_code()
+        with engine.begin() as conn:
+            conn.execute(
+                text("UPDATE dinaro_parents SET link_code = :lc WHERE id = :id"),
+                {"lc": link_code, "id": parent_id},
+            )
+
+    with engine.begin() as conn:
+        row = conn.execute(
+            text(
+                "INSERT INTO dinaro_families (name, rate_per_hour, family_code, is_classroom) "
+                "VALUES (:name, :rate, :code, 1) RETURNING id"
+            ),
+            {"name": class_name, "rate": 4, "code": _dinaro_make_family_code()},
+        ).mappings().first()
+        new_family_id = row["id"] if row else None
+        if new_family_id is None:
+            new_family_id = conn.execute(text("SELECT last_insert_rowid() AS id")).mappings().first()["id"]
+
+        row2 = conn.execute(
+            text(
+                "INSERT INTO dinaro_parents (family_id, name, pin_hash, pin_salt, link_code) "
+                "VALUES (:fid, :name, :hash, :salt, :lc) RETURNING id"
+            ),
+            {"fid": new_family_id, "name": parent["name"],
+             "hash": parent["pin_hash"], "salt": parent["pin_salt"], "lc": link_code},
+        ).mappings().first()
+        new_parent_id = row2["id"] if row2 else None
+        if new_parent_id is None:
+            new_parent_id = conn.execute(text("SELECT last_insert_rowid() AS id")).mappings().first()["id"]
+
+    session["dinaro_parent_id"] = int(new_parent_id)
+    return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+
+@dinaro_bp.post("/parent/class/switch")
+def dinaro_parent_switch_class():
+    """Switch to another linked class."""
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+
+    target_parent_id = request.form.get("target_parent_id")
+    if not target_parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+    conn = get_connection()
+    try:
+        current = conn.execute(
+            text("SELECT link_code FROM dinaro_parents WHERE id = :id"),
+            {"id": parent_id},
+        ).mappings().first()
+        target = conn.execute(
+            text("SELECT id, link_code FROM dinaro_parents WHERE id = :id"),
+            {"id": int(target_parent_id)},
+        ).mappings().first()
+    finally:
+        conn.close()
+
+    if not current or not target or not current["link_code"] or current["link_code"] != target["link_code"]:
+        return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+    session["dinaro_parent_id"] = int(target["id"])
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
@@ -720,6 +1008,24 @@ def dinaro_parent_add_chore():
             ),
             {"family_id": family_id, "title": title, "hours": hours, "recurrence": recurrence, "chore_type": chore_type},
         )
+
+    # Broadcast to other classes if requested (classroom mode)
+    broadcast_ids = request.form.getlist("broadcast_to_families")
+    if broadcast_ids:
+        linked = _dinaro_get_linked_families(parent_id)
+        valid_fids = {f["family_id"] for f in linked}
+        with engine.begin() as conn:
+            for fid_str in broadcast_ids:
+                fid = int(fid_str)
+                if fid in valid_fids:
+                    conn.execute(
+                        text(
+                            "INSERT INTO dinaro_chores (family_id, title, default_hours, recurrence, chore_type) "
+                            "VALUES (:family_id, :title, :hours, :recurrence, :chore_type)"
+                        ),
+                        {"family_id": fid, "title": title, "hours": hours, "recurrence": recurrence, "chore_type": chore_type},
+                    )
+
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
@@ -869,6 +1175,9 @@ def dinaro_parent_approve_log(log_id: int):
         )
 
     _dinaro_add_ledger(int(row["child_id"]), earned, "Chore approved", log_id=log_id)
+    _dinaro_check_group_rewards(int(row["family_id"]))
+    notify_child(int(row["family_id"]), int(row["child_id"]),
+                 "Chore approved!", f"You earned {earned:.2f} dinaro. Nice work!")
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
@@ -878,11 +1187,25 @@ def dinaro_parent_deny_log(log_id: int):
     if not parent_id:
         return redirect(url_for("dinaro.dinaro_parent_login"))
 
+    conn = get_connection()
+    try:
+        log_row = conn.execute(
+            text("SELECT l.child_id, ch.family_id FROM dinaro_chore_logs l "
+                 "JOIN dinaro_children ch ON ch.id = l.child_id WHERE l.id = :id"),
+            {"id": log_id},
+        ).mappings().first()
+    finally:
+        conn.close()
+
     with engine.begin() as conn:
         conn.execute(
             text("UPDATE dinaro_chore_logs SET status = 'denied', approved_hours = 0 WHERE id = :id"),
             {"id": log_id},
         )
+
+    if log_row:
+        notify_child(int(log_row["family_id"]), int(log_row["child_id"]),
+                     "Chore not approved", "A parent didn't approve your chore. Check your dashboard.")
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
@@ -908,6 +1231,17 @@ def dinaro_parent_counter_request(request_id: int):
             ),
             {"counter": counter, "note": note or None, "id": request_id},
         )
+
+    conn = get_connection()
+    try:
+        req_row = conn.execute(
+            text("SELECT child_id FROM dinaro_requests WHERE id = :id"), {"id": request_id}
+        ).mappings().first()
+    finally:
+        conn.close()
+    if req_row:
+        notify_child(_dinaro_child_family_id(int(req_row["child_id"])), int(req_row["child_id"]),
+                     "Counter offer!", f"A parent countered with {counter:.2f} dinaro. Check it out!")
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
@@ -950,6 +1284,8 @@ def dinaro_parent_accept_request(request_id: int):
     if final_dinaro > 0:
         _dinaro_add_ledger(int(row["child_id"]), -final_dinaro, "Request accepted", request_id=request_id)
 
+    notify_child(_dinaro_child_family_id(int(row["child_id"])), int(row["child_id"]),
+                 "Request accepted!", f"Your request was approved for {final_dinaro:.2f} dinaro.")
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
@@ -965,6 +1301,8 @@ def dinaro_parent_child_bonus(child_id: int):
         return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
     _dinaro_add_ledger(child_id, amount, f"🎁 {note}")
+    notify_child(_dinaro_child_family_id(child_id), child_id,
+                 "Surprise bonus!", f"You received {amount:.2f} dinaro! {note}")
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
@@ -1008,6 +1346,15 @@ def dinaro_parent_decline_request(request_id: int):
         return redirect(url_for("dinaro.dinaro_parent_login"))
 
     note = (request.form.get("parent_note") or "").strip()
+
+    conn = get_connection()
+    try:
+        req_row = conn.execute(
+            text("SELECT child_id FROM dinaro_requests WHERE id = :id"), {"id": request_id}
+        ).mappings().first()
+    finally:
+        conn.close()
+
     with engine.begin() as conn:
         conn.execute(
             text(
@@ -1019,6 +1366,10 @@ def dinaro_parent_decline_request(request_id: int):
             ),
             {"note": note or None, "closed_at": _dinaro_now(), "id": request_id},
         )
+
+    if req_row:
+        notify_child(_dinaro_child_family_id(int(req_row["child_id"])), int(req_row["child_id"]),
+                     "Request declined", "A parent declined your request. Check your dashboard.")
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
@@ -1034,7 +1385,7 @@ def dinaro_child_login():
             conn = get_connection()
             try:
                 family = conn.execute(
-                    text("SELECT id FROM dinaro_families WHERE family_code = :code"),
+                    text("SELECT id, is_classroom FROM dinaro_families WHERE family_code = :code"),
                     {"code": code},
                 ).mappings().first()
                 if family:
@@ -1059,7 +1410,7 @@ def dinaro_child_login():
                         text("""
                             SELECT c.id, c.name FROM dinaro_children c
                             JOIN dinaro_families f ON f.id = c.family_id
-                            WHERE f.family_code = :code
+                            WHERE f.family_code = :code AND c.approved = 1
                             ORDER BY c.name ASC
                         """),
                         {"code": family_code}
@@ -1084,7 +1435,7 @@ def dinaro_child_login():
                         text("""
                             SELECT c.id, c.name FROM dinaro_children c
                             JOIN dinaro_families f ON f.id = c.family_id
-                            WHERE f.family_code = :code
+                            WHERE f.family_code = :code AND c.approved = 1
                             ORDER BY c.name ASC
                         """),
                         {"code": family_code}
@@ -1099,26 +1450,32 @@ def dinaro_child_login():
 
     if not family_code:
         return render_template("dinaro_child_login.html")
-    
+
     conn = get_connection()
     try:
+        family_row = conn.execute(
+            text("SELECT id, is_classroom FROM dinaro_families WHERE family_code = :code"),
+            {"code": family_code}
+        ).mappings().first()
         kids = conn.execute(
             text("""
                 SELECT c.id, c.name FROM dinaro_children c
                 JOIN dinaro_families f ON f.id = c.family_id
-                WHERE f.family_code = :code
+                WHERE f.family_code = :code AND c.approved = 1
                 ORDER BY c.name ASC
             """),
             {"code": family_code}
         ).mappings().all()
     finally:
         conn.close()
-        
-    if not kids:
+
+    is_classroom = family_row["is_classroom"] if family_row else 0
+
+    if not kids and not is_classroom:
         session.pop("dinaro_family_code", None)
         return render_template("dinaro_child_login.html", error="No children found for this family code.")
-        
-    return render_template("dinaro_child_login.html", kids=kids, family_code=family_code)
+
+    return render_template("dinaro_child_login.html", kids=kids, family_code=family_code, is_classroom=is_classroom)
 
 
 @dinaro_bp.post("/child/reset-family")
@@ -1131,6 +1488,154 @@ def dinaro_child_reset_family():
 def dinaro_child_logout():
     session.pop("dinaro_child_id", None)
     return redirect(url_for("dinaro.dinaro_landing"))
+
+
+@dinaro_bp.post("/child/enroll")
+def dinaro_child_enroll():
+    """Self-enrollment for classroom mode."""
+    family_code = session.get("dinaro_family_code")
+    if not family_code:
+        return redirect(url_for("dinaro.dinaro_child_login"))
+
+    conn = get_connection()
+    try:
+        family = conn.execute(
+            text("SELECT id, is_classroom FROM dinaro_families WHERE family_code = :code"),
+            {"code": family_code},
+        ).mappings().first()
+    finally:
+        conn.close()
+
+    if not family or not family["is_classroom"]:
+        return redirect(url_for("dinaro.dinaro_child_login"))
+
+    name = (request.form.get("student_name") or "").strip()
+    pin = (request.form.get("student_pin") or "").strip()
+    pin_confirm = (request.form.get("student_pin_confirm") or "").strip()
+
+    if not name or not pin or pin != pin_confirm:
+        return redirect(url_for("dinaro.dinaro_child_login"))
+
+    pin_hash, pin_salt = _make_pin(pin)
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO dinaro_children (family_id, name, pin_hash, pin_salt, approved) "
+                "VALUES (:fid, :name, :hash, :salt, 0)"
+            ),
+            {"fid": family["id"], "name": name, "hash": pin_hash, "salt": pin_salt},
+        )
+
+    notify_parents(family["id"], "New enrollment request",
+                   f"{name} wants to join your class.")
+
+    return render_template("dinaro_child_login.html",
+                           family_code=family_code,
+                           is_classroom=1,
+                           kids=[],
+                           success=f"{name}, your request has been sent. Wait for your teacher to approve it.")
+
+
+@dinaro_bp.post("/parent/enrollment/<int:child_id>/approve")
+def dinaro_parent_approve_enrollment(child_id: int):
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+
+    family_id = _dinaro_parent_family_id(parent_id)
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE dinaro_children SET approved = 1 WHERE id = :id AND family_id = :fid AND approved = 0"),
+            {"id": child_id, "fid": family_id},
+        )
+    return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+
+@dinaro_bp.post("/parent/enrollment/<int:child_id>/deny")
+def dinaro_parent_deny_enrollment(child_id: int):
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+
+    family_id = _dinaro_parent_family_id(parent_id)
+    with engine.begin() as conn:
+        conn.execute(
+            text("DELETE FROM dinaro_children WHERE id = :id AND family_id = :fid AND approved = 0"),
+            {"id": child_id, "fid": family_id},
+        )
+    return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+
+@dinaro_bp.post("/parent/group-reward/add")
+def dinaro_parent_add_group_reward():
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+
+    family_id = _dinaro_parent_family_id(parent_id)
+    title = (request.form.get("reward_title") or "").strip()
+    reward_dinaro = safe_float(request.form.get("reward_dinaro"), 0.0)
+    condition_type = request.form.get("condition_type") or "all_complete"
+    condition_chore_id = request.form.get("condition_chore_id") or None
+    condition_target = request.form.get("condition_target") or None
+    condition_period = request.form.get("condition_period") or "daily"
+
+    if not title or reward_dinaro <= 0:
+        return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("""
+                INSERT INTO dinaro_group_rewards
+                (family_id, title, reward_dinaro, condition_type, condition_chore_id, condition_target, condition_period)
+                VALUES (:fid, :title, :rd, :ct, :cci, :ctarget, :cp)
+            """),
+            {
+                "fid": family_id, "title": title, "rd": reward_dinaro,
+                "ct": condition_type,
+                "cci": int(condition_chore_id) if condition_chore_id else None,
+                "ctarget": int(condition_target) if condition_target else None,
+                "cp": condition_period,
+            },
+        )
+    return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+
+@dinaro_bp.post("/parent/group-reward/<int:reward_id>/edit")
+def dinaro_parent_edit_group_reward(reward_id: int):
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+
+    family_id = _dinaro_parent_family_id(parent_id)
+    title = (request.form.get("reward_title") or "").strip()
+    reward_dinaro = safe_float(request.form.get("reward_dinaro"), 0.0)
+
+    if not title or reward_dinaro <= 0:
+        return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE dinaro_group_rewards SET title = :title, reward_dinaro = :rd WHERE id = :id AND family_id = :fid"),
+            {"title": title, "rd": reward_dinaro, "id": reward_id, "fid": family_id},
+        )
+    return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+
+@dinaro_bp.post("/parent/group-reward/<int:reward_id>/delete")
+def dinaro_parent_delete_group_reward(reward_id: int):
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+
+    family_id = _dinaro_parent_family_id(parent_id)
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE dinaro_group_rewards SET active = 0 WHERE id = :id AND family_id = :fid"),
+            {"id": reward_id, "fid": family_id},
+        )
+    return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
 @dinaro_bp.get("/child")
@@ -1152,7 +1657,7 @@ def dinaro_child_dashboard():
         ).mappings().first()
         
         family = conn.execute(
-            text("SELECT interest_rate, interest_threshold, tax_rate, is_classroom FROM dinaro_families WHERE id = :id"),
+            text("SELECT interest_rate, interest_threshold, tax_rate, is_classroom, show_leaderboard FROM dinaro_families WHERE id = :id"),
             {"id": family_id},
         ).mappings().first()
 
@@ -1189,6 +1694,13 @@ def dinaro_child_dashboard():
     finally:
         conn.close()
 
+    # Leaderboard (if teacher enabled it)
+    show_leaderboard = family.get("show_leaderboard", 0) if family else 0
+    leaderboard = []
+    if show_leaderboard and family.get("is_classroom"):
+        analytics = _dinaro_class_analytics(family_id)
+        leaderboard = analytics.get("leaderboard", [])
+
     # Calculate Quirky Badges
     badges = []
     if (child["balance"] or 0) >= 50:
@@ -1214,21 +1726,18 @@ def dinaro_child_dashboard():
 
     for chore in chores:
         if chore["recurrence"] == "daily":
-            done_ledger = any(l["chore_id"] == chore["id"] and l["work_date"] == today for l in ledger)
             done_logs = any(l["chore_id"] == chore["id"] and l["work_date"] == today and l["status"] != 'denied' for l in recent_logs)
-            
-            if done_ledger or done_logs:
+
+            if done_logs:
                 completed_today.append(chore)
             else:
                 todo_list.append(chore)
         elif chore["recurrence"] == "weekly":
-            done_ledger = any(l["chore_id"] == chore["id"] and l["work_date"] >= monday for l in ledger)
             done_logs = any(l["chore_id"] == chore["id"] and l["work_date"] >= monday and l["status"] != 'denied' for l in recent_logs)
-            
-            if done_ledger or done_logs:
-                was_today_ledger = any(l["chore_id"] == chore["id"] and l["work_date"] == today for l in ledger)
+
+            if done_logs:
                 was_today_logs = any(l["chore_id"] == chore["id"] and l["work_date"] == today and l["status"] != 'denied' for l in recent_logs)
-                if was_today_ledger or was_today_logs:
+                if was_today_logs:
                     completed_today.append(chore)
             else:
                 todo_list.append(chore)
@@ -1249,6 +1758,8 @@ def dinaro_child_dashboard():
         interest_rate=family.get("interest_rate", 0),
         interest_threshold=family.get("interest_threshold", 100),
         tax_rate=family.get("tax_rate", 0),
+        leaderboard=leaderboard,
+        show_leaderboard=show_leaderboard,
     )
 
 
@@ -1291,7 +1802,7 @@ def dinaro_child_log_chore():
     conn = get_connection()
     try:
         chore = conn.execute(
-            text("SELECT id, default_hours FROM dinaro_chores WHERE id = :id"),
+            text("SELECT id, title, default_hours FROM dinaro_chores WHERE id = :id"),
             {"id": chore_id},
         ).mappings().first()
     finally:
@@ -1319,6 +1830,19 @@ def dinaro_child_log_chore():
                 "created_at": _dinaro_now(),
             },
         )
+
+    family_id = _dinaro_child_family_id(child_id)
+    conn = get_connection()
+    try:
+        child_row = conn.execute(
+            text("SELECT name FROM dinaro_children WHERE id = :id"), {"id": child_id}
+        ).mappings().first()
+    finally:
+        conn.close()
+    child_name = child_row["name"] if child_row else "Your child"
+    chore_title = chore["title"] or "a chore"
+    notify_parents(family_id, f"{child_name} finished a chore",
+                   f"{child_name} completed '{chore_title}' and needs approval.")
     return redirect(url_for("dinaro.dinaro_child_dashboard"))
 
 
@@ -1408,6 +1932,18 @@ def dinaro_child_add_request():
                 "created_at": _dinaro_now(),
             },
         )
+
+    family_id = _dinaro_child_family_id(child_id)
+    conn = get_connection()
+    try:
+        child_row = conn.execute(
+            text("SELECT name FROM dinaro_children WHERE id = :id"), {"id": child_id}
+        ).mappings().first()
+    finally:
+        conn.close()
+    child_name = child_row["name"] if child_row else "Your child"
+    notify_parents(family_id, f"{child_name} wants something!",
+                   f"{child_name} requested '{item_name}' for {offer:.2f} dinaro.")
     return redirect(url_for("dinaro.dinaro_child_dashboard"))
 
 
@@ -1542,3 +2078,48 @@ def dinaro_parent_export_child(child_id: int):
         mimetype="text/csv",
         headers={"Content-disposition": f"attachment; filename={filename}"},
     )
+
+
+# ----------------------------
+# Push Notification API
+# ----------------------------
+
+@dinaro_bp.get("/push/vapid-public-key")
+def dinaro_push_vapid_key():
+    import os
+    return jsonify({"publicKey": os.environ.get("VAPID_PUBLIC_KEY", "")})
+
+
+@dinaro_bp.post("/push/subscribe")
+def dinaro_push_subscribe():
+    from dinaro.push import save_subscription
+
+    sub_json = request.get_json(silent=True)
+    if not sub_json or "endpoint" not in sub_json or "keys" not in sub_json:
+        return jsonify({"error": "Invalid subscription"}), 400
+
+    parent_id = session.get("dinaro_parent_id")
+    child_id = session.get("dinaro_child_id")
+
+    if parent_id:
+        family_id = _dinaro_parent_family_id(int(parent_id))
+        save_subscription(family_id, "parent", int(parent_id), sub_json)
+        return jsonify({"ok": True})
+    elif child_id:
+        family_id = _dinaro_child_family_id(int(child_id))
+        save_subscription(family_id, "child", int(child_id), sub_json)
+        return jsonify({"ok": True})
+    else:
+        return jsonify({"error": "Not logged in"}), 401
+
+
+@dinaro_bp.post("/push/unsubscribe")
+def dinaro_push_unsubscribe():
+    from dinaro.push import remove_subscription_by_endpoint
+
+    data = request.get_json(silent=True)
+    if not data or "endpoint" not in data:
+        return jsonify({"error": "Missing endpoint"}), 400
+
+    remove_subscription_by_endpoint(data["endpoint"])
+    return jsonify({"ok": True})
