@@ -14,7 +14,12 @@
     "invalid": "Something here hasn’t settled yet.",
     "err_cost": "I need the item price first.",
     "err_wage": "I need your pay amount to translate this.",
-    "err_convert": "These numbers don’t resolve into an hourly rhythm yet."
+    "err_convert": "These numbers don’t resolve into an hourly rhythm yet.",
+    "onboarding_title": "First, your hourly rhythm",
+    "onboarding_body": "Enter your wage below and I’ll show how any price translates into hours of your life. That’s all this needs.",
+    "onboarding_hint": "Hourly, weekly, or annual — whatever you know. The rest follows.",
+    "share_label": "Share this moment",
+    "share_copied": "Copied to clipboard"
   },
   "leslie": {
     "title": "What did this cost in work time?",
@@ -24,7 +29,12 @@
     "invalid": "Totally fine! One of the inputs just needs a quick fix.",
     "err_cost": "Pop in the item price and we’re golden.",
     "err_wage": "Add your pay amount and we’ll do the time-math.",
-    "err_convert": "These numbers need a moment to cooperate. They will."
+    "err_convert": "These numbers need a moment to cooperate. They will.",
+    "onboarding_title": "Welcome! Let’s get you set up",
+    "onboarding_body": "Pop your wage into the field below and we’ll start converting prices into work hours. It takes ten seconds and changes everything.",
+    "onboarding_hint": "Any format works — hourly, weekly, monthly, or annual. You’re going to love this.",
+    "share_label": "Share this!",
+    "share_copied": "Copied! Go spread the word!"
   },
   "edie": {
     "title": "What did this cost in work time?",
@@ -34,7 +44,12 @@
     "invalid": "Darling. No. These numbers are a shambles.",
     "err_cost": "That needs an actual price.",
     "err_wage": "That wage won’t do. Try again, properly.",
-    "err_convert": "This conversion is having a nervous breakdown. Adjust accordingly."
+    "err_convert": "This conversion is having a nervous breakdown. Adjust accordingly.",
+    "onboarding_title": "You’ll need your wage first",
+    "onboarding_body": "Enter what you earn below. I’ll tell you what things actually cost — in hours of your life, not some abstract number.",
+    "onboarding_hint": "Hourly, annual, whatever. Just give me a number and stop guessing.",
+    "share_label": "Tell someone",
+    "share_copied": "Copied, darling"
   }
 } %}
 
@@ -45,6 +60,19 @@
     <h1>{{ c.title }}</h1>
     <p class="muted">{{ c.intro }}</p>
   </header>
+
+  {% if not has_wage and not result %}
+  <section class="panel onboarding-nudge">
+    <div style="display:flex; align-items:flex-start; gap:12px;">
+      <i data-lucide="clock" style="width:24px;height:24px;color:var(--accent);flex-shrink:0;margin-top:2px;"></i>
+      <div>
+        <h2 class="card-title" style="margin-bottom:4px;">{{ c.onboarding_title }}</h2>
+        <p class="muted" style="margin:0 0 8px;">{{ c.onboarding_body }}</p>
+        <p class="muted" style="font-size:0.85rem; margin:0;">{{ c.onboarding_hint }}</p>
+      </div>
+    </div>
+  </section>
+  {% endif %}
 
   <form action="{{ url_for('calculator') }}" method="post" class="stack" id="calcForm">
 
@@ -174,6 +202,16 @@
             {% endif %}
           </p>
         </div>
+        {% endif %}
+
+        {% if time_cost and time_cost.ok %}
+        <button type="button" class="btn share-btn" id="shareResult"
+          data-text="{{ item_name or 'This item' }} ({{ currency }}{{ item_cost }}) costs {{ time_cost.human }} of my work time"
+          data-url="https://thetimecost.com/calculate"
+          data-copied="{{ c.share_copied }}">
+          <i data-lucide="share-2" style="width:16px;height:16px;"></i>
+          <span class="share-label">{{ c.share_label }}</span>
+        </button>
         {% endif %}
       </section>
     {% endif %}

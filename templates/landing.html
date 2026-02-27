@@ -6,9 +6,12 @@
 <meta property="og:title" content="TimeCost — What does money really cost?" />
 <meta property="og:description" content="Every price tag has a hidden number: how many hours of your life it costs. TimeCost makes that number visible." />
 <meta property="og:type" content="website" />
-<meta name="twitter:card" content="summary" />
+<meta property="og:image" content="https://thetimecost.com/static/og-image.png" />
+<meta property="og:url" content="https://thetimecost.com/" />
+<meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="TimeCost — What does money really cost?" />
 <meta name="twitter:description" content="Every price tag has a hidden number: how many hours of your life it costs." />
+<meta name="twitter:image" content="https://thetimecost.com/static/og-image.png" />
 {% endblock %}
 
 {% block content %}
@@ -23,7 +26,15 @@
       TimeCost makes that number visible.
     </p>
     <div class="landing-ctas">
-      <a class="btn btn-primary" href="{{ url_for('calculator') }}">Try the calculator →</a>
+      {% if has_wage %}
+        <a class="btn btn-primary" href="{{ url_for('calculator') }}">Open calculator &rarr;</a>
+        <p class="muted" style="font-size:0.82rem; margin-top:0.75rem;">
+          <i data-lucide="check" style="width:14px;height:14px;vertical-align:middle;margin-right:3px;color:var(--accent);"></i>
+          Your wage is saved. Ready to calculate.
+        </p>
+      {% else %}
+        <a class="btn btn-primary" href="{{ url_for('calculator') }}">Set your wage &amp; start &rarr;</a>
+      {% endif %}
     </div>
 
     <div style="display:flex; gap:8px; justify-content:center; margin-top:1.25rem; flex-wrap:wrap;">

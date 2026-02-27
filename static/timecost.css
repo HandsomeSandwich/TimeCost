@@ -363,6 +363,19 @@ h1,h2,h3{
   min-width: 0;
 }
 
+.onboarding-nudge{
+  border-left: 3px solid var(--accent);
+}
+
+.callout{
+  background: var(--surface, var(--panel));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
 /* ============================
    Top bar (nav)
 ============================ */
@@ -616,6 +629,31 @@ h1,h2,h3{
   outline:none;
   box-shadow:0 0 0 4px var(--focus-ring);
 }
+
+.share-btn{
+  gap:6px;
+  font-size:0.85rem;
+  margin-top:12px;
+}
+
+/* Toast notification */
+.toast{
+  position:fixed;
+  bottom:24px;
+  left:50%;
+  transform:translateX(-50%);
+  background:var(--btn);
+  color:#fff;
+  padding:10px 20px;
+  border-radius:12px;
+  font-size:0.85rem;
+  font-weight:500;
+  z-index:1000;
+  pointer-events:none;
+  animation:toast-in .3s ease, toast-out .3s ease 1.7s forwards;
+}
+@keyframes toast-in{ from{opacity:0;translate:0 10px;} }
+@keyframes toast-out{ to{opacity:0;translate:0 -10px;} }
 
 /* ============================
    Forms (contrast: the point)

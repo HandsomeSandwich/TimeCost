@@ -167,6 +167,7 @@ def inject_globals():
         "is_parent": session.get("piggy_parent", False),
         "guide": session.get("guide", "lorelai"),
         "plausible_domain": os.environ.get("PLAUSIBLE_DOMAIN", ""),
+        "has_wage": get_effective_hourly_rate() is not None,
     }
 
 
@@ -555,6 +556,9 @@ def calculator():
 
             result = item_cost_f / hourly_rate
             time_cost = money_to_time(item_cost_f, hourly_rate)
+
+            # Remember the hourly rate so other pages can detect a wage
+            session["hourlyRate"] = str(round(hourly_rate, 4))
 
             if time_cost["ok"]:
                 workday_text = workday_equivalent(time_cost["total_hours"])

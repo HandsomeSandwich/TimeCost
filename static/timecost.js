@@ -64,6 +64,38 @@ let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  // Potentially show a custom install button here if needed
   console.log('Install prompt ready');
 });
+
+// --- Share result button ---
+function showToast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2200);
+}
+
+const shareBtn = document.getElementById('shareResult');
+if (shareBtn) {
+  shareBtn.addEventListener('click', async () => {
+    const text = shareBtn.dataset.text;
+    const url = shareBtn.dataset.url;
+    const full = text + ' \u2014 ' + url;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: full });
+        return;
+      } catch (_) { /* user cancelled or not supported */ }
+    }
+
+    // Clipboard fallback
+    try {
+      await navigator.clipboard.writeText(full);
+      showToast(shareBtn.dataset.copied || 'Copied!');
+    } catch (_) {
+      showToast('Could not copy');
+    }
+  });
+}
