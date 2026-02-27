@@ -95,7 +95,19 @@ if (shareBtn) {
       await navigator.clipboard.writeText(full);
       showToast(shareBtn.dataset.copied || 'Copied!');
     } catch (_) {
-      showToast('Could not copy');
+      // execCommand fallback for restricted contexts
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = full;
+        ta.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        showToast(shareBtn.dataset.copied || 'Copied!');
+      } catch (_) {
+        showToast('Could not copy');
+      }
     }
   });
 }
