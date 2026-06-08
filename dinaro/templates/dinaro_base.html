@@ -18,7 +18,7 @@
     // Apply the saved theme before first paint so there's no flash of the default.
     (function(){ try { var t = localStorage.getItem('dinaro-theme'); if (t && t !== 'piggy') document.documentElement.dataset.theme = t; } catch(e){} })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('dinaro.static', filename='dinaro.css', v='9') }}">
+  <link rel="stylesheet" href="{{ url_for('dinaro.static', filename='dinaro.css', v='10') }}">
   <script src="https://unpkg.com/lucide@latest"></script>
   {% block head %}{% endblock %}
 </head>

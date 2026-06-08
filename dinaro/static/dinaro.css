@@ -78,16 +78,17 @@ html[data-theme="midnight"]{
 }
 
 html[data-theme="forest"]{
-  --bg:#f3f6f1; --panel:#ffffff; --border:#dde7d8;
-  --text:#1f2a22; --muted:#5e6f5c;
-  --accent:#2f8f5b; --accent-soft:#e3f1e8;
-  --accent-2:#e08a3c; --accent-2-soft:#fbe6d4;
-  --btn:#2f8f5b; --btn2:#e3f1e8;
+  --bg:#edf1e4; --panel:#ffffff; --border:#d8e3cd;
+  --text:#20291f; --muted:#5e6b54;
+  --accent:#2e8b57; --accent-soft:#e0efe2;
+  --accent-2:#d9822b; --accent-2-soft:#f7e6cf;
+  --btn:#2e8b57; --btn2:#e0efe2;
   --radius:20px;
-  --input-bg:#fbfdfa; --input-border:#d7e3d2; --input-border-hover:#2f8f5b; --input-border-focus:#2f8f5b;
-  --focus-ring:rgba(47,143,91,.16); --placeholder:rgba(31,42,34,.42);
-  --topbar-bg:rgba(243,246,241,.92); --topbar-chip-bg:#ffffff; --topbar-hover:#e3f1e8;
-  --c1:#2f8f5b; --c2:#e08a3c; --c3:#4a90d9; --c4:#b5446e; --c5:#d4a017;
+  --input-bg:#fbfdf8; --input-border:#d5e0ca; --input-border-hover:#2e8b57; --input-border-focus:#2e8b57;
+  --focus-ring:rgba(46,139,87,.16); --placeholder:rgba(32,41,31,.42);
+  --topbar-bg:rgba(237,241,228,.92); --topbar-chip-bg:#ffffff; --topbar-hover:#e0efe2;
+  /* All-earthy palette: leaf green, bark amber, terracotta, olive, mustard */
+  --c1:#2e8b57; --c2:#d9822b; --c3:#c0603a; --c4:#8a9a4e; --c5:#c9a227;
 }
 
 html[data-theme="arcade"]{
