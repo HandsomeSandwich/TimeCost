@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import secrets
 import csv
 import io
@@ -12,36 +11,16 @@ from sqlalchemy import text
 
 from database import engine, get_db_connection as get_connection
 from dinaro.push import notify_parents, notify_child
+from core.finance import safe_float
+from core.auth import pin_hash as _pin_hash, make_pin as _make_pin, verify_pin as _verify_pin
+from core.timeutil import utc_now_iso as _dinaro_now
 from . import dinaro_bp
 
 
 # ----------------------------
 # Dinaro Helpers
+# (safe_float / pin / timestamp helpers now live in the core package)
 # ----------------------------
-
-def safe_float(val, default: float = 0.0) -> float:
-    try:
-        return float(val)
-    except (TypeError, ValueError):
-        return default
-
-
-def _pin_hash(pin: str, salt: str) -> str:
-    return hashlib.sha256((salt + pin).encode("utf-8")).hexdigest()
-
-
-def _make_pin(pin: str) -> tuple[str, str]:
-    salt = secrets.token_hex(8)
-    return _pin_hash(pin, salt), salt
-
-
-def _verify_pin(pin: str, pin_hash: str, salt: str) -> bool:
-    return _pin_hash(pin, salt) == pin_hash
-
-
-def _dinaro_now() -> str:
-    return datetime.utcnow().isoformat(timespec="seconds")
-
 
 def _dinaro_rate_for_family(family_id: int) -> float:
     conn = get_connection()
