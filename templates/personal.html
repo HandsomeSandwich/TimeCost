@@ -44,7 +44,7 @@
     <p class="muted">{{ c.subtitle }}</p>
   </header>
 
-  <form action="{{ url_for('personal') }}" method="post" class="stack">
+  <form action="{{ url_for('core.personal') }}" method="post" class="stack">
     {% if error %}
       <div class="callout">{{ error }}</div>
     {% endif %}

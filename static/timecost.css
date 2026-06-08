@@ -1276,6 +1276,139 @@ h1,h2,h3{
 }
 
 /* ============================
+   Formulas / Reference page
+============================ */
+.ref-page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 1rem 0 2rem;
+}
+
+.ref-hero {
+  text-align: center;
+  padding: 3rem 1rem 2rem;
+}
+
+.ref-title {
+  font-family: var(--font-head);
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.15;
+  color: var(--text);
+  margin: 0.25rem 0 1rem;
+  text-wrap: balance;
+}
+
+.ref-sub {
+  font-size: 1.05rem;
+  color: var(--muted);
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.65;
+}
+
+.ref-section {
+  margin-bottom: 2.5rem;
+}
+
+.ref-section-title {
+  font-family: var(--font-head);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.ref-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ref-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.35rem;
+}
+
+.ref-desc {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0 0 0.75rem;
+}
+
+.ref-formula {
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  line-height: 1.7;
+  color: var(--text);
+  overflow-x: auto;
+}
+
+[data-view="dusk"] .ref-formula,
+[data-perspective="river"] .ref-formula,
+[data-perspective="edie"] .ref-formula {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ref-unit {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.ref-example {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 0.6rem 0 0;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.ref-table th,
+.ref-table td {
+  text-align: left;
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.ref-table th {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ref-table td {
+  color: var(--muted);
+}
+
+.ref-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ref-footer {
+  text-align: center;
+  font-size: 0.88rem;
+  line-height: 1.7;
+  padding: 0.5rem 0 1rem;
+}
+
+/* ============================
    Result visual bar
 ============================ */
 .result-visual{

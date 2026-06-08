@@ -74,7 +74,7 @@
   </section>
   {% endif %}
 
-  <form action="{{ url_for('calculator') }}" method="post" class="stack" id="calcForm">
+  <form action="{{ url_for('core.calculator') }}" method="post" class="stack" id="calcForm">
 
     <section class="panel">
       <div class="grid-2">
@@ -157,7 +157,7 @@
   </div>
 
   <small class="hint" style="text-align:center; display:block; margin-top:6px;">
-    <a href="{{ url_for('freelance') }}" style="color:var(--accent);">
+    <a href="{{ url_for('core.freelance') }}" style="color:var(--accent);">
       {% if session.get("wageSource") == "freelance" %}
         Freelance rate active ✓
       {% elif display_wage_amount %}
@@ -169,6 +169,15 @@
   </small>
 </section>
 
+
+    {% if error %}
+      <section class="panel" aria-live="polite" role="alert">
+        <p class="muted" style="margin:0;">
+          <i data-lucide="alert-triangle" style="color:var(--accent);vertical-align:middle;margin-right:6px;"></i>
+          {{ c.invalid }}
+        </p>
+      </section>
+    {% endif %}
 
     {% if result is not none %}
       <section class="panel" aria-live="polite">

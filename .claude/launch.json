@@ -3,13 +3,21 @@
   "configurations": [
     {
       "name": "timecost",
-      "runtimeExecutable": "/usr/local/bin/python3.9",
+      "runtimeExecutable": "/Users/bettychitty/PycharmProjects/TimeCost/venv/bin/python",
       "runtimeArgs": ["-m", "flask", "--app", "app", "run", "--port", "5050"],
       "port": 5050,
       "cwd": "/Users/bettychitty/PycharmProjects/TimeCost",
       "env": {
-        "PYTHONPATH": "/Users/bettychitty/PycharmProjects/TimeCost/venv/lib/python3.9/site-packages"
+        "VAPID_PRIVATE_KEY": "GOvsxDOP_Ybo-QceVmBCgyJwRxAnaagLvIcATzIkrPw=",
+        "VAPID_PUBLIC_KEY": "BLunhd5Nv00fxuOH44bpG6_6W8ESZnmGsC2obWk7paddHf3XAX5cEDSPGjS7t0VUad8jvxIDKR3UwMvB1JfIMk4",
+        "VAPID_CLAIM_EMAIL": "mailto:hello@thetimecost.com"
       }
+    },
+    {
+      "name": "kickback",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8731", "--directory", "/Users/bettychitty/Library/CloudStorage/OneDrive-Personal"],
+      "port": 8731
     }
   ]
 }

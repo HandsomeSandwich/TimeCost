@@ -27,20 +27,20 @@
     </p>
     <div class="landing-ctas">
       {% if has_wage %}
-        <a class="btn btn-primary" href="{{ url_for('calculator') }}">Open calculator &rarr;</a>
+        <a class="btn btn-primary" href="{{ url_for('core.calculator') }}">Open calculator &rarr;</a>
         <p class="muted" style="font-size:0.82rem; margin-top:0.75rem;">
           <i data-lucide="check" style="width:14px;height:14px;vertical-align:middle;margin-right:3px;color:var(--accent);"></i>
           Your wage is saved. Ready to calculate.
         </p>
       {% else %}
-        <a class="btn btn-primary" href="{{ url_for('calculator') }}">Set your wage &amp; start &rarr;</a>
+        <a class="btn btn-primary" href="{{ url_for('core.calculator') }}">Set your wage &amp; start &rarr;</a>
       {% endif %}
     </div>
 
     <div style="display:flex; gap:8px; justify-content:center; margin-top:1.25rem; flex-wrap:wrap;">
       <span class="muted" style="font-size:0.8rem; align-self:center; margin-right:4px;">Perspective:</span>
       {% for name in ["river", "leslie", "edie"] %}
-      <form action="{{ url_for('set_perspective') }}" method="post" style="margin:0;">
+      <form action="{{ url_for('core.set_perspective') }}" method="post" style="margin:0;">
         <button type="submit" name="perspective" value="{{ name }}"
                 class="pill" style="font-size:0.78rem; padding:5px 12px; cursor:pointer;{% if perspective == name %} background:var(--accent); color:#fff; border-color:var(--accent);{% endif %}">
           {{ name | capitalize }}
@@ -82,42 +82,42 @@
       Personal finance tools
     </h2>
     <div class="grid-2">
-      <a class="card landing-feature" href="{{ url_for('calculator') }}">
+      <a class="card landing-feature" href="{{ url_for('core.calculator') }}">
         <i data-lucide="calculator"></i>
         <div>
           <strong>Calculator</strong>
           <p class="muted">Convert any price to work hours instantly.</p>
         </div>
       </a>
-      <a class="card landing-feature" href="{{ url_for('budget') }}">
+      <a class="card landing-feature" href="{{ url_for('core.budget') }}">
         <i data-lucide="layout-dashboard"></i>
         <div>
           <strong>Budget</strong>
           <p class="muted">See your monthly spend in time, not money.</p>
         </div>
       </a>
-      <a class="card landing-feature" href="{{ url_for('goals') }}">
+      <a class="card landing-feature" href="{{ url_for('core.goals') }}">
         <i data-lucide="target"></i>
         <div>
           <strong>Goals</strong>
           <p class="muted">Save towards what matters, track progress.</p>
         </div>
       </a>
-      <a class="card landing-feature" href="{{ url_for('freelance') }}">
+      <a class="card landing-feature" href="{{ url_for('core.freelance') }}">
         <i data-lucide="briefcase"></i>
         <div>
           <strong>Freelance</strong>
           <p class="muted">Log client work and calculate your earnings.</p>
         </div>
       </a>
-      <a class="card landing-feature" href="{{ url_for('expenses') }}">
+      <a class="card landing-feature" href="{{ url_for('core.expenses') }}">
         <i data-lucide="receipt"></i>
         <div>
           <strong>Expenses</strong>
           <p class="muted">Track recurring costs and household spend.</p>
         </div>
       </a>
-      <a class="card landing-feature" href="{{ url_for('staples') }}">
+      <a class="card landing-feature" href="{{ url_for('core.staples') }}">
         <i data-lucide="shopping-basket"></i>
         <div>
           <strong>Staples</strong>
@@ -174,7 +174,7 @@
     <p class="landing-eyebrow">Stay in the loop</p>
     <h2 class="subscribe-title">New tools, updates, and ideas</h2>
     <p class="muted subscribe-sub">No spam. No noise. Just occasional updates when something worth sharing happens.</p>
-    <form class="subscribe-form" action="{{ url_for('subscribe') }}" method="post">
+    <form class="subscribe-form" action="{{ url_for('core.subscribe') }}" method="post">
       <input type="hidden" name="source" value="landing" />
       <div class="subscribe-row">
         <input
@@ -194,7 +194,7 @@
   <!-- Footer nudge -->
   <p class="muted" style="text-align:center;padding:1rem 0 0.5rem;font-size:0.9rem;">
     Free to use. No account required.
-    <a href="{{ url_for('calculator') }}" style="color:var(--accent);">Start now →</a>
+    <a href="{{ url_for('core.calculator') }}" style="color:var(--accent);">Start now →</a>
   </p>
 
 </div>

@@ -46,10 +46,10 @@
       <p class="muted">{{ c.subtitle }}</p>
 
       <div class="pill-row" style="display:flex; gap:10px; flex-wrap:wrap; margin:14px 0;">
-        <a class="pill" href="{{ url_for('freelance', range='month') }}">This month</a>
-        <a class="pill" href="{{ url_for('freelance', range='7') }}">Last 7 days</a>
-        <a class="pill" href="{{ url_for('freelance', range='30') }}">Last 30 days</a>
-        <a class="pill" href="{{ url_for('freelance', range='90') }}">Last 90 days</a>
+        <a class="pill" href="{{ url_for('core.freelance', range='month') }}">This month</a>
+        <a class="pill" href="{{ url_for('core.freelance', range='7') }}">Last 7 days</a>
+        <a class="pill" href="{{ url_for('core.freelance', range='30') }}">Last 30 days</a>
+        <a class="pill" href="{{ url_for('core.freelance', range='90') }}">Last 90 days</a>
       </div>
 
       <div class="summary" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin: 14px 0;">
@@ -81,7 +81,7 @@
         </div>
       </div>
 
-      <form method="post" action="{{ url_for('freelance', range=range_key) }}" style="margin: 10px 0 20px;">
+      <form method="post" action="{{ url_for('core.freelance', range=range_key) }}" style="margin: 10px 0 20px;">
         <input type="hidden" name="action" value="use_effective_rate" />
         <button class="btn" type="submit">{{ c.use_btn }}</button>
       </form>
@@ -117,7 +117,7 @@
       <h2>{{ c.log_title }}</h2>
       <p class="muted" style="margin-top:-6px;">{{ c.log_subtitle }}</p>
 
-      <form class="form stack" method="post" action="{{ url_for('freelance_add_entry') }}">
+      <form class="form stack" method="post" action="{{ url_for('core.freelance_add_entry') }}">
         <div class="grid-2">
           <div class="field">
             <label>Date</label>
@@ -185,7 +185,7 @@
               <td style="font-weight:600;">{{ currency }}{{ "%.2f"|format(e.total) }}</td>
               <td style="color:var(--muted); max-width:260px;">{{ e.notes }}</td>
               <td class="action">
-                <form method="post" action="{{ url_for('freelance_delete_entry', entry_id=e.id) }}" onsubmit="return confirm('Delete this entry?');">
+                <form method="post" action="{{ url_for('core.freelance_delete_entry', entry_id=e.id) }}" onsubmit="return confirm('Delete this entry?');">
                   <button class="btn" type="submit">Delete</button>
                 </form>
               </td>

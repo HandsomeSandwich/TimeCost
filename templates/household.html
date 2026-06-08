@@ -31,7 +31,7 @@
     </p>
 
     <div class="actions" style="margin-top:14px;">
-      <a href="{{ url_for('expenses') }}" class="btn btn-primary">Go to Expenses →</a>
+      <a href="{{ url_for('core.expenses') }}" class="btn btn-primary">Go to Expenses →</a>
     </div>
   </section>
 
@@ -45,7 +45,7 @@
       <p class="muted" style="margin-bottom:14px;">
         Start a new household and get an invite code to share.
       </p>
-      <form action="{{ url_for('household') }}" method="post">
+      <form action="{{ url_for('core.household') }}" method="post">
         <input type="hidden" name="action" value="create">
         <button type="submit" class="btn btn-primary">Create household</button>
       </form>
@@ -58,7 +58,7 @@
       <p class="muted" style="margin-bottom:14px;">
         Got an invite code? Enter it below.
       </p>
-      <form action="{{ url_for('household') }}" method="post" class="stack">
+      <form action="{{ url_for('core.household') }}" method="post" class="stack">
         <input type="hidden" name="action" value="join">
         <div class="field">
           <label for="inviteCode">Invite code</label>

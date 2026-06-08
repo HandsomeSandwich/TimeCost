@@ -97,7 +97,7 @@
     {% else %}
     <p class="landing-eyebrow">Payments aren't live yet</p>
     <p class="muted subscribe-sub">Leave your email and we'll let you know when they are.</p>
-    <form class="subscribe-form" action="{{ url_for('subscribe') }}" method="post">
+    <form class="subscribe-form" action="{{ url_for('core.subscribe') }}" method="post">
       <input type="hidden" name="source" value="support" />
       <div class="subscribe-row">
         <input
@@ -119,7 +119,7 @@
     Payments go directly via Stripe. No account needed. No recurring charges.
     <br>
     Rather just use the app?
-    <a href="{{ url_for('calculator') }}" style="color:var(--accent);">Head to the calculator →</a>
+    <a href="{{ url_for('core.calculator') }}" style="color:var(--accent);">Head to the calculator →</a>
   </p>
 
 </div>
