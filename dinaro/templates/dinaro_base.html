@@ -13,12 +13,12 @@
 
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-  <meta name="theme-color" content="#3a86ff">
+  <meta name="theme-color" content="#4f46e5">
   <script>
     // Apply the saved theme before first paint so there's no flash of the default.
     (function(){ try { var t = localStorage.getItem('dinaro-theme'); if (t && t !== 'piggy') document.documentElement.dataset.theme = t; } catch(e){} })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('dinaro.static', filename='dinaro.css', v='7') }}">
+  <link rel="stylesheet" href="{{ url_for('dinaro.static', filename='dinaro.css', v='8') }}">
   <script src="https://unpkg.com/lucide@latest"></script>
   {% block head %}{% endblock %}
 </head>
@@ -30,12 +30,12 @@
         <span class="dinaro-brand-mark" aria-hidden="true">
           <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
             <!-- ears -->
-            <path d="M6 4 L16 12 L8 16 Z" fill="#ff7a45"/>
-            <path d="M30 4 L20 12 L28 16 Z" fill="#ff7a45"/>
-            <path d="M9 7 L14.5 12 L10.5 14 Z" fill="#ffd9c4"/>
-            <path d="M27 7 L21.5 12 L25.5 14 Z" fill="#ffd9c4"/>
+            <path d="M6 4 L16 12 L8 16 Z" fill="#f59e0b"/>
+            <path d="M30 4 L20 12 L28 16 Z" fill="#f59e0b"/>
+            <path d="M9 7 L14.5 12 L10.5 14 Z" fill="#fde2a0"/>
+            <path d="M27 7 L21.5 12 L25.5 14 Z" fill="#fde2a0"/>
             <!-- face -->
-            <path d="M6.5 11 Q18 8.5 29.5 11 L24 23 Q18 30.5 12 23 Z" fill="#ff944d"/>
+            <path d="M6.5 11 Q18 8.5 29.5 11 L24 23 Q18 30.5 12 23 Z" fill="#fbb03b"/>
             <!-- muzzle -->
             <path d="M12 19 Q18 22 24 19 L18 27.5 Q14.5 24.5 12 19 Z" fill="#fff6ef"/>
             <!-- eyes -->

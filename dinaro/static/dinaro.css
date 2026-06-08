@@ -13,32 +13,32 @@
   --font-ui: 'Nunito', system-ui, -apple-system, sans-serif;
   --font-head: 'Baloo 2', 'Nunito', system-ui, sans-serif;
 
-  /* Cool soft paper — fresher than TimeCost's warm oat, reads clearly non-pink */
-  --bg: #f1f5fb;
+  /* Soft cream — warm and friendly, clearly not pink */
+  --bg: #fffbeb;
   --panel: #ffffff;
-  --border: #ece1cf;
+  --border: #efe7cf;
 
-  --text: #18213a;
-  --muted: #6b7280;
+  --text: #1e1e1e;          /* charcoal */
+  --muted: #7c7568;
 
-  --accent: #3a86ff;        /* sky cobalt */
-  --accent-soft: #e8f0ff;
-  --accent-2: #ff7a45;      /* tangerine */
-  --accent-2-soft: #ffe6db;
+  --accent: #4f46e5;        /* indigo (primary) */
+  --accent-soft: #ecebfd;
+  --accent-2: #f59e0b;      /* electric amber — coins, badges, pop */
+  --accent-2-soft: #fef1d6;
 
-  --btn: #3a86ff;
-  --btn2: #e8f0ff;
+  --btn: #4f46e5;
+  --btn2: #fef3d3;          /* soft amber secondary button */
 
   --radius: 24px;           /* chunky, tactile */
 
   --input-bg: #ffffff;
-  --input-border: rgba(24,33,58,.16);
-  --input-border-hover: rgba(58,134,255,.45);
-  --input-border-focus: rgba(58,134,255,.70);
-  --focus-ring: rgba(58,134,255,.22);
-  --placeholder: rgba(24,33,58,.42);
+  --input-border: rgba(30,30,30,.16);
+  --input-border-hover: rgba(79,70,229,.45);
+  --input-border-focus: rgba(79,70,229,.70);
+  --focus-ring: rgba(79,70,229,.22);
+  --placeholder: rgba(30,30,30,.42);
 
-  --topbar-bg: rgba(241,245,251,.92);
+  --topbar-bg: rgba(255,251,235,.92);
   --topbar-chip-bg: #ffffff;
   --topbar-hover: var(--accent-soft);
 }
@@ -1710,7 +1710,7 @@ h1,h2,h3{
 .dinaro-brand-mark svg{
   width: 30px;
   height: 30px;
-  filter: drop-shadow(0 2px 0 rgba(255,122,69,.25));
+  filter: drop-shadow(0 2px 0 rgba(245,158,11,.28));
 }
 .dinaro-brand-name{
   font-family: var(--font-head);
@@ -1804,7 +1804,7 @@ h1,h2,h3{
   flex: 0 0 22px;
   border: 2px solid rgba(0,0,0,.08);
 }
-.sw-piggy{    background: linear-gradient(135deg,#3a86ff 50%,#ff7a45 50%); }
+.sw-piggy{    background: linear-gradient(135deg,#4f46e5 50%,#f59e0b 50%); }
 .sw-candyland{background: linear-gradient(135deg,#e5446d 50%,#2ec4b6 50%); }
 .sw-midnight{ background: linear-gradient(135deg,#131a2e 48%,#5b8def 48%); }
 .sw-forest{   background: linear-gradient(135deg,#2f8f5b 50%,#e08a3c 50%); }
