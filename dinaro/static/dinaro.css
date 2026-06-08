@@ -1676,9 +1676,14 @@ h1,h2,h3{
   text-decoration: none;
 }
 .dinaro-brand-mark{
-  font-size: 1.5rem;
-  line-height: 1;
-  filter: drop-shadow(0 2px 0 rgba(255,122,69,.35));
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+}
+.dinaro-brand-mark svg{
+  width: 26px;
+  height: 26px;
+  stroke-width: 2.4;
 }
 .dinaro-brand-name{
   font-family: var(--font-head);

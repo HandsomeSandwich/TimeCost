@@ -14,7 +14,7 @@
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <meta name="theme-color" content="#3a86ff">
-  <link rel="stylesheet" href="{{ url_for('dinaro.static', filename='dinaro.css', v='3') }}">
+  <link rel="stylesheet" href="{{ url_for('dinaro.static', filename='dinaro.css', v='4') }}">
   <script src="https://unpkg.com/lucide@latest"></script>
   {% block head %}{% endblock %}
 </head>
@@ -23,7 +23,7 @@
   <header class="dinaro-topbar">
     <div class="dinaro-topbar-inner">
       <a class="dinaro-brand" href="{{ url_for('dinaro.dinaro_landing') }}">
-        <span class="dinaro-brand-mark">🐷</span>
+        <span class="dinaro-brand-mark"><i data-lucide="piggy-bank"></i></span>
         <span class="dinaro-brand-name">Dinaro</span>
       </a>
       <a class="dinaro-sibling" href="{{ url_for('core.landing') }}" title="The grown-ups' version">
