@@ -26,6 +26,9 @@
   --accent-2: #f59e0b;      /* electric amber — coins, badges, pop */
   --accent-2-soft: #fef1d6;
 
+  /* Category palette — surfaced via icon chips & section accents */
+  --c1:#4f46e5; --c2:#f59e0b; --c3:#fb7185; --c4:#14b8a6; --c5:#22c55e;
+
   --btn: #4f46e5;
   --btn2: #fef3d3;          /* soft amber secondary button */
 
@@ -58,6 +61,7 @@ html[data-theme="candyland"]{
   --input-bg:#fffafb; --input-border:#f0d3dc; --input-border-hover:#e5446d; --input-border-focus:#e5446d;
   --focus-ring:rgba(229,68,109,.18); --placeholder:rgba(91,43,61,.4);
   --topbar-bg:rgba(255,246,240,.92); --topbar-chip-bg:#ffffff; --topbar-hover:#ffe1ea;
+  --c1:#e5446d; --c2:#2ec4b6; --c3:#ffb627; --c4:#9b5de5; --c5:#4cc9f0;
 }
 
 html[data-theme="midnight"]{
@@ -70,6 +74,7 @@ html[data-theme="midnight"]{
   --input-bg:#0f1626; --input-border:rgba(255,255,255,.14); --input-border-hover:rgba(91,141,239,.5); --input-border-focus:#5b8def;
   --focus-ring:rgba(91,141,239,.30); --placeholder:rgba(234,240,255,.4);
   --topbar-bg:rgba(19,26,46,.85); --topbar-chip-bg:rgba(255,255,255,.06); --topbar-hover:rgba(91,141,239,.16);
+  --c1:#5b8def; --c2:#ff8a5c; --c3:#34d399; --c4:#a78bfa; --c5:#f472b6;
 }
 
 html[data-theme="forest"]{
@@ -82,6 +87,7 @@ html[data-theme="forest"]{
   --input-bg:#fbfdfa; --input-border:#d7e3d2; --input-border-hover:#2f8f5b; --input-border-focus:#2f8f5b;
   --focus-ring:rgba(47,143,91,.16); --placeholder:rgba(31,42,34,.42);
   --topbar-bg:rgba(243,246,241,.92); --topbar-chip-bg:#ffffff; --topbar-hover:#e3f1e8;
+  --c1:#2f8f5b; --c2:#e08a3c; --c3:#4a90d9; --c4:#b5446e; --c5:#d4a017;
 }
 
 html[data-theme="arcade"]{
@@ -94,6 +100,7 @@ html[data-theme="arcade"]{
   --input-bg:#14151f; --input-border:rgba(255,255,255,.14); --input-border-hover:#22d3ee; --input-border-focus:#22d3ee;
   --focus-ring:rgba(34,211,238,.30); --placeholder:rgba(240,242,248,.4);
   --topbar-bg:rgba(21,22,31,.85); --topbar-chip-bg:rgba(255,255,255,.06); --topbar-hover:rgba(34,211,238,.14);
+  --c1:#b8f135; --c2:#22d3ee; --c3:#ff9f1c; --c4:#a78bfa; --c5:#ff4d8d;
 }
 
 /* Arcade's primary is near-fluorescent: keep button text dark for contrast. */
@@ -1809,3 +1816,40 @@ h1,h2,h3{
 .sw-midnight{ background: linear-gradient(135deg,#131a2e 48%,#5b8def 48%); }
 .sw-forest{   background: linear-gradient(135deg,#2f8f5b 50%,#e08a3c 50%); }
 .sw-arcade{   background: linear-gradient(135deg,#15161f 48%,#b8f135 48%); }
+
+/* ============================
+   Colorful components: icon chips + section accents
+   Each "tone-N" pulls from the active theme's category palette (--c1..--c5).
+============================ */
+.tone-1{ --tone: var(--c1); }
+.tone-2{ --tone: var(--c2); }
+.tone-3{ --tone: var(--c3); }
+.tone-4{ --tone: var(--c4); }
+.tone-5{ --tone: var(--c5); }
+
+.icon-chip{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--tone, var(--accent)) 16%, transparent);
+  color: var(--tone, var(--accent));
+}
+.icon-chip svg{ width: 21px; height: 21px; }
+
+/* Toned panels get a colored top accent + the title picks up the tone */
+.panel.toned{
+  border-top: 4px solid var(--tone, var(--accent));
+}
+.panel.toned .card-title{ color: var(--tone, var(--accent)); }
+
+/* Toned secondary buttons (outline in the tone) */
+.btn.tone-btn{
+  background: color-mix(in srgb, var(--tone, var(--accent)) 14%, transparent);
+  color: var(--tone, var(--accent));
+  border: 2px solid color-mix(in srgb, var(--tone, var(--accent)) 35%, transparent);
+}
+.btn.tone-btn:hover{ border-color: var(--tone, var(--accent)); }
