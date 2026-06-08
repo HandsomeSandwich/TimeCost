@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Dinaro{% endblock %}</title>
+  {% block meta %}
+  <meta name="description" content="Dinaro — a pocket-money & classroom economy where kids earn, save, and spend their own currency." />
+  <meta property="og:title" content="Dinaro — earn it, save it, spend it" />
+  <meta property="og:description" content="A pocket-money & classroom economy where kids earn, save, and spend their own currency." />
+  <meta property="og:type" content="website" />
+  {% endblock %}
+
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#3a86ff">
+  <link rel="stylesheet" href="{{ url_for('dinaro.static', filename='dinaro.css', v='1') }}">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  {% block head %}{% endblock %}
+</head>
+<body data-view="personality" data-app="dinaro">
+
+  <header class="dinaro-topbar">
+    <div class="dinaro-topbar-inner">
+      <a class="dinaro-brand" href="{{ url_for('dinaro.dinaro_landing') }}">
+        <span class="dinaro-brand-mark">🐷</span>
+        <span class="dinaro-brand-name">Dinaro</span>
+      </a>
+      <a class="dinaro-sibling" href="{{ url_for('core.landing') }}" title="The grown-ups' version">
+        TimeCost <i data-lucide="arrow-up-right" style="width:14px;height:14px;vertical-align:middle;"></i>
+      </a>
+    </div>
+  </header>
+
+  <main id="main" class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <p class="muted" style="font-size:0.8rem; margin:0 0 0.4rem;">Earn it · save it · spend it</p>
+    <a href="{{ url_for('dinaro.dinaro_landing') }}">Dinaro home</a>
+    <span class="site-footer-sep">·</span>
+    <a href="{{ url_for('core.landing') }}">TimeCost</a>
+  </footer>
+
+  {% if plausible_domain %}
+  <script defer data-domain="{{ plausible_domain }}" src="https://plausible.io/js/script.js"></script>
+  {% endif %}
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+          .catch(err => console.log('SW registration failed:', err));
+      });
+    }
+    lucide.createIcons();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
