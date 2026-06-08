@@ -13,8 +13,8 @@
   --font-ui: 'Nunito', system-ui, -apple-system, sans-serif;
   --font-head: 'Baloo 2', 'Nunito', system-ui, sans-serif;
 
-  /* Warm paper — the shared anchor with TimeCost */
-  --bg: #f6f1e8;
+  /* Cool soft paper — fresher than TimeCost's warm oat, reads clearly non-pink */
+  --bg: #f1f5fb;
   --panel: #ffffff;
   --border: #ece1cf;
 
@@ -38,14 +38,14 @@
   --focus-ring: rgba(58,134,255,.22);
   --placeholder: rgba(24,33,58,.42);
 
-  --topbar-bg: rgba(246,241,232,.92);
+  --topbar-bg: rgba(241,245,251,.92);
   --topbar-chip-bg: #ffffff;
   --topbar-hover: var(--accent-soft);
 }
 
 /* Keep tokens stable even if a data-view attribute is present. */
 body[data-view="personality"]{
-  --bg: #f6f1e8;
+  --bg: #f1f5fb;
   --panel: #ffffff;
   --border: #ece1cf;
 
@@ -69,7 +69,7 @@ body[data-view="personality"]{
   --focus-ring: rgba(58,134,255,.22);
   --placeholder: rgba(24,33,58,.42);
 
-  --topbar-bg: rgba(246,241,232,.92);
+  --topbar-bg: rgba(241,245,251,.92);
   --topbar-chip-bg: #ffffff;
   --topbar-hover: var(--accent-soft);
 }
