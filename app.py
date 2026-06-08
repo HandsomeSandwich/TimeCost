@@ -94,11 +94,6 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(32))
 def favicon():
     return redirect(url_for("static", filename="favicon.svg"))
 
-# --- PiggyBank ---
-from PiggyBank import piggybank_bp
-import PiggyBank.routes
-app.register_blueprint(piggybank_bp, url_prefix="/piggybank")
-
 # --- Dinaro (Blueprint — all routes live in dinaro/routes.py) ---
 from dinaro import dinaro_bp
 app.register_blueprint(dinaro_bp, url_prefix="/dinaro")
