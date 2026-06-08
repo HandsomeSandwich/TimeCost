@@ -34,6 +34,8 @@ app.register_blueprint(couples_bp, url_prefix="/couples")
 # Initialize DB on startup
 try:
     init_db()
+    from dinaro.db import init_dinaro_db
+    init_dinaro_db()
     from dinaro.routes import _dinaro_ensure_family_codes
     _dinaro_ensure_family_codes()
 except Exception as e:

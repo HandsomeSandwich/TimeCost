@@ -9,7 +9,7 @@ from typing import Optional
 from flask import render_template, request, session, redirect, url_for, Response, jsonify
 from sqlalchemy import text
 
-from database import engine, get_db_connection as get_connection
+from dinaro.db import engine, get_db_connection as get_connection
 from dinaro.push import notify_parents, notify_child
 from core.finance import safe_float
 from core.auth import pin_hash as _pin_hash, make_pin as _make_pin, verify_pin as _verify_pin

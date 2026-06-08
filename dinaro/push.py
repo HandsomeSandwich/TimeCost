@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pywebpush import webpush, WebPushException
 from sqlalchemy import text
 
-from database import engine, get_db_connection as get_connection
+from dinaro.db import engine, get_db_connection as get_connection
 
 logger = logging.getLogger(__name__)
 
