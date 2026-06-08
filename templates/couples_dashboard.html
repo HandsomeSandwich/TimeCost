@@ -11,6 +11,19 @@
     .period-tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px; }
     .period-tabs a { padding:4px 12px; border-radius:20px; font-size:0.8rem; text-decoration:none; color:var(--text); background:var(--bg-card); border:1px solid var(--border); }
     .period-tabs a.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+    /* Per-category diverging balance bars */
+    .bal-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; gap:8px; }
+    .bal-status { font-size:0.75rem; font-weight:600; color:var(--text); opacity:0.65; white-space:nowrap; }
+    .bal-status.balanced { color:var(--accent); opacity:1; }
+    .bal-row { display:flex; align-items:center; height:16px; }
+    .bal-left, .bal-right { flex:1; height:14px; background:var(--border); overflow:hidden; display:flex; }
+    .bal-left { justify-content:flex-end; border-radius:7px 0 0 7px; }
+    .bal-right { justify-content:flex-start; border-radius:0 7px 7px 0; }
+    .bal-center { width:2px; height:18px; background:var(--text); opacity:0.35; flex-shrink:0; border-radius:1px; }
+    .bal-fill-a { background:var(--accent); height:100%; transition:width .4s ease; }
+    .bal-fill-b { background:#3498db; height:100%; transition:width .4s ease; }
+    .bal-nums { display:flex; justify-content:space-between; font-size:0.75rem; font-weight:600; margin-top:2px; }
   </style>
 {% endblock %}
 
@@ -86,15 +99,43 @@
   {% if categories %}
   <section class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display:flex; align-items:center; gap:8px;">
-      <i data-lucide="pie-chart" style="color:var(--accent);"></i> By Category
+      <i data-lucide="scale" style="color:var(--accent);"></i> By Category
     </h2>
-    <div class="stack" style="gap:2px;">
+    <p class="muted" style="font-size:0.8rem; margin:-4px 0 10px;">Who's carrying each category. A bar that tips to one side means that partner is doing most of it; an even bar means it's shared.</p>
+
+    {# Legend #}
+    <div style="display:flex; gap:16px; justify-content:center; margin-bottom:14px; font-size:0.8rem;">
+      {% if partner_a %}<span style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:12px; border-radius:3px; background:var(--accent); display:inline-block;"></span>{{ partner_a.name }}</span>{% endif %}
+      {% if partner_b %}<span style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:12px; border-radius:3px; background:#3498db; display:inline-block;"></span>{{ partner_b.name }}</span>{% endif %}
+    </div>
+
+    <div class="stack" style="gap:12px;">
       {% for cat in categories %}
-      <div class="card" style="display:flex; justify-content:space-between; align-items:center; padding:8px 14px;">
-        <span style="font-weight:600; font-size:0.9rem;">{{ cat.name }}</span>
-        <div style="display:flex; gap:16px; font-size:0.85rem;">
-          {% if partner_a %}<span style="color:var(--accent); font-weight:600;">{{ cat.a_hours }}h</span>{% endif %}
-          {% if partner_b %}<span style="color:#3498db; font-weight:600;">{{ cat.b_hours }}h</span>{% endif %}
+      {% set tot = cat.a_mins + cat.b_mins %}
+      {% set a_share = (cat.a_mins / tot * 100) if tot > 0 else 0 %}
+      {% set b_share = (cat.b_mins / tot * 100) if tot > 0 else 0 %}
+      {% set diff = (a_share - b_share)|abs %}
+      <div class="bal-cat">
+        <div class="bal-head">
+          <span style="font-weight:600; font-size:0.9rem;">{{ cat.name }}</span>
+          {% if tot <= 0 %}
+            <span class="bal-status">—</span>
+          {% elif diff <= 10 %}
+            <span class="bal-status balanced">⚖ balanced</span>
+          {% elif a_share > b_share %}
+            <span class="bal-status">{{ partner_a.name }} does most</span>
+          {% else %}
+            <span class="bal-status">{{ partner_b.name if partner_b else partner_a.name }} does most</span>
+          {% endif %}
+        </div>
+        <div class="bal-row">
+          <div class="bal-left"><div class="bal-fill-a" style="width:{{ a_share }}%;"></div></div>
+          <div class="bal-center"></div>
+          <div class="bal-right"><div class="bal-fill-b" style="width:{{ b_share }}%;"></div></div>
+        </div>
+        <div class="bal-nums">
+          <span style="color:var(--accent);">{{ cat.a_hours }}h</span>
+          <span style="color:#3498db;">{{ cat.b_hours }}h</span>
         </div>
       </div>
       {% endfor %}
