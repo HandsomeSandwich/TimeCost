@@ -23,11 +23,11 @@
 
   --accent: #3a86ff;        /* sky cobalt */
   --accent-soft: #e8f0ff;
-  --accent-2: #ff5d8f;      /* bubblegum */
-  --accent-2-soft: #ffe3ee;
+  --accent-2: #ff7a45;      /* tangerine */
+  --accent-2-soft: #ffe6db;
 
   --btn: #3a86ff;
-  --btn2: #ffe3ee;
+  --btn2: #ffe6db;
 
   --radius: 24px;           /* chunky, tactile */
 
@@ -54,11 +54,11 @@ body[data-view="personality"]{
 
   --accent: #3a86ff;
   --accent-soft: #e8f0ff;
-  --accent-2: #ff5d8f;
-  --accent-2-soft: #ffe3ee;
+  --accent-2: #ff7a45;
+  --accent-2-soft: #ffe6db;
 
   --btn: #3a86ff;
-  --btn2: #ffe3ee;
+  --btn2: #ffe6db;
 
   --radius: 24px;
 
@@ -1678,7 +1678,7 @@ h1,h2,h3{
 .dinaro-brand-mark{
   font-size: 1.5rem;
   line-height: 1;
-  filter: drop-shadow(0 2px 0 rgba(255,93,143,.35));
+  filter: drop-shadow(0 2px 0 rgba(255,122,69,.35));
 }
 .dinaro-brand-name{
   font-family: var(--font-head);
