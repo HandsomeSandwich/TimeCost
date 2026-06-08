@@ -14,7 +14,7 @@
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <meta name="theme-color" content="#3a86ff">
-  <link rel="stylesheet" href="{{ url_for('dinaro.static', filename='dinaro.css', v='4') }}">
+  <link rel="stylesheet" href="{{ url_for('dinaro.static', filename='dinaro.css', v='5') }}">
   <script src="https://unpkg.com/lucide@latest"></script>
   {% block head %}{% endblock %}
 </head>
@@ -22,8 +22,25 @@
 
   <header class="dinaro-topbar">
     <div class="dinaro-topbar-inner">
-      <a class="dinaro-brand" href="{{ url_for('dinaro.dinaro_landing') }}">
-        <span class="dinaro-brand-mark"><i data-lucide="piggy-bank"></i></span>
+      <a class="dinaro-brand" href="{{ url_for('dinaro.dinaro_landing') }}" title="Piggy Fox" aria-label="Dinaro — Piggy Fox">
+        <span class="dinaro-brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- ears -->
+            <path d="M6 4 L16 12 L8 16 Z" fill="#ff7a45"/>
+            <path d="M30 4 L20 12 L28 16 Z" fill="#ff7a45"/>
+            <path d="M9 7 L14.5 12 L10.5 14 Z" fill="#ffd9c4"/>
+            <path d="M27 7 L21.5 12 L25.5 14 Z" fill="#ffd9c4"/>
+            <!-- face -->
+            <path d="M6.5 11 Q18 8.5 29.5 11 L24 23 Q18 30.5 12 23 Z" fill="#ff944d"/>
+            <!-- muzzle -->
+            <path d="M12 19 Q18 22 24 19 L18 27.5 Q14.5 24.5 12 19 Z" fill="#fff6ef"/>
+            <!-- eyes -->
+            <circle cx="13.6" cy="15.2" r="1.5" fill="#18213a"/>
+            <circle cx="22.4" cy="15.2" r="1.5" fill="#18213a"/>
+            <!-- nose -->
+            <path d="M18 26.5 L16 23.8 H20 Z" fill="#18213a"/>
+          </svg>
+        </span>
         <span class="dinaro-brand-name">Dinaro</span>
       </a>
       <a class="dinaro-sibling" href="{{ url_for('core.landing') }}" title="The grown-ups' version">
