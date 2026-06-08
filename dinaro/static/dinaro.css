@@ -43,35 +43,63 @@
   --topbar-hover: var(--accent-soft);
 }
 
-/* Keep tokens stable even if a data-view attribute is present. */
-body[data-view="personality"]{
-  --bg: #f1f5fb;
-  --panel: #ffffff;
-  --border: #ece1cf;
+/* ============================
+   Theme variants. The switcher sets data-theme on <html>; no attribute (or
+   "piggy") = the Piggy Pop default in :root above. Tokens live on <html> so
+   per-theme overrides win the cascade for every descendant.
+============================ */
+html[data-theme="candyland"]{
+  --bg:#fff6f0; --panel:#ffffff; --border:#f6dfe6;
+  --text:#5b2b3d; --muted:#a8788a;
+  --accent:#e5446d; --accent-soft:#ffe1ea;
+  --accent-2:#2ec4b6; --accent-2-soft:#d8f5f0;
+  --btn:#e5446d; --btn2:#ffe1ea;
+  --radius:28px;
+  --input-bg:#fffafb; --input-border:#f0d3dc; --input-border-hover:#e5446d; --input-border-focus:#e5446d;
+  --focus-ring:rgba(229,68,109,.18); --placeholder:rgba(91,43,61,.4);
+  --topbar-bg:rgba(255,246,240,.92); --topbar-chip-bg:#ffffff; --topbar-hover:#ffe1ea;
+}
 
-  --text: #18213a;
-  --muted: #6b7280;
+html[data-theme="midnight"]{
+  --bg:#131a2e; --panel:#1b2236; --border:rgba(255,255,255,.10);
+  --text:#eaf0ff; --muted:#9aa6c0;
+  --accent:#5b8def; --accent-soft:rgba(91,141,239,.16);
+  --accent-2:#ff8a5c; --accent-2-soft:rgba(255,138,92,.16);
+  --btn:#5b8def; --btn2:rgba(255,255,255,.08);
+  --radius:16px;
+  --input-bg:#0f1626; --input-border:rgba(255,255,255,.14); --input-border-hover:rgba(91,141,239,.5); --input-border-focus:#5b8def;
+  --focus-ring:rgba(91,141,239,.30); --placeholder:rgba(234,240,255,.4);
+  --topbar-bg:rgba(19,26,46,.85); --topbar-chip-bg:rgba(255,255,255,.06); --topbar-hover:rgba(91,141,239,.16);
+}
 
-  --accent: #3a86ff;
-  --accent-soft: #e8f0ff;
-  --accent-2: #ff7a45;
-  --accent-2-soft: #ffe6db;
+html[data-theme="forest"]{
+  --bg:#f3f6f1; --panel:#ffffff; --border:#dde7d8;
+  --text:#1f2a22; --muted:#5e6f5c;
+  --accent:#2f8f5b; --accent-soft:#e3f1e8;
+  --accent-2:#e08a3c; --accent-2-soft:#fbe6d4;
+  --btn:#2f8f5b; --btn2:#e3f1e8;
+  --radius:20px;
+  --input-bg:#fbfdfa; --input-border:#d7e3d2; --input-border-hover:#2f8f5b; --input-border-focus:#2f8f5b;
+  --focus-ring:rgba(47,143,91,.16); --placeholder:rgba(31,42,34,.42);
+  --topbar-bg:rgba(243,246,241,.92); --topbar-chip-bg:#ffffff; --topbar-hover:#e3f1e8;
+}
 
-  --btn: #3a86ff;
-  --btn2: #e8f0ff;
+html[data-theme="arcade"]{
+  --bg:#15161f; --panel:#1f2130; --border:rgba(255,255,255,.10);
+  --text:#f0f2f8; --muted:#9b9fb5;
+  --accent:#b8f135; --accent-soft:rgba(184,241,53,.14);
+  --accent-2:#22d3ee; --accent-2-soft:rgba(34,211,238,.14);
+  --btn:#b8f135; --btn2:rgba(255,255,255,.07);
+  --radius:14px;
+  --input-bg:#14151f; --input-border:rgba(255,255,255,.14); --input-border-hover:#22d3ee; --input-border-focus:#22d3ee;
+  --focus-ring:rgba(34,211,238,.30); --placeholder:rgba(240,242,248,.4);
+  --topbar-bg:rgba(21,22,31,.85); --topbar-chip-bg:rgba(255,255,255,.06); --topbar-hover:rgba(34,211,238,.14);
+}
 
-  --radius: 24px;
-
-  --input-bg: #ffffff;
-  --input-border: rgba(24,33,58,.16);
-  --input-border-hover: rgba(58,134,255,.45);
-  --input-border-focus: rgba(58,134,255,.70);
-  --focus-ring: rgba(58,134,255,.22);
-  --placeholder: rgba(24,33,58,.42);
-
-  --topbar-bg: rgba(241,245,251,.92);
-  --topbar-chip-bg: #ffffff;
-  --topbar-hover: var(--accent-soft);
+/* Arcade's primary is near-fluorescent: keep button text dark for contrast. */
+html[data-theme="arcade"] .btn-primary,
+html[data-theme="arcade"] .primary{
+  color:#15161f;
 }
 
 /* Leslie Knope: Bright, High-Energy, "Binder" Palette */
@@ -1715,3 +1743,69 @@ h1,h2,h3{
   border-color: var(--accent);
   transform: translateY(-1px);
 }
+
+/* ============================
+   Theme switcher (topbar)
+============================ */
+.dinaro-theme{ position: relative; }
+.dinaro-theme-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease;
+}
+.dinaro-theme-btn:hover{ color: var(--accent); border-color: var(--accent); }
+.dinaro-theme-btn svg{ width: 16px; height: 16px; }
+.dinaro-theme-menu{
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 180px;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.14);
+  padding: 6px;
+  display: none;
+  z-index: 60;
+}
+.dinaro-theme-menu[data-open="true"]{ display: block; }
+.dinaro-theme-opt{
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  border-radius: 11px;
+  padding: 0.5rem 0.6rem;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+  text-align: left;
+}
+.dinaro-theme-opt:hover{ background: var(--topbar-hover); }
+.dinaro-theme-opt[aria-checked="true"]{ outline: 2px solid var(--accent); }
+.dinaro-theme-swatch{
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex: 0 0 22px;
+  border: 2px solid rgba(0,0,0,.08);
+}
+.sw-piggy{    background: linear-gradient(135deg,#3a86ff 50%,#ff7a45 50%); }
+.sw-candyland{background: linear-gradient(135deg,#e5446d 50%,#2ec4b6 50%); }
+.sw-midnight{ background: linear-gradient(135deg,#131a2e 48%,#5b8def 48%); }
+.sw-forest{   background: linear-gradient(135deg,#2f8f5b 50%,#e08a3c 50%); }
+.sw-arcade{   background: linear-gradient(135deg,#15161f 48%,#b8f135 48%); }

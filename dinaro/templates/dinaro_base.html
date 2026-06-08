@@ -14,7 +14,11 @@
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <meta name="theme-color" content="#3a86ff">
-  <link rel="stylesheet" href="{{ url_for('dinaro.static', filename='dinaro.css', v='6') }}">
+  <script>
+    // Apply the saved theme before first paint so there's no flash of the default.
+    (function(){ try { var t = localStorage.getItem('dinaro-theme'); if (t && t !== 'piggy') document.documentElement.dataset.theme = t; } catch(e){} })();
+  </script>
+  <link rel="stylesheet" href="{{ url_for('dinaro.static', filename='dinaro.css', v='7') }}">
   <script src="https://unpkg.com/lucide@latest"></script>
   {% block head %}{% endblock %}
 </head>
@@ -43,9 +47,23 @@
         </span>
         <span class="dinaro-brand-name">Dinaro</span>
       </a>
-      <a class="dinaro-sibling" href="{{ url_for('core.landing') }}" title="The grown-ups' version">
-        TimeCost <i data-lucide="arrow-up-right" style="width:14px;height:14px;vertical-align:middle;"></i>
-      </a>
+      <div class="dinaro-topbar-actions" style="display:flex; align-items:center; gap:0.5rem;">
+        <div class="dinaro-theme">
+          <button type="button" class="dinaro-theme-btn" id="themeBtn" aria-haspopup="true" aria-expanded="false" title="Change theme">
+            <i data-lucide="palette"></i> Theme
+          </button>
+          <div class="dinaro-theme-menu" id="themeMenu" role="menu" data-open="false">
+            <button class="dinaro-theme-opt" role="menuitemradio" data-theme="piggy"><span class="dinaro-theme-swatch sw-piggy"></span> Piggy Pop</button>
+            <button class="dinaro-theme-opt" role="menuitemradio" data-theme="candyland"><span class="dinaro-theme-swatch sw-candyland"></span> Candyland</button>
+            <button class="dinaro-theme-opt" role="menuitemradio" data-theme="forest"><span class="dinaro-theme-swatch sw-forest"></span> Forest</button>
+            <button class="dinaro-theme-opt" role="menuitemradio" data-theme="midnight"><span class="dinaro-theme-swatch sw-midnight"></span> Midnight</button>
+            <button class="dinaro-theme-opt" role="menuitemradio" data-theme="arcade"><span class="dinaro-theme-swatch sw-arcade"></span> Arcade</button>
+          </div>
+        </div>
+        <a class="dinaro-sibling" href="{{ url_for('core.landing') }}" title="The grown-ups' version">
+          TimeCost <i data-lucide="arrow-up-right" style="width:14px;height:14px;vertical-align:middle;"></i>
+        </a>
+      </div>
     </div>
   </header>
 
@@ -71,6 +89,29 @@
       });
     }
     lucide.createIcons();
+  </script>
+  <script>
+    // Theme switcher
+    (function(){
+      var btn = document.getElementById('themeBtn');
+      var menu = document.getElementById('themeMenu');
+      if (!btn || !menu) return;
+      var opts = menu.querySelectorAll('.dinaro-theme-opt');
+      var current = (function(){ try { return localStorage.getItem('dinaro-theme') || 'piggy'; } catch(e){ return 'piggy'; } })();
+      function mark(){ opts.forEach(function(o){ o.setAttribute('aria-checked', o.dataset.theme === current ? 'true' : 'false'); }); }
+      function setOpen(open){ menu.setAttribute('data-open', open ? 'true' : 'false'); btn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+      function apply(t){
+        current = t;
+        if (t === 'piggy') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.dataset.theme = t;
+        try { localStorage.setItem('dinaro-theme', t); } catch(e){}
+        mark();
+      }
+      btn.addEventListener('click', function(e){ e.stopPropagation(); setOpen(menu.getAttribute('data-open') !== 'true'); });
+      opts.forEach(function(o){ o.addEventListener('click', function(){ apply(o.dataset.theme); setOpen(false); }); });
+      document.addEventListener('click', function(e){ if (!menu.contains(e.target) && e.target !== btn) setOpen(false); });
+      mark();
+    })();
   </script>
   {% block scripts %}{% endblock %}
 </body>
