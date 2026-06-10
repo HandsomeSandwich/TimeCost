@@ -60,9 +60,11 @@
             <button class="dinaro-theme-opt" role="menuitemradio" data-theme="arcade"><span class="dinaro-theme-swatch sw-arcade"></span> Arcade</button>
           </div>
         </div>
-        <a class="dinaro-sibling" href="{{ url_for('core.landing') }}" title="The grown-ups' version">
+        {% if timecost_url %}
+        <a class="dinaro-sibling" href="{{ timecost_url }}" title="The grown-ups' version">
           TimeCost <i data-lucide="arrow-up-right" style="width:14px;height:14px;vertical-align:middle;"></i>
         </a>
+        {% endif %}
       </div>
     </div>
   </header>
@@ -74,8 +76,10 @@
   <footer class="site-footer">
     <p class="muted" style="font-size:0.8rem; margin:0 0 0.4rem;">Earn it · save it · spend it</p>
     <a href="{{ url_for('dinaro.dinaro_landing') }}">Dinaro home</a>
+    {% if timecost_url %}
     <span class="site-footer-sep">·</span>
-    <a href="{{ url_for('core.landing') }}">TimeCost</a>
+    <a href="{{ timecost_url }}">TimeCost</a>
+    {% endif %}
   </footer>
 
   {% if plausible_domain %}
