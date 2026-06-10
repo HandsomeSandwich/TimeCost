@@ -156,6 +156,8 @@ def subscribe():
         pass  # Duplicate email — silently succeed
     if source == "support":
         return redirect(url_for("core.support") + "?subscribed=1")
+    if source == "dinaro_multichild":
+        return redirect(url_for("dinaro.dinaro_parent_upgrade") + "?subscribed=1")
     return redirect(url_for("core.landing") + "?subscribed=1")
 
 

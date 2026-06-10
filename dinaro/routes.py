@@ -799,6 +799,28 @@ def dinaro_parent_switch_class():
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
+@dinaro_bp.get("/parent/upgrade")
+def dinaro_parent_upgrade():
+    """Demand test: interest-capture page shown when a family hits the free
+    child limit. No payment — reuses email_signups via core.subscribe."""
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+
+    family_id = _dinaro_parent_family_id(parent_id)
+    conn = get_connection()
+    try:
+        child_count = conn.execute(
+            text("SELECT COUNT(*) AS c FROM dinaro_children WHERE family_id = :fid AND approved = 1"),
+            {"fid": family_id},
+        ).mappings().first()["c"]
+    finally:
+        conn.close()
+
+    subscribed = request.args.get("subscribed") == "1"
+    return render_template("dinaro_upgrade.html", child_count=child_count, subscribed=subscribed)
+
+
 @dinaro_bp.post("/parent/child/add")
 def dinaro_parent_add_child():
     parent_id = _dinaro_require_parent()
@@ -806,6 +828,22 @@ def dinaro_parent_add_child():
         return redirect(url_for("dinaro.dinaro_parent_login"))
 
     family_id = _dinaro_parent_family_id(parent_id)
+
+    # --- Demand test: free tier caps children; extra children capture interest ---
+    conn = get_connection()
+    try:
+        existing_count = conn.execute(
+            text("SELECT COUNT(*) AS c FROM dinaro_children WHERE family_id = :fid"),
+            {"fid": family_id},
+        ).mappings().first()["c"]
+    finally:
+        conn.close()
+
+    FREE_CHILD_LIMIT = 2
+    if existing_count >= FREE_CHILD_LIMIT:
+        return redirect(url_for("dinaro.dinaro_parent_upgrade"))
+    # --- end demand test ---
+
     name = (request.form.get("child_name") or "").strip()
     pin = (request.form.get("child_pin") or "").strip()
     if not name or not pin:

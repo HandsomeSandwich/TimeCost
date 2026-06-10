@@ -1,0 +1,42 @@
+{% extends "dinaro_base.html" %}
+{% block title %}More children — Dinaro{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Add your whole family</h1>
+    <p class="muted">Free Dinaro covers two children. Multi-child families are coming soon.</p>
+  </header>
+
+  <section class="panel toned tone-2">
+    <h2 class="card-title" style="display:flex; align-items:center; gap:10px;">
+      <span class="icon-chip"><i data-lucide="users"></i></span> Founding families
+    </h2>
+
+    {% if subscribed %}
+      <div style="background:#e6f7ed; border:2px solid #b7e4c7; color:#1b5e3a; border-radius:14px; padding:14px 16px; margin-top:6px;">
+        🎉 You're on the founding-families list. We'll email you the moment multi-child support is ready.
+      </div>
+      <div class="actions" style="margin-top:14px;">
+        <a class="btn btn-primary" href="{{ url_for('dinaro.dinaro_parent_dashboard') }}">Back to dashboard</a>
+      </div>
+    {% else %}
+      <p style="margin:6px 0 14px;">
+        We're building paid family plans so every child gets their own chores, goals, and savings.
+        Join the founding families for early access{% if child_count %} — you already have {{ child_count }} set up{% endif %}.
+      </p>
+      <form action="{{ url_for('core.subscribe') }}" method="post">
+        <input type="hidden" name="source" value="dinaro_multichild" />
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input type="email" name="email" placeholder="your@email.com" required autocomplete="email"
+                 style="flex:1 1 220px; padding:12px 14px; border-radius:14px; border:2px solid var(--input-border); background:var(--input-bg); color:var(--text); font:inherit;" />
+          <button class="btn btn-primary" type="submit">Notify me</button>
+        </div>
+      </form>
+      <p class="muted" style="font-size:0.85rem; margin-top:12px;">
+        No charge now. We're gauging interest before we build it.
+      </p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
