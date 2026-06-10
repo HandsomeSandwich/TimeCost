@@ -1,0 +1,20 @@
+# Python
+**/__pycache__
+**/*.pyc
+
+# Virtual env / secrets
+**/venv
+**/.env
+**/.env.*
+
+# macOS / IDEs
+**/.DS_Store
+**/.idea
+**/.vscode
+
+# Local databases
+**/*.db
+**/*.sqlite
+**/instance
+
+fly.toml
