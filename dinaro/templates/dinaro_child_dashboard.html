@@ -503,6 +503,76 @@
       </form>
     </section>
   {% endif %}
+
+  {% if family.is_classroom and treasury %}
+  {% set grade_label = 'bonus points' if family.grade_mode == 'bonus' else 'class score' %}
+  {% set remaining = (my_bill.amount_owed - my_bill.amount_paid) if my_bill else 0 %}
+  <section class="panel toned tone-2" style="margin-top:14px;">
+    <h2 class="card-title" style="display:flex; align-items:center; gap:8px;">
+      <i data-lucide="landmark"></i> {{ treasury.title }}
+    </h2>
+
+    <div style="margin:8px 0;">
+      <div style="display:flex; justify-content:space-between; font-weight:700; font-size:0.9rem;">
+        <span>{{ "%.0f"|format(treasury.raised) }} / {{ "%.0f"|format(treasury.goal) }} dinaro</span>
+        {% if treasury.match_num %}<span class="muted" style="font-weight:400;">teacher matches {{ treasury.match_num }}:{{ treasury.match_den }}</span>{% endif %}
+      </div>
+      <div style="height:12px; background:var(--accent-soft); border-radius:999px; overflow:hidden; margin-top:4px;">
+        <div style="height:100%; width:{{ ((treasury.raised / treasury.goal * 100) if treasury.goal else 0)|round|int }}%; max-width:100%; background:var(--accent-2);"></div>
+      </div>
+    </div>
+
+    <p class="muted" style="font-size:0.85rem;">
+      You have <strong>{{ "%.0f"|format(child.balance) }}</strong> dinaro. Every one you give or spend is one you can't save.
+    </p>
+
+    <div style="display:grid; gap:14px; margin-top:8px;">
+      {% if my_bill %}
+      <div>
+        <strong>Your fair-share bill:</strong> {{ "%.0f"|format(my_bill.amount_paid) }} / {{ "%.0f"|format(my_bill.amount_owed) }} paid
+        {% if remaining > 0 %}
+        <form action="{{ url_for('dinaro.dinaro_child_treasury_pay') }}" method="post" style="display:flex; gap:8px; margin-top:6px; max-width:320px;">
+          <input name="amount" type="number" step="1" min="0" value="{{ remaining|round|int }}" style="flex:1;">
+          <button class="btn btn-primary" type="submit">Pay my share</button>
+        </form>
+        {% else %}
+        <span style="color:#2e8b57; font-weight:700;"> &check; paid in full</span>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <div>
+        <strong>Donate extra</strong> <span class="muted" style="font-size:0.85rem;">— help the class reach the goal</span>
+        <form action="{{ url_for('dinaro.dinaro_child_treasury_donate') }}" method="post" style="display:flex; gap:8px; margin-top:6px; max-width:320px;">
+          <input name="amount" type="number" step="1" min="0" placeholder="dinaro" style="flex:1;">
+          <button class="btn" type="submit">Donate</button>
+        </form>
+      </div>
+
+      <div>
+        <strong>Your {{ grade_label }}: {{ "%.0f"|format(child.standing) }}</strong>
+        <form action="{{ url_for('dinaro.dinaro_child_treasury_grade') }}" method="post" style="display:flex; gap:8px; margin-top:6px; max-width:320px;">
+          <input name="amount" type="number" step="1" min="0" placeholder="dinaro to spend" style="flex:1;">
+          <button class="btn" type="submit">Boost my {{ grade_label }}</button>
+        </form>
+      </div>
+
+      {% if classmates %}
+      <div>
+        <strong>Gift a classmate's {{ grade_label }}</strong>
+        <form action="{{ url_for('dinaro.dinaro_child_treasury_gift') }}" method="post" style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; max-width:440px;">
+          <select name="target_id" style="flex:1 1 140px;">
+            {% for m in classmates %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
+          </select>
+          <input name="amount" type="number" step="1" min="0" placeholder="dinaro" style="flex:0 1 110px;">
+          <button class="btn" type="submit">Gift</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
   <script src="{{ url_for('static', filename='dinaro-push.js') }}" defer></script>
 </div>
 {% endblock %}
