@@ -871,6 +871,28 @@
       <input name="label" placeholder="e.g. Class movie afternoon" style="flex:1;">
       <button class="btn" type="submit">Add option</button>
     </form>
+
+    <h3 class="card-title" style="font-size:0.95rem; margin-top:18px;">Voting</h3>
+    {% if treasury.status == 'collecting' %}
+      <p class="muted" style="font-size:0.85rem; margin:4px 0;">Add options above, then open voting when the pot's ready.</p>
+      <form action="{{ url_for('dinaro.dinaro_parent_treasury_open_vote') }}" method="post">
+        <button class="btn btn-primary" type="submit">Open voting</button>
+      </form>
+    {% elif treasury.status == 'voting' %}
+      <p style="margin:4px 0;"><strong>Voting is open.</strong> Students {% if treasury.penalty_no_vote %}who paid their share {% endif %}can vote.</p>
+      <ul style="list-style:none; padding:0; margin:6px 0; display:grid; gap:4px;">
+        {% for o in treasury_options %}<li>{{ o.label }} — <strong>{{ o.votes }}</strong> vote{{ '' if o.votes == 1 else 's' }}</li>{% endfor %}
+      </ul>
+      <form action="{{ url_for('dinaro.dinaro_parent_treasury_close_vote') }}" method="post">
+        <button class="btn btn-primary" type="submit">Close voting &amp; declare winner</button>
+      </form>
+    {% else %}
+      {% set winner = (treasury_options|sort(attribute='votes')|last) if treasury_options else None %}
+      {% if winner %}<p style="margin:4px 0;">🏆 The class chose: <strong>{{ winner.label }}</strong> ({{ winner.votes }} vote{{ '' if winner.votes == 1 else 's' }}).</p>{% endif %}
+      <ul style="list-style:none; padding:0; margin:6px 0; display:grid; gap:4px;">
+        {% for o in treasury_options %}<li>{{ o.label }} — {{ o.votes }} vote{{ '' if o.votes == 1 else 's' }}</li>{% endfor %}
+      </ul>
+    {% endif %}
     {% endif %}
   </section>
   {% endif %}

@@ -569,6 +569,33 @@
         </form>
       </div>
       {% endif %}
+
+      {% if treasury.status == 'voting' %}
+      <div>
+        <strong>Class vote — what should the pot fund?</strong>
+        {% if can_vote %}
+        <div style="display:grid; gap:6px; margin-top:6px; max-width:380px;">
+          {% for o in treasury_options %}
+          <form action="{{ url_for('dinaro.dinaro_child_treasury_vote') }}" method="post">
+            <input type="hidden" name="option_id" value="{{ o.id }}">
+            <button class="btn {{ 'btn-primary' if my_vote == o.id else '' }}" type="submit" style="width:100%; text-align:left;">
+              {{ '✓ ' if my_vote == o.id else '' }}{{ o.label }}
+            </button>
+          </form>
+          {% endfor %}
+        </div>
+        {% if my_vote %}<p class="muted" style="font-size:0.8rem; margin-top:4px;">You can change your vote until voting closes.</p>{% endif %}
+        {% else %}
+        <p class="muted" style="font-size:0.85rem; margin-top:4px;">Pay your fair-share bill to earn your vote.</p>
+        {% endif %}
+      </div>
+      {% elif treasury.status == 'closed' %}
+      {% set winner = (treasury_options|sort(attribute='votes')|last) if treasury_options else None %}
+      <div>
+        <strong>Class vote — closed</strong>
+        {% if winner %}<p style="margin-top:4px;">🏆 The class chose: <strong>{{ winner.label }}</strong>.</p>{% endif %}
+      </div>
+      {% endif %}
     </div>
   </section>
   {% endif %}
