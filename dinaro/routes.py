@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import secrets
 import csv
 import io
@@ -10,38 +9,21 @@ from typing import Optional
 from flask import render_template, request, session, redirect, url_for, Response, jsonify
 from sqlalchemy import text
 
-from database import engine, get_db_connection as get_connection
+from dinaro.db import engine, get_db_connection as get_connection
 from dinaro.push import notify_parents, notify_child
+from dinaro.kernel import (
+    safe_float,
+    make_pin as _make_pin,
+    verify_pin as _verify_pin,
+    utc_now_iso as _dinaro_now,
+)
 from . import dinaro_bp
 
 
 # ----------------------------
 # Dinaro Helpers
+# (safe_float / pin / timestamp helpers now live in the core package)
 # ----------------------------
-
-def safe_float(val, default: float = 0.0) -> float:
-    try:
-        return float(val)
-    except (TypeError, ValueError):
-        return default
-
-
-def _pin_hash(pin: str, salt: str) -> str:
-    return hashlib.sha256((salt + pin).encode("utf-8")).hexdigest()
-
-
-def _make_pin(pin: str) -> tuple[str, str]:
-    salt = secrets.token_hex(8)
-    return _pin_hash(pin, salt), salt
-
-
-def _verify_pin(pin: str, pin_hash: str, salt: str) -> bool:
-    return _pin_hash(pin, salt) == pin_hash
-
-
-def _dinaro_now() -> str:
-    return datetime.utcnow().isoformat(timespec="seconds")
-
 
 def _dinaro_rate_for_family(family_id: int) -> float:
     conn = get_connection()
@@ -491,6 +473,18 @@ def dinaro_parent_logout():
     return redirect(url_for("dinaro.dinaro_landing"))
 
 
+def _dinaro_active_fund(family_id: int):
+    """The family's most recent Treasury fund, or None."""
+    conn = get_connection()
+    try:
+        return conn.execute(
+            text("SELECT * FROM dinaro_class_funds WHERE family_id = :fid ORDER BY id DESC LIMIT 1"),
+            {"fid": family_id},
+        ).mappings().first()
+    finally:
+        conn.close()
+
+
 @dinaro_bp.get("/parent")
 def dinaro_parent_dashboard():
     parent_id = _dinaro_require_parent()
@@ -501,7 +495,7 @@ def dinaro_parent_dashboard():
     conn = get_connection()
     try:
         family = conn.execute(
-            text("SELECT id, name, rate_per_hour, family_code, is_classroom, interest_rate, interest_threshold, tax_rate, show_leaderboard FROM dinaro_families WHERE id = :id"),
+            text("SELECT id, name, rate_per_hour, family_code, is_classroom, interest_rate, interest_threshold, tax_rate, show_leaderboard, grade_mode FROM dinaro_families WHERE id = :id"),
             {"id": family_id},
         ).mappings().first()
         kids = conn.execute(
@@ -665,6 +659,31 @@ def dinaro_parent_dashboard():
     # Classroom analytics
     analytics = _dinaro_class_analytics(family_id) if family and family["is_classroom"] else None
 
+    treasury = _dinaro_active_fund(family_id)
+    treasury_options = []
+    treasury_bill_stats = {"paid": 0, "total": 0}
+    if treasury:
+        conn = get_connection()
+        try:
+            treasury_options = conn.execute(
+                text(
+                    "SELECT o.id, o.label, "
+                    "(SELECT COUNT(*) FROM dinaro_fund_votes v WHERE v.option_id = o.id) AS votes "
+                    "FROM dinaro_fund_options o WHERE o.fund_id = :fid ORDER BY o.id"
+                ),
+                {"fid": treasury["id"]},
+            ).mappings().all()
+            treasury_bill_stats = conn.execute(
+                text(
+                    "SELECT COUNT(*) AS total, "
+                    "COALESCE(SUM(CASE WHEN amount_paid >= amount_owed THEN 1 ELSE 0 END), 0) AS paid "
+                    "FROM dinaro_fund_bills WHERE fund_id = :fid"
+                ),
+                {"fid": treasury["id"]},
+            ).mappings().first()
+        finally:
+            conn.close()
+
     return render_template(
         "dinaro_parent_dashboard.html",
         family=family,
@@ -682,7 +701,162 @@ def dinaro_parent_dashboard():
         other_classes=_dinaro_get_linked_families(parent_id) if family and family["is_classroom"] else [],
         analytics=analytics,
         group_rewards=group_rewards,
+        treasury=treasury,
+        treasury_options=treasury_options,
+        treasury_bill_stats=treasury_bill_stats,
     )
+
+
+# ----------------------------
+# The Treasury — teacher setup
+# ----------------------------
+@dinaro_bp.post("/parent/treasury/save")
+def dinaro_parent_treasury_save():
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+    family_id = _dinaro_parent_family_id(parent_id)
+
+    title = (request.form.get("title") or "The Treasury").strip() or "The Treasury"
+    goal = safe_float(request.form.get("goal"), 0.0)
+    match_num = int(safe_float(request.form.get("match_num"), 0.0))
+    match_den = int(safe_float(request.form.get("match_den"), 1.0)) or 1
+    tax_type = (request.form.get("tax_type") or "flat").strip()
+    tax_type = tax_type if tax_type in ("flat", "percent") else "flat"
+    tax_amount = safe_float(request.form.get("tax_amount"), 0.0)
+    penalty_no_vote = 1 if request.form.get("penalty_no_vote") else 0
+    penalty_interest = safe_float(request.form.get("penalty_interest"), 0.0)
+    grade_mode = (request.form.get("grade_mode") or "score").strip()
+    grade_mode = grade_mode if grade_mode in ("score", "bonus") else "score"
+
+    existing = _dinaro_active_fund(family_id)
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE dinaro_families SET grade_mode = :gm WHERE id = :fid"),
+            {"gm": grade_mode, "fid": family_id},
+        )
+        if existing:
+            conn.execute(
+                text(
+                    "UPDATE dinaro_class_funds SET title=:t, goal=:g, match_num=:mn, match_den=:md, "
+                    "tax_type=:tt, tax_amount=:ta, penalty_no_vote=:pnv, penalty_interest=:pi WHERE id=:id"
+                ),
+                {"t": title, "g": goal, "mn": match_num, "md": match_den, "tt": tax_type,
+                 "ta": tax_amount, "pnv": penalty_no_vote, "pi": penalty_interest, "id": existing["id"]},
+            )
+        else:
+            conn.execute(
+                text(
+                    "INSERT INTO dinaro_class_funds "
+                    "(family_id, title, goal, match_num, match_den, tax_type, tax_amount, penalty_no_vote, penalty_interest, created_at) "
+                    "VALUES (:fid, :t, :g, :mn, :md, :tt, :ta, :pnv, :pi, :now)"
+                ),
+                {"fid": family_id, "t": title, "g": goal, "mn": match_num, "md": match_den, "tt": tax_type,
+                 "ta": tax_amount, "pnv": penalty_no_vote, "pi": penalty_interest, "now": _dinaro_now()},
+            )
+    return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+
+@dinaro_bp.post("/parent/treasury/option/add")
+def dinaro_parent_treasury_option_add():
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+    fund = _dinaro_active_fund(_dinaro_parent_family_id(parent_id))
+    label = (request.form.get("label") or "").strip()
+    if fund and label:
+        with engine.begin() as conn:
+            conn.execute(
+                text("INSERT INTO dinaro_fund_options (fund_id, label) VALUES (:fid, :l)"),
+                {"fid": fund["id"], "l": label},
+            )
+    return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+
+@dinaro_bp.post("/parent/treasury/option/<int:option_id>/delete")
+def dinaro_parent_treasury_option_delete(option_id: int):
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+    fund = _dinaro_active_fund(_dinaro_parent_family_id(parent_id))
+    if fund:
+        with engine.begin() as conn:
+            conn.execute(
+                text("DELETE FROM dinaro_fund_options WHERE id=:oid AND fund_id=:fid"),
+                {"oid": option_id, "fid": fund["id"]},
+            )
+            conn.execute(text("DELETE FROM dinaro_fund_votes WHERE option_id=:oid"), {"oid": option_id})
+    return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+
+@dinaro_bp.post("/parent/treasury/bills")
+def dinaro_parent_treasury_bills():
+    """Issue (or refresh) each student's fair-share bill from the tax rule."""
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+    family_id = _dinaro_parent_family_id(parent_id)
+    fund = _dinaro_active_fund(family_id)
+    if not fund:
+        return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+    with engine.begin() as conn:
+        kids = conn.execute(
+            text("SELECT id, balance FROM dinaro_children WHERE family_id=:fid AND approved=1"),
+            {"fid": family_id},
+        ).mappings().all()
+        for kid in kids:
+            if fund["tax_type"] == "percent":
+                owed = round(float(kid["balance"]) * float(fund["tax_amount"]) / 100.0, 2)
+            else:
+                owed = round(float(fund["tax_amount"]), 2)
+            existing_bill = conn.execute(
+                text("SELECT id FROM dinaro_fund_bills WHERE fund_id=:fid AND child_id=:cid"),
+                {"fid": fund["id"], "cid": kid["id"]},
+            ).mappings().first()
+            if existing_bill:
+                conn.execute(
+                    text("UPDATE dinaro_fund_bills SET amount_owed=:o WHERE id=:id"),
+                    {"o": owed, "id": existing_bill["id"]},
+                )
+            else:
+                conn.execute(
+                    text(
+                        "INSERT INTO dinaro_fund_bills (fund_id, child_id, amount_owed, amount_paid, created_at) "
+                        "VALUES (:fid, :cid, :o, 0, :now)"
+                    ),
+                    {"fid": fund["id"], "cid": kid["id"], "o": owed, "now": _dinaro_now()},
+                )
+    return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+
+@dinaro_bp.post("/parent/treasury/open-vote")
+def dinaro_parent_treasury_open_vote():
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+    fund = _dinaro_active_fund(_dinaro_parent_family_id(parent_id))
+    if fund:
+        with engine.begin() as conn:
+            n = conn.execute(text("SELECT COUNT(*) FROM dinaro_fund_options WHERE fund_id=:f"), {"f": fund["id"]}).scalar()
+            if n:
+                conn.execute(text("UPDATE dinaro_class_funds SET status='voting' WHERE id=:f"), {"f": fund["id"]})
+    return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+
+@dinaro_bp.post("/parent/treasury/close-vote")
+def dinaro_parent_treasury_close_vote():
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+    fund = _dinaro_active_fund(_dinaro_parent_family_id(parent_id))
+    if fund:
+        with engine.begin() as conn:
+            conn.execute(
+                text("UPDATE dinaro_class_funds SET status='closed', closed_at=:now WHERE id=:f"),
+                {"now": _dinaro_now(), "f": fund["id"]},
+            )
+    return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
 @dinaro_bp.post("/parent/settings")
@@ -817,6 +991,28 @@ def dinaro_parent_switch_class():
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
+@dinaro_bp.get("/parent/upgrade")
+def dinaro_parent_upgrade():
+    """Demand test: interest-capture page shown when a family hits the free
+    child limit. No payment — reuses email_signups via core.subscribe."""
+    parent_id = _dinaro_require_parent()
+    if not parent_id:
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+
+    family_id = _dinaro_parent_family_id(parent_id)
+    conn = get_connection()
+    try:
+        child_count = conn.execute(
+            text("SELECT COUNT(*) AS c FROM dinaro_children WHERE family_id = :fid AND approved = 1"),
+            {"fid": family_id},
+        ).mappings().first()["c"]
+    finally:
+        conn.close()
+
+    subscribed = request.args.get("subscribed") == "1"
+    return render_template("dinaro_upgrade.html", child_count=child_count, subscribed=subscribed)
+
+
 @dinaro_bp.post("/parent/child/add")
 def dinaro_parent_add_child():
     parent_id = _dinaro_require_parent()
@@ -824,6 +1020,22 @@ def dinaro_parent_add_child():
         return redirect(url_for("dinaro.dinaro_parent_login"))
 
     family_id = _dinaro_parent_family_id(parent_id)
+
+    # --- Demand test: free tier caps children; extra children capture interest ---
+    conn = get_connection()
+    try:
+        existing_count = conn.execute(
+            text("SELECT COUNT(*) AS c FROM dinaro_children WHERE family_id = :fid"),
+            {"fid": family_id},
+        ).mappings().first()["c"]
+    finally:
+        conn.close()
+
+    FREE_CHILD_LIMIT = 2
+    if existing_count >= FREE_CHILD_LIMIT:
+        return redirect(url_for("dinaro.dinaro_parent_upgrade"))
+    # --- end demand test ---
+
     name = (request.form.get("child_name") or "").strip()
     pin = (request.form.get("child_pin") or "").strip()
     if not name or not pin:
@@ -1652,12 +1864,12 @@ def dinaro_child_dashboard():
     conn = get_connection()
     try:
         child = conn.execute(
-            text("SELECT id, family_id, name, balance, view_mode FROM dinaro_children WHERE id = :id"),
+            text("SELECT id, family_id, name, balance, view_mode, standing FROM dinaro_children WHERE id = :id"),
             {"id": child_id},
         ).mappings().first()
-        
+
         family = conn.execute(
-            text("SELECT interest_rate, interest_threshold, tax_rate, is_classroom, show_leaderboard FROM dinaro_families WHERE id = :id"),
+            text("SELECT interest_rate, interest_threshold, tax_rate, is_classroom, show_leaderboard, grade_mode FROM dinaro_families WHERE id = :id"),
             {"id": family_id},
         ).mappings().first()
 
@@ -1742,6 +1954,45 @@ def dinaro_child_dashboard():
             else:
                 todo_list.append(chore)
 
+    treasury = _dinaro_active_fund(family_id)
+    my_bill = None
+    classmates = []
+    treasury_options = []
+    my_vote = None
+    can_vote = False
+    if treasury:
+        conn = get_connection()
+        try:
+            my_bill = conn.execute(
+                text("SELECT amount_owed, amount_paid FROM dinaro_fund_bills WHERE fund_id=:f AND child_id=:c"),
+                {"f": treasury["id"], "c": child_id},
+            ).mappings().first()
+            classmates = conn.execute(
+                text("SELECT id, name FROM dinaro_children WHERE family_id=:fid AND approved=1 AND id != :c ORDER BY name ASC"),
+                {"fid": family_id, "c": child_id},
+            ).mappings().all()
+            treasury_options = conn.execute(
+                text(
+                    "SELECT o.id, o.label, "
+                    "(SELECT COUNT(*) FROM dinaro_fund_votes v WHERE v.option_id = o.id) AS votes "
+                    "FROM dinaro_fund_options o WHERE o.fund_id = :f ORDER BY o.id"
+                ),
+                {"f": treasury["id"]},
+            ).mappings().all()
+            if treasury["status"] == "voting":
+                if not treasury["penalty_no_vote"]:
+                    can_vote = True
+                elif my_bill:
+                    owed, paid = float(my_bill["amount_owed"]), float(my_bill["amount_paid"])
+                    can_vote = owed <= 0 or paid >= owed
+                mv = conn.execute(
+                    text("SELECT option_id FROM dinaro_fund_votes WHERE fund_id=:f AND child_id=:c"),
+                    {"f": treasury["id"], "c": child_id},
+                ).mappings().first()
+                my_vote = mv["option_id"] if mv else None
+        finally:
+            conn.close()
+
     return render_template(
         "dinaro_child_dashboard.html",
         child=child,
@@ -1760,7 +2011,147 @@ def dinaro_child_dashboard():
         tax_rate=family.get("tax_rate", 0),
         leaderboard=leaderboard,
         show_leaderboard=show_leaderboard,
+        treasury=treasury,
+        my_bill=my_bill,
+        classmates=classmates,
+        treasury_options=treasury_options,
+        my_vote=my_vote,
+        can_vote=can_vote,
     )
+
+
+# ----------------------------
+# The Treasury — student actions
+# ----------------------------
+def _dinaro_fund_match(fund, amount: float) -> float:
+    """Teacher match added on top of a contribution (match_num : match_den)."""
+    den = fund["match_den"] or 1
+    return round(amount * (fund["match_num"] or 0) / den, 2)
+
+
+@dinaro_bp.post("/child/treasury/pay")
+def dinaro_child_treasury_pay():
+    """Pay toward your fair-share bill (capped at what you owe and what you have)."""
+    child_id = _dinaro_require_child()
+    if not child_id:
+        return redirect(url_for("dinaro.dinaro_child_login"))
+    family_id = _dinaro_child_family_id(child_id)
+    fund = _dinaro_active_fund(family_id)
+    amount = safe_float(request.form.get("amount"), 0.0)
+    if fund and amount > 0:
+        with engine.begin() as conn:
+            bal = float(conn.execute(text("SELECT balance FROM dinaro_children WHERE id=:c"), {"c": child_id}).scalar() or 0)
+            bill = conn.execute(
+                text("SELECT id, amount_owed, amount_paid FROM dinaro_fund_bills WHERE fund_id=:f AND child_id=:c"),
+                {"f": fund["id"], "c": child_id},
+            ).mappings().first()
+            if bill:
+                remaining = max(0.0, float(bill["amount_owed"]) - float(bill["amount_paid"]))
+                pay = round(min(amount, bal, remaining), 2)
+                if pay > 0:
+                    conn.execute(text("UPDATE dinaro_children SET balance = balance - :p WHERE id=:c"), {"p": pay, "c": child_id})
+                    conn.execute(text("UPDATE dinaro_fund_bills SET amount_paid = amount_paid + :p WHERE id=:b"), {"p": pay, "b": bill["id"]})
+                    conn.execute(text("UPDATE dinaro_class_funds SET raised = raised + :amt WHERE id=:f"), {"amt": pay + _dinaro_fund_match(fund, pay), "f": fund["id"]})
+                    conn.execute(text("INSERT INTO dinaro_ledger (child_id, delta, reason, created_at) VALUES (:c, :d, 'treasury_tax', :now)"), {"c": child_id, "d": -pay, "now": _dinaro_now()})
+    return redirect(url_for("dinaro.dinaro_child_dashboard"))
+
+
+@dinaro_bp.post("/child/treasury/donate")
+def dinaro_child_treasury_donate():
+    """Donate extra to the Treasury (beyond your bill)."""
+    child_id = _dinaro_require_child()
+    if not child_id:
+        return redirect(url_for("dinaro.dinaro_child_login"))
+    family_id = _dinaro_child_family_id(child_id)
+    fund = _dinaro_active_fund(family_id)
+    amount = safe_float(request.form.get("amount"), 0.0)
+    if fund and amount > 0:
+        with engine.begin() as conn:
+            bal = float(conn.execute(text("SELECT balance FROM dinaro_children WHERE id=:c"), {"c": child_id}).scalar() or 0)
+            give = round(min(amount, bal), 2)
+            if give > 0:
+                conn.execute(text("UPDATE dinaro_children SET balance = balance - :g WHERE id=:c"), {"g": give, "c": child_id})
+                conn.execute(text("UPDATE dinaro_class_funds SET raised = raised + :amt WHERE id=:f"), {"amt": give + _dinaro_fund_match(fund, give), "f": fund["id"]})
+                conn.execute(text("INSERT INTO dinaro_ledger (child_id, delta, reason, created_at) VALUES (:c, :d, 'treasury_donation', :now)"), {"c": child_id, "d": -give, "now": _dinaro_now()})
+    return redirect(url_for("dinaro.dinaro_child_dashboard"))
+
+
+@dinaro_bp.post("/child/treasury/grade")
+def dinaro_child_treasury_grade():
+    """Spend dinaro to raise your own grade/standing (1:1)."""
+    child_id = _dinaro_require_child()
+    if not child_id:
+        return redirect(url_for("dinaro.dinaro_child_login"))
+    amount = safe_float(request.form.get("amount"), 0.0)
+    if amount > 0:
+        with engine.begin() as conn:
+            bal = float(conn.execute(text("SELECT balance FROM dinaro_children WHERE id=:c"), {"c": child_id}).scalar() or 0)
+            spend = round(min(amount, bal), 2)
+            if spend > 0:
+                conn.execute(text("UPDATE dinaro_children SET balance = balance - :s, standing = standing + :s WHERE id=:c"), {"s": spend, "c": child_id})
+                conn.execute(text("INSERT INTO dinaro_ledger (child_id, delta, reason, created_at) VALUES (:c, :d, 'grade_self', :now)"), {"c": child_id, "d": -spend, "now": _dinaro_now()})
+    return redirect(url_for("dinaro.dinaro_child_dashboard"))
+
+
+@dinaro_bp.post("/child/treasury/gift")
+def dinaro_child_treasury_gift():
+    """Spend your dinaro to raise a classmate's grade/standing (1:1)."""
+    child_id = _dinaro_require_child()
+    if not child_id:
+        return redirect(url_for("dinaro.dinaro_child_login"))
+    family_id = _dinaro_child_family_id(child_id)
+    target_id = int(safe_float(request.form.get("target_id"), 0))
+    amount = safe_float(request.form.get("amount"), 0.0)
+    if target_id and target_id != child_id and amount > 0:
+        with engine.begin() as conn:
+            target = conn.execute(
+                text("SELECT id FROM dinaro_children WHERE id=:t AND family_id=:fid AND approved=1"),
+                {"t": target_id, "fid": family_id},
+            ).mappings().first()
+            bal = float(conn.execute(text("SELECT balance FROM dinaro_children WHERE id=:c"), {"c": child_id}).scalar() or 0)
+            spend = round(min(amount, bal), 2)
+            if target and spend > 0:
+                conn.execute(text("UPDATE dinaro_children SET balance = balance - :s WHERE id=:c"), {"s": spend, "c": child_id})
+                conn.execute(text("UPDATE dinaro_children SET standing = standing + :s WHERE id=:t"), {"s": spend, "t": target_id})
+                conn.execute(text("INSERT INTO dinaro_ledger (child_id, delta, reason, created_at) VALUES (:c, :d, 'grade_gift', :now)"), {"c": child_id, "d": -spend, "now": _dinaro_now()})
+    return redirect(url_for("dinaro.dinaro_child_dashboard"))
+
+
+@dinaro_bp.post("/child/treasury/vote")
+def dinaro_child_treasury_vote():
+    """Cast (or change) your vote on what the funded Treasury does."""
+    child_id = _dinaro_require_child()
+    if not child_id:
+        return redirect(url_for("dinaro.dinaro_child_login"))
+    family_id = _dinaro_child_family_id(child_id)
+    fund = _dinaro_active_fund(family_id)
+    option_id = int(safe_float(request.form.get("option_id"), 0))
+    if not (fund and fund["status"] == "voting" and option_id):
+        return redirect(url_for("dinaro.dinaro_child_dashboard"))
+    with engine.begin() as conn:
+        opt = conn.execute(
+            text("SELECT id FROM dinaro_fund_options WHERE id=:o AND fund_id=:f"),
+            {"o": option_id, "f": fund["id"]},
+        ).mappings().first()
+        # Gate: if the teacher set "no vote unless paid", require the bill be settled.
+        eligible = True
+        if fund["penalty_no_vote"]:
+            bill = conn.execute(
+                text("SELECT amount_owed, amount_paid FROM dinaro_fund_bills WHERE fund_id=:f AND child_id=:c"),
+                {"f": fund["id"], "c": child_id},
+            ).mappings().first()
+            if not bill:
+                eligible = False
+            else:
+                owed, paid = float(bill["amount_owed"]), float(bill["amount_paid"])
+                eligible = owed <= 0 or paid >= owed
+        if opt and eligible:
+            conn.execute(text("DELETE FROM dinaro_fund_votes WHERE fund_id=:f AND child_id=:c"), {"f": fund["id"], "c": child_id})
+            conn.execute(
+                text("INSERT INTO dinaro_fund_votes (fund_id, child_id, option_id) VALUES (:f, :c, :o)"),
+                {"f": fund["id"], "c": child_id, "o": option_id},
+            )
+    return redirect(url_for("dinaro.dinaro_child_dashboard"))
 
 
 @dinaro_bp.get("/child/history")

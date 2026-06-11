@@ -1,11 +1,10 @@
-const CACHE_NAME = 'timecost-cache-v4';
+const CACHE_NAME = 'timecost-cache-v5';
+// Precache only genuinely static, versioned assets. NOTE: do not list '/' here —
+// the old fetch handler matched it against every URL (every URL contains '/'),
+// which served the entire site stale-from-cache and hid fresh deploys.
 const ASSETS_TO_CACHE = [
-  '/',
-  '/static/timecost.css?v=20260225o',
-  '/static/timecost.js',
   '/static/favicon.svg',
-  'https://unpkg.com/lucide@latest',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;500;600&display=swap'
+  'https://unpkg.com/lucide@latest'
 ];
 
 self.addEventListener('install', (event) => {
@@ -31,8 +30,23 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Stale-while-revalidate strategy for assets
-  if (ASSETS_TO_CACHE.some(asset => event.request.url.includes(asset))) {
+  if (event.request.method !== 'GET') return;
+
+  // Page navigations (HTML) are ALWAYS network-first so deploys show up
+  // immediately; fall back to cache only when offline.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Only the explicitly precached static assets use stale-while-revalidate,
+  // matched by exact URL (not substring) so '/' can't swallow everything.
+  const isPrecached = ASSETS_TO_CACHE.some(asset => event.request.url === asset
+    || event.request.url === new URL(asset, self.location.origin).href);
+
+  if (isPrecached) {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
         const fetchPromise = fetch(event.request).then((networkResponse) => {
@@ -45,11 +59,10 @@ self.addEventListener('fetch', (event) => {
       })
     );
   } else {
-    // Network first for other requests
+    // Everything else (CSS/JS with ?v= params, blueprint static, etc.):
+    // network-first, cache only as an offline fallback.
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match(event.request);
-      })
+      fetch(event.request).catch(() => caches.match(event.request))
     );
   }
 });

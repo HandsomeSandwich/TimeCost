@@ -41,24 +41,24 @@
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">
-        <a class="brand-name" href="{{ url_for('landing') }}">TimeCost</a>
+        <a class="brand-name" href="{{ url_for('core.landing') }}">TimeCost</a>
       </div>
 
       <nav class="nav" aria-label="Primary">
-        <a href="{{ url_for('calculator') }}"><i data-lucide="calculator" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;"></i> Calculator</a>
+        <a href="{{ url_for('core.calculator') }}"><i data-lucide="calculator" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;"></i> Calculator</a>
         <a href="{{ url_for('dinaro.dinaro_landing') }}"><i data-lucide="coins" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;"></i> Dinaro</a>
         <a href="{{ url_for('couples.couples_landing') }}"><i data-lucide="heart-handshake" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;"></i> Couples</a>
 
         <details class="nav-details">
           <summary><i data-lucide="wrench" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;"></i> Tools</summary>
           <div class="nav-popover" aria-label="Tools">
-            <a href="{{ url_for('personal') }}"><i data-lucide="user" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Personal</a>
-            <a href="{{ url_for('freelance') }}"><i data-lucide="briefcase" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Freelance</a>
-            <a href="{{ url_for('expenses') }}"><i data-lucide="receipt" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Expenses</a>
-            <a href="{{ url_for('timebank') }}"><i data-lucide="clock" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Time Bank</a>
-            <a href="{{ url_for('budget') }}"><i data-lucide="layout-dashboard" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Budget</a>
-            <a href="{{ url_for('goals') }}"><i data-lucide="target" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Goals</a>
-            <a href="{{ url_for('staples') }}"><i data-lucide="shopping-basket" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Staples</a>
+            <a href="{{ url_for('core.personal') }}"><i data-lucide="user" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Personal</a>
+            <a href="{{ url_for('core.freelance') }}"><i data-lucide="briefcase" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Freelance</a>
+            <a href="{{ url_for('core.expenses') }}"><i data-lucide="receipt" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Expenses</a>
+            <a href="{{ url_for('core.timebank') }}"><i data-lucide="clock" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Time Bank</a>
+            <a href="{{ url_for('core.budget') }}"><i data-lucide="layout-dashboard" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Budget</a>
+            <a href="{{ url_for('core.goals') }}"><i data-lucide="target" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Goals</a>
+            <a href="{{ url_for('core.staples') }}"><i data-lucide="shopping-basket" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Staples</a>
           </div>
         </details>
       </nav>
@@ -75,7 +75,7 @@
           <div class="settings-popover">
             <div class="settings-row">
               <label class="settings-label">Currency</label>
-              <form action="{{ url_for('set_currency') }}" method="post">
+              <form action="{{ url_for('core.set_currency') }}" method="post">
                 <select class="select settings-select" name="currency" onchange="this.form.submit()">
                   {% for sym in ["£","$","€","¥","₹","₩","₽"] %}
                     <option value="{{ sym }}" {% if currency==sym %}selected{% endif %}>{{ sym }}</option>
@@ -86,7 +86,7 @@
             {% if session.get('view', 'personality') == 'personality' %}
             <div class="settings-row">
               <label class="settings-label">Perspective</label>
-              <form action="{{ url_for('set_perspective') }}" method="post">
+              <form action="{{ url_for('core.set_perspective') }}" method="post">
                 <select class="select settings-select" name="perspective" onchange="this.form.submit()">
                   <option value="river" {% if perspective=="river" %}selected{% endif %}>River</option>
                   <option value="leslie" {% if perspective=="leslie" %}selected{% endif %}>Leslie</option>
@@ -97,7 +97,7 @@
             {% endif %}
             <div class="settings-row">
               <label class="settings-label">Theme</label>
-              <form method="post" action="{{ url_for('set_view') }}">
+              <form method="post" action="{{ url_for('core.set_view') }}">
                 <select class="select settings-select" name="view" onchange="this.form.submit()">
                   <option value="personality" {% if session.get('view') == 'personality' %}selected{% endif %}>Personality</option>
                   <option value="dawn" {% if session.get('view') == 'dawn' %}selected{% endif %}>Dawn</option>
@@ -113,20 +113,20 @@
 
     <!-- Mobile drawer -->
     <div class="nav-drawer" id="navDrawer">
-      <a href="{{ url_for('landing') }}"><i data-lucide="home" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Home</a>
-      <a href="{{ url_for('calculator') }}"><i data-lucide="calculator" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Calculator</a>
+      <a href="{{ url_for('core.landing') }}"><i data-lucide="home" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Home</a>
+      <a href="{{ url_for('core.calculator') }}"><i data-lucide="calculator" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Calculator</a>
       <a href="{{ url_for('dinaro.dinaro_landing') }}"><i data-lucide="coins" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Dinaro</a>
       <a href="{{ url_for('couples.couples_landing') }}"><i data-lucide="heart-handshake" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Couples</a>
 
       <div class="drawer-section">
         <div class="drawer-title">Tools</div>
-        <a href="{{ url_for('personal') }}"><i data-lucide="user" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Personal</a>
-        <a href="{{ url_for('freelance') }}"><i data-lucide="briefcase" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Freelance</a>
-        <a href="{{ url_for('expenses') }}"><i data-lucide="receipt" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Expenses</a>
-        <a href="{{ url_for('timebank') }}"><i data-lucide="clock" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Time Bank</a>
-        <a href="{{ url_for('budget') }}"><i data-lucide="layout-dashboard" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Budget</a>
-        <a href="{{ url_for('goals') }}"><i data-lucide="target" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Goals</a>
-        <a href="{{ url_for('staples') }}"><i data-lucide="shopping-basket" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Staples</a>
+        <a href="{{ url_for('core.personal') }}"><i data-lucide="user" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Personal</a>
+        <a href="{{ url_for('core.freelance') }}"><i data-lucide="briefcase" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Freelance</a>
+        <a href="{{ url_for('core.expenses') }}"><i data-lucide="receipt" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Expenses</a>
+        <a href="{{ url_for('core.timebank') }}"><i data-lucide="clock" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Time Bank</a>
+        <a href="{{ url_for('core.budget') }}"><i data-lucide="layout-dashboard" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Budget</a>
+        <a href="{{ url_for('core.goals') }}"><i data-lucide="target" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Goals</a>
+        <a href="{{ url_for('core.staples') }}"><i data-lucide="shopping-basket" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Staples</a>
       </div>
     </div>
   </header>
@@ -137,11 +137,13 @@
 
   <footer class="site-footer">
     <p class="muted" style="font-size:0.78rem; margin:0 0 0.5rem; letter-spacing:0.03em;">Time is the real currency</p>
-    <a href="{{ url_for('support') }}">
+    <a href="{{ url_for('core.support') }}">
       <i data-lucide="clock" style="width:14px;height:14px;vertical-align:middle;margin-right:5px;"></i>Buy me some time
     </a>
     <span class="site-footer-sep">·</span>
-    <a href="{{ url_for('landing') }}">Home</a>
+    <a href="{{ url_for('core.formulas') }}">How it works</a>
+    <span class="site-footer-sep">·</span>
+    <a href="{{ url_for('core.landing') }}">Home</a>
     <span class="site-footer-sep">·</span>
     <span class="site-footer-sig">crafted with hours by <a href="https://github.com/HandsomeSandwich" target="_blank" rel="noopener">HandsomeSandwich</a></span>
   </footer>

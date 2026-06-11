@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "dinaro_base.html" %}
 {% block title %}Dinaro Child{% endblock %}
 
 {% block content %}
@@ -212,7 +212,7 @@
     <div class="grid-2" style="gap: 16px;">
       {% for item in spendables %}
         {% set can_afford = (child.balance >= item.cost_dinaro) %}
-        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 16px; border: 2px solid {% if can_afford %}#ff4d6d{% else %}#ccc{% endif %}; position: relative; overflow: hidden;">
+        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 16px; border: 2px solid {% if can_afford %}var(--accent-2){% else %}#ccc{% endif %}; position: relative; overflow: hidden;">
           {% if not can_afford %}
             <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--border);"></div>
           {% endif %}
@@ -228,7 +228,7 @@
               {% else %}🎁{% endif %}
             </div>
             <div style="font-weight: 700; font-size: 1.2rem;">{{ item.title }}</div>
-            <div style="font-weight: 800; color: #ff4d6d; font-size: 1.1rem; margin-top: 4px;">{{ "%.2f"|format(item.cost_dinaro) }} dinaro</div>
+            <div style="font-weight: 800; color: var(--accent-2); font-size: 1.1rem; margin-top: 4px;">{{ "%.2f"|format(item.cost_dinaro) }} dinaro</div>
           </div>
 
           <div style="margin-top: 16px;">
@@ -503,6 +503,103 @@
       </form>
     </section>
   {% endif %}
+
+  {% if family.is_classroom and treasury %}
+  {% set grade_label = 'bonus points' if family.grade_mode == 'bonus' else 'class score' %}
+  {% set remaining = (my_bill.amount_owed - my_bill.amount_paid) if my_bill else 0 %}
+  <section class="panel toned tone-2" style="margin-top:14px;">
+    <h2 class="card-title" style="display:flex; align-items:center; gap:8px;">
+      <i data-lucide="landmark"></i> {{ treasury.title }}
+    </h2>
+
+    <div style="margin:8px 0;">
+      <div style="display:flex; justify-content:space-between; font-weight:700; font-size:0.9rem;">
+        <span>{{ "%.0f"|format(treasury.raised) }} / {{ "%.0f"|format(treasury.goal) }} dinaro</span>
+        {% if treasury.match_num %}<span class="muted" style="font-weight:400;">teacher matches {{ treasury.match_num }}:{{ treasury.match_den }}</span>{% endif %}
+      </div>
+      <div style="height:12px; background:var(--accent-soft); border-radius:999px; overflow:hidden; margin-top:4px;">
+        <div style="height:100%; width:{{ ((treasury.raised / treasury.goal * 100) if treasury.goal else 0)|round|int }}%; max-width:100%; background:var(--accent-2);"></div>
+      </div>
+    </div>
+
+    <p class="muted" style="font-size:0.85rem;">
+      You have <strong>{{ "%.0f"|format(child.balance) }}</strong> dinaro. Every one you give or spend is one you can't save.
+    </p>
+
+    <div style="display:grid; gap:14px; margin-top:8px;">
+      {% if my_bill %}
+      <div>
+        <strong>Your fair-share bill:</strong> {{ "%.0f"|format(my_bill.amount_paid) }} / {{ "%.0f"|format(my_bill.amount_owed) }} paid
+        {% if remaining > 0 %}
+        <form action="{{ url_for('dinaro.dinaro_child_treasury_pay') }}" method="post" style="display:flex; gap:8px; margin-top:6px; max-width:320px;">
+          <input name="amount" type="number" step="1" min="0" value="{{ remaining|round|int }}" style="flex:1;">
+          <button class="btn btn-primary" type="submit">Pay my share</button>
+        </form>
+        {% else %}
+        <span style="color:#2e8b57; font-weight:700;"> &check; paid in full</span>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <div>
+        <strong>Donate extra</strong> <span class="muted" style="font-size:0.85rem;">— help the class reach the goal</span>
+        <form action="{{ url_for('dinaro.dinaro_child_treasury_donate') }}" method="post" style="display:flex; gap:8px; margin-top:6px; max-width:320px;">
+          <input name="amount" type="number" step="1" min="0" placeholder="dinaro" style="flex:1;">
+          <button class="btn" type="submit">Donate</button>
+        </form>
+      </div>
+
+      <div>
+        <strong>Your {{ grade_label }}: {{ "%.0f"|format(child.standing) }}</strong>
+        <form action="{{ url_for('dinaro.dinaro_child_treasury_grade') }}" method="post" style="display:flex; gap:8px; margin-top:6px; max-width:320px;">
+          <input name="amount" type="number" step="1" min="0" placeholder="dinaro to spend" style="flex:1;">
+          <button class="btn" type="submit">Boost my {{ grade_label }}</button>
+        </form>
+      </div>
+
+      {% if classmates %}
+      <div>
+        <strong>Gift a classmate's {{ grade_label }}</strong>
+        <form action="{{ url_for('dinaro.dinaro_child_treasury_gift') }}" method="post" style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; max-width:440px;">
+          <select name="target_id" style="flex:1 1 140px;">
+            {% for m in classmates %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
+          </select>
+          <input name="amount" type="number" step="1" min="0" placeholder="dinaro" style="flex:0 1 110px;">
+          <button class="btn" type="submit">Gift</button>
+        </form>
+      </div>
+      {% endif %}
+
+      {% if treasury.status == 'voting' %}
+      <div>
+        <strong>Class vote — what should the pot fund?</strong>
+        {% if can_vote %}
+        <div style="display:grid; gap:6px; margin-top:6px; max-width:380px;">
+          {% for o in treasury_options %}
+          <form action="{{ url_for('dinaro.dinaro_child_treasury_vote') }}" method="post">
+            <input type="hidden" name="option_id" value="{{ o.id }}">
+            <button class="btn {{ 'btn-primary' if my_vote == o.id else '' }}" type="submit" style="width:100%; text-align:left;">
+              {{ '✓ ' if my_vote == o.id else '' }}{{ o.label }}
+            </button>
+          </form>
+          {% endfor %}
+        </div>
+        {% if my_vote %}<p class="muted" style="font-size:0.8rem; margin-top:4px;">You can change your vote until voting closes.</p>{% endif %}
+        {% else %}
+        <p class="muted" style="font-size:0.85rem; margin-top:4px;">Pay your fair-share bill to earn your vote.</p>
+        {% endif %}
+      </div>
+      {% elif treasury.status == 'closed' %}
+      {% set winner = (treasury_options|sort(attribute='votes')|last) if treasury_options else None %}
+      <div>
+        <strong>Class vote — closed</strong>
+        {% if winner %}<p style="margin-top:4px;">🏆 The class chose: <strong>{{ winner.label }}</strong>.</p>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
   <script src="{{ url_for('static', filename='dinaro-push.js') }}" defer></script>
 </div>
 {% endblock %}

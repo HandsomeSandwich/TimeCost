@@ -1,69 +1,113 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fraunces:opsz,wght@9..144,600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap');
 
 /* ============================
    Theme tokens
 ============================ */
+/* ============================
+   Dinaro — "Piggy Pop" identity
+   Sibling to TimeCost: shares the warm-paper background, diverges into
+   sky-cobalt + bubblegum, chunky rounded forms, and friendly geometric type.
+   Same token NAMES as timecost.css, so every structural rule reskins for free.
+============================ */
 :root{
-  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-head: 'Fraunces', ui-serif, Georgia, serif;
+  --font-ui: 'Nunito', system-ui, -apple-system, sans-serif;
+  --font-head: 'Baloo 2', 'Nunito', system-ui, sans-serif;
 
-  /* Dawn: warm slate, oat paper */
-  --bg: #f6f1e8;
-  --panel: #fbf7ef;
-  --border: #e4d8c2;
+  /* Soft cream — warm and friendly, clearly not pink */
+  --bg: #fffbeb;
+  --panel: #ffffff;
+  --border: #efe7cf;
 
-  --text: #1f2a33;
-  --muted: #5d6b72;
+  --text: #1e1e1e;          /* charcoal */
+  --muted: #7c7568;
 
-  --accent: #4a7c82;
-  --accent-soft: #e1eeef;
+  --accent: #4f46e5;        /* indigo (primary) */
+  --accent-soft: #ecebfd;
+  --accent-2: #f59e0b;      /* electric amber — coins, badges, pop */
+  --accent-2-soft: #fef1d6;
 
-  --btn: #4a7c82;
-  --btn2: #f1eadc;
+  /* Category palette — surfaced via icon chips & section accents */
+  --c1:#4f46e5; --c2:#f59e0b; --c3:#fb7185; --c4:#14b8a6; --c5:#22c55e;
 
-  --radius: 18px;
+  --btn: #4f46e5;
+  --btn2: #fef3d3;          /* soft amber secondary button */
 
-  /* Inputs (Dawn) */
-  --input-bg: #fdf9f1;                 /* warm paper */
-  --input-border: rgba(31,42,51,.18);
-  --input-border-hover: rgba(74,124,130,.35);
-  --input-border-focus: rgba(74,124,130,.60);
-  --focus-ring: rgba(74,124,130,.18);
-  --placeholder: rgba(31,42,51,.45);
+  --radius: 24px;           /* chunky, tactile */
 
-  /* Topbar (Dawn) */
-  --topbar-bg: rgba(246,241,232,.92);
-  --topbar-chip-bg: linear-gradient(180deg, #ffffff, #f6f1e8);
+  --input-bg: #ffffff;
+  --input-border: rgba(30,30,30,.16);
+  --input-border-hover: rgba(79,70,229,.45);
+  --input-border-focus: rgba(79,70,229,.70);
+  --focus-ring: rgba(79,70,229,.22);
+  --placeholder: rgba(30,30,30,.42);
+
+  --topbar-bg: rgba(255,251,235,.92);
+  --topbar-chip-bg: #ffffff;
   --topbar-hover: var(--accent-soft);
 }
 
-/* Personality: organic, earthy, soft textures (General Fallback) */
-body[data-view="personality"]{
-  --bg: #fdfaf5;
-  --panel: #ffffff;
-  --border: #e9e2d5;
+/* ============================
+   Theme variants. The switcher sets data-theme on <html>; no attribute (or
+   "piggy") = the Piggy Pop default in :root above. Tokens live on <html> so
+   per-theme overrides win the cascade for every descendant.
+============================ */
+html[data-theme="candyland"]{
+  --bg:#fff6f0; --panel:#ffffff; --border:#f6dfe6;
+  --text:#5b2b3d; --muted:#a8788a;
+  --accent:#e5446d; --accent-soft:#ffe1ea;
+  --accent-2:#2ec4b6; --accent-2-soft:#d8f5f0;
+  --btn:#e5446d; --btn2:#ffe1ea;
+  --radius:28px;
+  --input-bg:#fffafb; --input-border:#f0d3dc; --input-border-hover:#e5446d; --input-border-focus:#e5446d;
+  --focus-ring:rgba(229,68,109,.18); --placeholder:rgba(91,43,61,.4);
+  --topbar-bg:rgba(255,246,240,.92); --topbar-chip-bg:#ffffff; --topbar-hover:#ffe1ea;
+  --c1:#e5446d; --c2:#2ec4b6; --c3:#ffb627; --c4:#9b5de5; --c5:#4cc9f0;
+}
 
-  --text: #2d2a26;
-  --muted: #736d66;
+html[data-theme="midnight"]{
+  --bg:#131a2e; --panel:#1b2236; --border:rgba(255,255,255,.10);
+  --text:#eaf0ff; --muted:#9aa6c0;
+  --accent:#5b8def; --accent-soft:rgba(91,141,239,.16);
+  --accent-2:#ff8a5c; --accent-2-soft:rgba(255,138,92,.16);
+  --btn:#5b8def; --btn2:rgba(255,255,255,.08);
+  --radius:16px;
+  --input-bg:#0f1626; --input-border:rgba(255,255,255,.14); --input-border-hover:rgba(91,141,239,.5); --input-border-focus:#5b8def;
+  --focus-ring:rgba(91,141,239,.30); --placeholder:rgba(234,240,255,.4);
+  --topbar-bg:rgba(19,26,46,.85); --topbar-chip-bg:rgba(255,255,255,.06); --topbar-hover:rgba(91,141,239,.16);
+  --c1:#5b8def; --c2:#ff8a5c; --c3:#34d399; --c4:#a78bfa; --c5:#f472b6;
+}
 
-  --accent: #bc6c25;
-  --accent-soft: #fefae0;
+html[data-theme="forest"]{
+  --bg:#edf1e4; --panel:#ffffff; --border:#d8e3cd;
+  --text:#20291f; --muted:#5e6b54;
+  --accent:#2e8b57; --accent-soft:#e0efe2;
+  --accent-2:#d9822b; --accent-2-soft:#f7e6cf;
+  --btn:#2e8b57; --btn2:#e0efe2;
+  --radius:20px;
+  --input-bg:#fbfdf8; --input-border:#d5e0ca; --input-border-hover:#2e8b57; --input-border-focus:#2e8b57;
+  --focus-ring:rgba(46,139,87,.16); --placeholder:rgba(32,41,31,.42);
+  --topbar-bg:rgba(237,241,228,.92); --topbar-chip-bg:#ffffff; --topbar-hover:#e0efe2;
+  /* All-earthy palette: leaf green, bark amber, terracotta, olive, mustard */
+  --c1:#2e8b57; --c2:#d9822b; --c3:#c0603a; --c4:#8a9a4e; --c5:#c9a227;
+}
 
-  --btn: #606c38;
-  --btn2: #f4f1de;
+html[data-theme="arcade"]{
+  --bg:#15161f; --panel:#1f2130; --border:rgba(255,255,255,.10);
+  --text:#f0f2f8; --muted:#9b9fb5;
+  --accent:#b8f135; --accent-soft:rgba(184,241,53,.14);
+  --accent-2:#22d3ee; --accent-2-soft:rgba(34,211,238,.14);
+  --btn:#b8f135; --btn2:rgba(255,255,255,.07);
+  --radius:14px;
+  --input-bg:#14151f; --input-border:rgba(255,255,255,.14); --input-border-hover:#22d3ee; --input-border-focus:#22d3ee;
+  --focus-ring:rgba(34,211,238,.30); --placeholder:rgba(240,242,248,.4);
+  --topbar-bg:rgba(21,22,31,.85); --topbar-chip-bg:rgba(255,255,255,.06); --topbar-hover:rgba(34,211,238,.14);
+  --c1:#b8f135; --c2:#22d3ee; --c3:#ff9f1c; --c4:#a78bfa; --c5:#ff4d8d;
+}
 
-  --radius: 22px;
-
-  --input-bg: #fffcf9;
-  --input-border: #e0d7c6;
-  --input-border-hover: #bc6c25;
-  --input-border-focus: #606c38;
-  --focus-ring: rgba(96, 108, 56, 0.15);
-  --placeholder: #a8a095;
-
-  --topbar-bg: rgba(253, 250, 245, 0.85);
-  --topbar-chip-bg: #ffffff;
-  --topbar-hover: #fefae0;
+/* Arcade's primary is near-fluorescent: keep button text dark for contrast. */
+html[data-theme="arcade"] .btn-primary,
+html[data-theme="arcade"] .primary{
+  color:#15161f;
 }
 
 /* Leslie Knope: Bright, High-Energy, "Binder" Palette */
@@ -1640,3 +1684,173 @@ h1,h2,h3{
     font-size: 0.72rem;
   }
 }
+
+/* ============================
+   Dinaro "Piggy Pop" topbar + brand
+============================ */
+.dinaro-topbar{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--topbar-bg);
+  backdrop-filter: saturate(140%) blur(8px);
+  border-bottom: 2px solid var(--border);
+}
+.dinaro-topbar-inner{
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.6rem 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.dinaro-brand{
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+.dinaro-brand-mark{
+  display: inline-flex;
+  align-items: center;
+}
+.dinaro-brand-mark svg{
+  width: 30px;
+  height: 30px;
+  filter: drop-shadow(0 2px 0 rgba(245,158,11,.28));
+}
+.dinaro-brand-name{
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 1.4rem;
+  letter-spacing: .01em;
+  background: linear-gradient(95deg, var(--accent) 35%, var(--accent-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--accent);
+}
+.dinaro-sibling{
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--panel);
+  transition: border-color .15s ease, color .15s ease, transform .15s ease;
+}
+.dinaro-sibling:hover{
+  color: var(--accent);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+/* ============================
+   Theme switcher (topbar)
+============================ */
+.dinaro-theme{ position: relative; }
+.dinaro-theme-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease;
+}
+.dinaro-theme-btn:hover{ color: var(--accent); border-color: var(--accent); }
+.dinaro-theme-btn svg{ width: 16px; height: 16px; }
+.dinaro-theme-menu{
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 180px;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.14);
+  padding: 6px;
+  display: none;
+  z-index: 60;
+}
+.dinaro-theme-menu[data-open="true"]{ display: block; }
+.dinaro-theme-opt{
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  border-radius: 11px;
+  padding: 0.5rem 0.6rem;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+  text-align: left;
+}
+.dinaro-theme-opt:hover{ background: var(--topbar-hover); }
+.dinaro-theme-opt[aria-checked="true"]{ outline: 2px solid var(--accent); }
+.dinaro-theme-swatch{
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex: 0 0 22px;
+  border: 2px solid rgba(0,0,0,.08);
+}
+.sw-piggy{    background: linear-gradient(135deg,#4f46e5 50%,#f59e0b 50%); }
+.sw-candyland{background: linear-gradient(135deg,#e5446d 50%,#2ec4b6 50%); }
+.sw-midnight{ background: linear-gradient(135deg,#131a2e 48%,#5b8def 48%); }
+.sw-forest{   background: linear-gradient(135deg,#2f8f5b 50%,#e08a3c 50%); }
+.sw-arcade{   background: linear-gradient(135deg,#15161f 48%,#b8f135 48%); }
+
+/* ============================
+   Colorful components: icon chips + section accents
+   Each "tone-N" pulls from the active theme's category palette (--c1..--c5).
+============================ */
+.tone-1{ --tone: var(--c1); }
+.tone-2{ --tone: var(--c2); }
+.tone-3{ --tone: var(--c3); }
+.tone-4{ --tone: var(--c4); }
+.tone-5{ --tone: var(--c5); }
+
+.icon-chip{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--tone, var(--accent)) 16%, transparent);
+  color: var(--tone, var(--accent));
+}
+.icon-chip svg{ width: 21px; height: 21px; }
+
+/* Toned panels get a colored top accent + the title picks up the tone */
+.panel.toned{
+  border-top: 4px solid var(--tone, var(--accent));
+}
+.panel.toned .card-title{ color: var(--tone, var(--accent)); }
+
+/* Toned secondary buttons (outline in the tone) */
+.btn.tone-btn{
+  background: color-mix(in srgb, var(--tone, var(--accent)) 14%, transparent);
+  color: var(--tone, var(--accent));
+  border: 2px solid color-mix(in srgb, var(--tone, var(--accent)) 35%, transparent);
+}
+.btn.tone-btn:hover{ border-color: var(--tone, var(--accent)); }

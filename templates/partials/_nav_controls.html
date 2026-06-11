@@ -1,6 +1,6 @@
 <div class="nav-controls">
   <!-- Currency -->
-  <form action="{{ url_for('set_currency') }}" method="post" class="nav-control">
+  <form action="{{ url_for('core.set_currency') }}" method="post" class="nav-control">
     <label class="sr-only" for="currencySelect">Currency</label>
     <select class="select" id="currencySelect" name="currency" onchange="this.form.submit()">
       {% for sym in ["£","$","€","¥","₹","₩","₽"] %}
@@ -10,7 +10,7 @@
   </form>
 
   <!-- Perspective -->
-  <form action="{{ url_for('set_perspective') }}" method="post" class="nav-control">
+  <form action="{{ url_for('core.set_perspective') }}" method="post" class="nav-control">
     <label class="sr-only" for="perspectiveSelect">Tone</label>
     <select class="select" id="perspectiveSelect" name="perspective" onchange="this.form.submit()">
       <option value="river" {% if perspective == "river" %}selected{% endif %}>River</option>

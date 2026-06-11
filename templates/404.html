@@ -30,8 +30,8 @@
   <h1 style="font-family:var(--font-head);margin:0.5rem 0 0.75rem;">{{ c.heading }}</h1>
   <p class="muted" style="max-width:360px;margin:0 auto 1.5rem;">{{ c.sub }}</p>
   <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-    <a class="btn btn-primary" href="{{ url_for('calculator') }}">{{ c.nudge }}</a>
-    <a class="btn" href="{{ url_for('landing') }}">Home</a>
+    <a class="btn btn-primary" href="{{ url_for('core.calculator') }}">{{ c.nudge }}</a>
+    <a class="btn" href="{{ url_for('core.landing') }}">Home</a>
   </div>
 </div>
 {% endblock %}

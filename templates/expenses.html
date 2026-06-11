@@ -29,7 +29,7 @@
 <div class="page page-wide">
   <div class="panel">
 
-    <form method="post" action="{{ url_for('expenses') }}">
+    <form method="post" action="{{ url_for('core.expenses') }}">
 
       <div class="panel-head">
         <div>
@@ -123,7 +123,7 @@
                 <td class="action">
                   <button
                     class="btn btn-danger"
-                    formaction="{{ url_for('remove_expense', index=e.id) }}"
+                    formaction="{{ url_for('core.remove_expense', index=e.id) }}"
                     formmethod="post"
                     type="submit"
                   >Remove</button>
@@ -204,7 +204,7 @@
             <div class="expense-meta">
               <button
                 class="btn btn-danger"
-                formaction="{{ url_for('remove_expense', index=e.id) }}"
+                formaction="{{ url_for('core.remove_expense', index=e.id) }}"
                 formmethod="post"
                 type="submit"
               >Remove</button>
@@ -218,7 +218,7 @@
     </form>
 
     <!-- Separate Reset form -->
-    <form method="post" action="{{ url_for('expenses_reset') }}" class="reset-row">
+    <form method="post" action="{{ url_for('core.expenses_reset') }}" class="reset-row">
       <button class="btn btn-danger" type="submit" onclick="return confirm('Clear all expenses?');">
         Reset
       </button>

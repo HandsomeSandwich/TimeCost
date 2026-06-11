@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Dinaro{% endblock %}</title>
+  {% block meta %}
+  <meta name="description" content="Dinaro — a pocket-money & classroom economy where kids earn, save, and spend their own currency." />
+  <meta property="og:title" content="Dinaro — earn it, save it, spend it" />
+  <meta property="og:description" content="A pocket-money & classroom economy where kids earn, save, and spend their own currency." />
+  <meta property="og:type" content="website" />
+  {% endblock %}
+
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#4f46e5">
+  <script>
+    // Apply the saved theme before first paint so there's no flash of the default.
+    (function(){ try { var t = localStorage.getItem('dinaro-theme'); if (t && t !== 'piggy') document.documentElement.dataset.theme = t; } catch(e){} })();
+  </script>
+  <link rel="stylesheet" href="{{ url_for('dinaro.static', filename='dinaro.css', v='10') }}">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  {% block head %}{% endblock %}
+</head>
+<body data-view="personality" data-app="dinaro">
+
+  <header class="dinaro-topbar">
+    <div class="dinaro-topbar-inner">
+      <a class="dinaro-brand" href="{{ url_for('dinaro.dinaro_landing') }}" title="Piggy Fox" aria-label="Dinaro — Piggy Fox">
+        <span class="dinaro-brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- ears -->
+            <path d="M6 4 L16 12 L8 16 Z" fill="#f59e0b"/>
+            <path d="M30 4 L20 12 L28 16 Z" fill="#f59e0b"/>
+            <path d="M9 7 L14.5 12 L10.5 14 Z" fill="#fde2a0"/>
+            <path d="M27 7 L21.5 12 L25.5 14 Z" fill="#fde2a0"/>
+            <!-- face -->
+            <path d="M6.5 11 Q18 8.5 29.5 11 L24 23 Q18 30.5 12 23 Z" fill="#fbb03b"/>
+            <!-- muzzle -->
+            <path d="M12 19 Q18 22 24 19 L18 27.5 Q14.5 24.5 12 19 Z" fill="#fff6ef"/>
+            <!-- eyes -->
+            <circle cx="13.6" cy="15.2" r="1.5" fill="#18213a"/>
+            <circle cx="22.4" cy="15.2" r="1.5" fill="#18213a"/>
+            <!-- nose -->
+            <path d="M18 26.5 L16 23.8 H20 Z" fill="#18213a"/>
+          </svg>
+        </span>
+        <span class="dinaro-brand-name">Dinaro</span>
+      </a>
+      <div class="dinaro-topbar-actions" style="display:flex; align-items:center; gap:0.5rem;">
+        <div class="dinaro-theme">
+          <button type="button" class="dinaro-theme-btn" id="themeBtn" aria-haspopup="true" aria-expanded="false" title="Change theme">
+            <i data-lucide="palette"></i> Theme
+          </button>
+          <div class="dinaro-theme-menu" id="themeMenu" role="menu" data-open="false">
+            <button class="dinaro-theme-opt" role="menuitemradio" data-theme="piggy"><span class="dinaro-theme-swatch sw-piggy"></span> Piggy Pop</button>
+            <button class="dinaro-theme-opt" role="menuitemradio" data-theme="candyland"><span class="dinaro-theme-swatch sw-candyland"></span> Candyland</button>
+            <button class="dinaro-theme-opt" role="menuitemradio" data-theme="forest"><span class="dinaro-theme-swatch sw-forest"></span> Forest</button>
+            <button class="dinaro-theme-opt" role="menuitemradio" data-theme="midnight"><span class="dinaro-theme-swatch sw-midnight"></span> Midnight</button>
+            <button class="dinaro-theme-opt" role="menuitemradio" data-theme="arcade"><span class="dinaro-theme-swatch sw-arcade"></span> Arcade</button>
+          </div>
+        </div>
+        {% if timecost_url %}
+        <a class="dinaro-sibling" href="{{ timecost_url }}" title="The grown-ups' version">
+          TimeCost <i data-lucide="arrow-up-right" style="width:14px;height:14px;vertical-align:middle;"></i>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <p class="muted" style="font-size:0.8rem; margin:0 0 0.4rem;">Earn it · save it · spend it</p>
+    <a href="{{ url_for('dinaro.dinaro_landing') }}">Dinaro home</a>
+    {% if timecost_url %}
+    <span class="site-footer-sep">·</span>
+    <a href="{{ timecost_url }}">TimeCost</a>
+    {% endif %}
+  </footer>
+
+  {% if plausible_domain %}
+  <script defer data-domain="{{ plausible_domain }}" src="https://plausible.io/js/script.js"></script>
+  {% endif %}
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+          .catch(err => console.log('SW registration failed:', err));
+      });
+    }
+    lucide.createIcons();
+  </script>
+  <script>
+    // Theme switcher
+    (function(){
+      var btn = document.getElementById('themeBtn');
+      var menu = document.getElementById('themeMenu');
+      if (!btn || !menu) return;
+      var opts = menu.querySelectorAll('.dinaro-theme-opt');
+      var current = (function(){ try { return localStorage.getItem('dinaro-theme') || 'piggy'; } catch(e){ return 'piggy'; } })();
+      function mark(){ opts.forEach(function(o){ o.setAttribute('aria-checked', o.dataset.theme === current ? 'true' : 'false'); }); }
+      function setOpen(open){ menu.setAttribute('data-open', open ? 'true' : 'false'); btn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+      function apply(t){
+        current = t;
+        if (t === 'piggy') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.dataset.theme = t;
+        try { localStorage.setItem('dinaro-theme', t); } catch(e){}
+        mark();
+      }
+      btn.addEventListener('click', function(e){ e.stopPropagation(); setOpen(menu.getAttribute('data-open') !== 'true'); });
+      opts.forEach(function(o){ o.addEventListener('click', function(){ apply(o.dataset.theme); setOpen(false); }); });
+      document.addEventListener('click', function(e){ if (!menu.contains(e.target) && e.target !== btn) setOpen(false); });
+      mark();
+    })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

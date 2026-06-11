@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% block title %}How It Works — TimeCost{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Every formula behind TimeCost — how we convert money into time, calculate budgets, compare wealth, and more." />
+<meta property="og:title" content="How It Works — TimeCost" />
+<meta property="og:description" content="Every formula behind TimeCost — how we convert money into time, calculate budgets, compare wealth, and more." />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://thetimecost.com/static/og-image.png" />
+<meta property="og:url" content="https://thetimecost.com/formulas" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="How It Works — TimeCost" />
+<meta name="twitter:description" content="Every formula behind TimeCost — how we convert money into time, calculate budgets, compare wealth, and more." />
+<meta name="twitter:image" content="https://thetimecost.com/static/og-image.png" />
+{% endblock %}
+
+{% block content %}
+<div class="ref-page">
+
+  <header class="ref-hero">
+    <p class="landing-eyebrow">Reference</p>
+    <h1 class="ref-title">How it works</h1>
+    <p class="ref-sub">
+      Every number in TimeCost comes from a formula you can check.
+      No black boxes — just arithmetic and a clock.
+    </p>
+  </header>
+
+  <!-- ========== CALCULATOR ========== -->
+  <section class="ref-section">
+    <h2 class="ref-section-title">
+      <i data-lucide="calculator" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i>
+      Calculator
+    </h2>
+
+    <div class="ref-card">
+      <h3 class="ref-card-title">Time to afford</h3>
+      <p class="ref-desc">The core conversion. How long you'd need to work to pay for something.</p>
+      <div class="ref-formula">
+        total hours = cost &divide; hourly rate<br>
+        minutes = round(total hours &times; 60)<br>
+        display = minutes &divide; 60 <span class="ref-unit">h</span> &nbsp; minutes mod 60 <span class="ref-unit">m</span>
+      </div>
+      <p class="ref-example">
+        A {{ currency }}300 item at {{ currency }}15/hr = 20h 0m
+      </p>
+    </div>
+
+    <div class="ref-card">
+      <h3 class="ref-card-title">Workday equivalent</h3>
+      <p class="ref-desc">Puts the result in context — how many 8-hour days is that?</p>
+      <div class="ref-formula">
+        workdays = total hours &divide; 8
+      </div>
+      <p class="ref-example">
+        20 hours = about 2.5 workdays
+      </p>
+    </div>
+
+    <div class="ref-card">
+      <h3 class="ref-card-title">Hourly rate from wages</h3>
+      <p class="ref-desc">Converts any pay frequency into an hourly rate. Weekly hours default to 40 if unset.</p>
+      <div class="ref-formula">
+        hours/year = weekly hours &times; 52<br><br>
+        <table class="ref-table">
+          <thead><tr><th>Wage type</th><th>Hourly rate</th></tr></thead>
+          <tbody>
+            <tr><td>Hourly</td><td>as entered</td></tr>
+            <tr><td>Weekly</td><td>amount &divide; weekly hours</td></tr>
+            <tr><td>Bi-weekly</td><td>amount &divide; (weekly hours &times; 2)</td></tr>
+            <tr><td>Monthly</td><td>amount &divide; (hours/year &divide; 12)</td></tr>
+            <tr><td>Annual</td><td>amount &divide; hours/year</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== WEALTH COMPARISON ========== -->
+  <section class="ref-section">
+    <h2 class="ref-section-title">
+      <i data-lucide="bar-chart-3" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i>
+      Wealth comparison
+    </h2>
+
+    <div class="ref-card">
+      <h3 class="ref-card-title">Billionaire time-to-afford</h3>
+      <p class="ref-desc">
+        Compares how long a billionaire would "work" for the same item, using their annual wealth growth
+        spread across a standard working year (2,080 hours = 40 hrs/wk &times; 52 wks).
+      </p>
+      <div class="ref-formula">
+        hourly growth = annual growth &divide; 2,080<br>
+        their time = item cost (USD) &divide; hourly growth
+      </div>
+      <p class="ref-example">
+        If annual growth is $150B, hourly growth &asymp; $72.1M.
+        A $1,000 item takes about 0.05 milliseconds.
+      </p>
+    </div>
+
+    <div class="ref-card">
+      <h3 class="ref-card-title">"Could buy X of yours"</h3>
+      <p class="ref-desc">How many of your work-hours fit into the billionaire's work-hours for the same item.</p>
+      <div class="ref-formula">
+        your hours = cost &divide; your hourly rate<br>
+        their hours = cost &divide; their hourly growth<br>
+        ratio = your hours &divide; their hours
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== BUDGET ========== -->
+  <section class="ref-section">
+    <h2 class="ref-section-title">
+      <i data-lucide="layout-dashboard" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i>
+      Budget
+    </h2>
+
+    <div class="ref-card">
+      <h3 class="ref-card-title">Discretionary income</h3>
+      <p class="ref-desc">What you actually have left after expenses — and what each free hour is worth.</p>
+      <div class="ref-formula">
+        monthly hours = weekly hours &times; 4.33<br>
+        discretionary = monthly income &minus; monthly expenses<br>
+        hourly value = discretionary &divide; monthly hours
+      </div>
+      <p class="ref-example">
+        {{ currency }}3,000 income &minus; {{ currency }}2,200 expenses = {{ currency }}800 discretionary.
+        At 173 hrs/month, each hour is worth {{ currency }}4.62.
+      </p>
+    </div>
+
+    <div class="ref-card">
+      <h3 class="ref-card-title">Savings progress</h3>
+      <div class="ref-formula">
+        remaining = goal &minus; current savings<br>
+        progress % = (current savings &divide; goal) &times; 100
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FREELANCE ========== -->
+  <section class="ref-section">
+    <h2 class="ref-section-title">
+      <i data-lucide="briefcase" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i>
+      Freelance
+    </h2>
+
+    <div class="ref-card">
+      <h3 class="ref-card-title">Effective hourly rate</h3>
+      <p class="ref-desc">Your blended rate across all clients — what you actually earned per hour worked.</p>
+      <div class="ref-formula">
+        total earned = &sum;(hours &times; rate) for each job<br>
+        total hours = &sum; hours for each job<br>
+        effective rate = total earned &divide; total hours
+      </div>
+      <p class="ref-example">
+        10h at {{ currency }}20/hr + 5h at {{ currency }}40/hr = {{ currency }}400 &divide; 15h = {{ currency }}26.67/hr effective
+      </p>
+    </div>
+  </section>
+
+  <!-- ========== DINARO ========== -->
+  <section class="ref-section">
+    <h2 class="ref-section-title">
+      <i data-lucide="coins" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i>
+      Dinaro
+    </h2>
+
+    <div class="ref-card">
+      <h3 class="ref-card-title">Earning dinaro</h3>
+      <p class="ref-desc">Children earn dinaro by completing chores, at the family's hourly rate.</p>
+      <div class="ref-formula">
+        dinaro earned = chore hours &times; family rate per hour
+      </div>
+      <p class="ref-example">
+        0.5 hours at 4 dinaro/hr = 2 dinaro
+      </p>
+    </div>
+
+    <div class="ref-card">
+      <h3 class="ref-card-title">Savings bonus (interest)</h3>
+      <p class="ref-desc">
+        A daily bonus applied when the child's balance meets the family threshold.
+        Compounded once per calendar day.
+      </p>
+      <div class="ref-formula">
+        if balance &ge; threshold:<br>
+        &nbsp;&nbsp;bonus = balance &times; (interest rate &divide; 100)
+      </div>
+      <p class="ref-example">
+        100 dinaro balance at 5% daily = 5 dinaro bonus
+      </p>
+    </div>
+
+    <div class="ref-card">
+      <h3 class="ref-card-title">Parent tax</h3>
+      <p class="ref-desc">
+        A daily percentage deduction simulating bills or subscriptions — teaching that money has upkeep.
+      </p>
+      <div class="ref-formula">
+        tax = balance &times; (tax rate &divide; 100)
+      </div>
+    </div>
+
+    <div class="ref-card">
+      <h3 class="ref-card-title">Recurring expenses</h3>
+      <p class="ref-desc">Fixed daily costs that simulate subscriptions or utilities.</p>
+      <div class="ref-formula">
+        cost = expense hours &times; family rate per hour
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== COUPLES ========== -->
+  <section class="ref-section">
+    <h2 class="ref-section-title">
+      <i data-lucide="heart-handshake" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i>
+      Couples
+    </h2>
+
+    <div class="ref-card">
+      <h3 class="ref-card-title">Invisible work value</h3>
+      <p class="ref-desc">
+        Converts logged household work into a monetary value using the partnership's hourly rate.
+      </p>
+      <div class="ref-formula">
+        hours = minutes &divide; 60<br>
+        value = hours &times; hourly rate
+      </div>
+    </div>
+
+    <div class="ref-card">
+      <h3 class="ref-card-title">Partner split</h3>
+      <p class="ref-desc">Shows each partner's share of total household work for the selected period.</p>
+      <div class="ref-formula">
+        total = partner A minutes + partner B minutes<br>
+        A % = round(A minutes &divide; total &times; 100)<br>
+        B % = 100 &minus; A %
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CONSTANTS ========== -->
+  <section class="ref-section">
+    <h2 class="ref-section-title">
+      <i data-lucide="bookmark" style="width:20px;height:20px;vertical-align:middle;margin-right:6px;"></i>
+      Constants
+    </h2>
+
+    <div class="ref-card">
+      <table class="ref-table">
+        <thead><tr><th>Constant</th><th>Value</th><th>Used in</th></tr></thead>
+        <tbody>
+          <tr><td>Working hours/year</td><td>2,080</td><td>Wage conversions, wealth comparison</td></tr>
+          <tr><td>Weeks/month (approx.)</td><td>4.33</td><td>Budget monthly hours</td></tr>
+          <tr><td>Default work week</td><td>40 hours</td><td>Wage conversions when unset</td></tr>
+          <tr><td>Default workday</td><td>8 hours</td><td>Workday equivalent</td></tr>
+          <tr><td>Dinaro default rate</td><td>4 dinaro/hr</td><td>Chore earnings</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="ref-footer muted">
+    All calculations are deterministic and happen server-side.
+    No AI, no rounding tricks, no hidden fees — just division and multiplication.
+    <br>
+    <a href="{{ url_for('core.calculator') }}" style="color:var(--accent);">Back to the calculator &rarr;</a>
+  </p>
+
+</div>
+{% endblock %}
