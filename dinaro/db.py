@@ -60,7 +60,8 @@ def init_dinaro_db() -> None:
         interest_rate {num_col} NOT NULL DEFAULT 0,
         interest_threshold {num_col} NOT NULL DEFAULT 100,
         tax_rate {num_col} NOT NULL DEFAULT 0,
-        show_leaderboard INTEGER NOT NULL DEFAULT 0
+        show_leaderboard INTEGER NOT NULL DEFAULT 0,
+        grade_mode TEXT NOT NULL DEFAULT 'score'
     )
     """
 
@@ -86,7 +87,8 @@ def init_dinaro_db() -> None:
         view_mode TEXT NOT NULL DEFAULT 'visual',
         last_interest_at TEXT,
         last_tax_at TEXT,
-        approved INTEGER NOT NULL DEFAULT 1
+        approved INTEGER NOT NULL DEFAULT 1,
+        standing {num_col} NOT NULL DEFAULT 0
     )
     """
 
@@ -197,6 +199,54 @@ def init_dinaro_db() -> None:
     ON push_subscriptions (endpoint)
     """
 
+    # --- The Treasury: classroom public-economy module ---
+    dinaro_class_funds_sql = f"""
+    CREATE TABLE IF NOT EXISTS dinaro_class_funds (
+        id {id_col},
+        family_id INTEGER NOT NULL,
+        title TEXT NOT NULL DEFAULT 'The Treasury',
+        goal {num_col} NOT NULL DEFAULT 0,
+        raised {num_col} NOT NULL DEFAULT 0,
+        match_num INTEGER NOT NULL DEFAULT 0,
+        match_den INTEGER NOT NULL DEFAULT 1,
+        tax_type TEXT NOT NULL DEFAULT 'flat',
+        tax_amount {num_col} NOT NULL DEFAULT 0,
+        penalty_no_vote INTEGER NOT NULL DEFAULT 0,
+        penalty_interest {num_col} NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'collecting',
+        created_at TEXT NOT NULL,
+        closed_at TEXT
+    )
+    """
+
+    dinaro_fund_bills_sql = f"""
+    CREATE TABLE IF NOT EXISTS dinaro_fund_bills (
+        id {id_col},
+        fund_id INTEGER NOT NULL,
+        child_id INTEGER NOT NULL,
+        amount_owed {num_col} NOT NULL DEFAULT 0,
+        amount_paid {num_col} NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+    )
+    """
+
+    dinaro_fund_options_sql = f"""
+    CREATE TABLE IF NOT EXISTS dinaro_fund_options (
+        id {id_col},
+        fund_id INTEGER NOT NULL,
+        label TEXT NOT NULL
+    )
+    """
+
+    dinaro_fund_votes_sql = f"""
+    CREATE TABLE IF NOT EXISTS dinaro_fund_votes (
+        id {id_col},
+        fund_id INTEGER NOT NULL,
+        child_id INTEGER NOT NULL,
+        option_id INTEGER NOT NULL
+    )
+    """
+
     with engine.begin() as conn:
         conn.execute(text(dinaro_families_sql))
         conn.execute(text(dinaro_parents_sql))
@@ -210,6 +260,10 @@ def init_dinaro_db() -> None:
         conn.execute(text(dinaro_group_rewards_sql))
         conn.execute(text(push_subscriptions_sql))
         conn.execute(text(push_subscriptions_idx))
+        conn.execute(text(dinaro_class_funds_sql))
+        conn.execute(text(dinaro_fund_bills_sql))
+        conn.execute(text(dinaro_fund_options_sql))
+        conn.execute(text(dinaro_fund_votes_sql))
 
         # --- Column migrations for older databases ---
         if engine.dialect.name == "sqlite":
@@ -258,6 +312,13 @@ def init_dinaro_db() -> None:
             col_names = {c["name"] for c in cols}
             if "show_leaderboard" not in col_names:
                 conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN show_leaderboard INTEGER NOT NULL DEFAULT 0"))
+            if "grade_mode" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN grade_mode TEXT NOT NULL DEFAULT 'score'"))
+
+            cols = conn.execute(text("PRAGMA table_info(dinaro_children)")).mappings().all()
+            col_names = {c["name"] for c in cols}
+            if "standing" not in col_names:
+                conn.execute(text("ALTER TABLE dinaro_children ADD COLUMN standing REAL NOT NULL DEFAULT 0"))
         else:
             res = conn.execute(text("""
                 SELECT column_name FROM information_schema.columns
@@ -320,3 +381,17 @@ def init_dinaro_db() -> None:
             """)).mappings().first()
             if not res:
                 conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN show_leaderboard INTEGER NOT NULL DEFAULT 0"))
+
+            res = conn.execute(text("""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name='dinaro_families' AND column_name='grade_mode'
+            """)).mappings().first()
+            if not res:
+                conn.execute(text("ALTER TABLE dinaro_families ADD COLUMN grade_mode TEXT NOT NULL DEFAULT 'score'"))
+
+            res = conn.execute(text("""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name='dinaro_children' AND column_name='standing'
+            """)).mappings().first()
+            if not res:
+                conn.execute(text("ALTER TABLE dinaro_children ADD COLUMN standing DOUBLE PRECISION NOT NULL DEFAULT 0"))
