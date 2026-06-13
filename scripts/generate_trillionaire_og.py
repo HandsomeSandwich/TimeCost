@@ -94,8 +94,8 @@ def cherry(cx, cy):
 cherry(x0 - 6, ry + 6)
 
 # --- punchline + footer ---
-d.text((W // 2, ry + 34), "A loaf of bread of YOUR minutes = a few dozen homes of THEIRS.",
-       font=arialb(27), fill=CREAM, anchor="ma")
+d.text((W // 2, ry + 34), "The minutes you work for a loaf of bread? They earn dozens of homes.",
+       font=arialb(25), fill=CREAM, anchor="ma")
 d.text((W // 2, ry + 74), "thetimecost.com / trillionaire", font=arial(22), fill=GOLD, anchor="ma")
 
 out = os.path.join(os.path.dirname(__file__), os.pardir, "static", "og-trillionaire.png")
