@@ -219,6 +219,7 @@
         <p class="trill-line">
           <i data-lucide="hourglass" style="width:15px;height:15px;vertical-align:-2px;margin-right:4px;"></i>
           The first trillionaire <span class="muted">(projected)</span> would earn this in <strong>{{ trill.by_growth }}</strong>.
+          <a href="{{ url_for('core.trillionaire') }}" style="white-space:nowrap;">See the sarcastic breakdown &rarr;</a>
         </p>
         {% endif %}
         {% set share_url = 'https://thetimecost.com/calculate' %}

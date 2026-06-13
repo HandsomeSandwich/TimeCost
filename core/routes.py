@@ -92,6 +92,7 @@ def sitemap():
         ("/dinaro",     "weekly",  "0.8"),
         ("/support",    "monthly", "0.5"),
         ("/formulas",   "monthly", "0.6"),
+        ("/trillionaire", "monthly", "0.6"),
     ]
     xml_lines = ['<?xml version="1.0" encoding="UTF-8"?>',
                  '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
@@ -135,6 +136,71 @@ def support():
 @core_bp.get("/formulas")
 def formulas():
     return render_template("formulas.html")
+
+
+def _humanize_big(n: float) -> str:
+    n = float(n)
+    if n >= 1e12:
+        return f"{n/1e12:.1f} trillion"
+    if n >= 1e9:
+        return f"{n/1e9:.1f} billion"
+    if n >= 1e6:
+        return f"{n/1e6:.1f} million"
+    if n >= 1e3:
+        return f"{n/1e3:,.0f} thousand"
+    return f"{n:,.0f}"
+
+
+# Projected first-trillionaire annual income (hypothetical $1T-er), USD.
+TRILLIONAIRE_GROWTH_USD = 250_000_000_000
+
+
+@core_bp.get("/trillionaire")
+def trillionaire():
+    """Sarcastic campaign page: your groceries vs. what the first trillionaire
+    pockets in the exact same slice of your working life."""
+    currency = _currency()
+    hourly = get_effective_hourly_rate()
+    wage_q = request.args.get("wage")
+    if wage_q:
+        hourly = safe_float(wage_q, 0.0) or hourly
+    used_default = False
+    if not hourly or hourly <= 0:
+        hourly = 18.0  # ~UK median hourly, so the page works before you set a wage
+        used_default = True
+
+    usd_rate = CURRENCY_TO_USD.get(currency, 1.0)
+    trill_hourly = (TRILLIONAIRE_GROWTH_USD / WORKING_HOURS_PER_YEAR) / usd_rate
+
+    basket = [
+        {"emoji": "🥛", "name": "a gallon of milk",   "price": 4.50},
+        {"emoji": "🥚", "name": "a dozen eggs",        "price": 2.50},
+        {"emoji": "🍞", "name": "a loaf of bread",     "price": 1.40},
+        {"emoji": "🛒", "name": "a weekly food shop",  "price": 85.00},
+        {"emoji": "🏠", "name": "a month's rent",      "price": 1300.00},
+    ]
+    rows = []
+    for it in basket:
+        your_hours = it["price"] / hourly
+        earns = trill_hourly * your_hours
+        rows.append({
+            **it,
+            "minutes": your_hours * 60.0,
+            "pct_workday": your_hours / 8.0 * 100.0,
+            "earns": earns,
+            "earns_h": _humanize_big(earns),
+            # Same loot expressed in average family homes — varies per item and
+            # lands harder than "N of the same grocery" (which is a flat ratio).
+            "homes_h": _humanize_big(earns / 290000.0),
+        })
+
+    return render_template(
+        "trillionaire.html",
+        currency=currency,
+        hourly=hourly,
+        used_default=used_default,
+        rows=rows,
+    )
 
 
 @core_bp.route("/subscribe", methods=["POST"])

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Trillionaire Time — TimeCost{% endblock %}
+{% block meta %}
+<meta name="description" content="Your groceries cost you minutes of your life. Here's what the world's first trillionaire pockets in those exact same minutes." />
+<meta property="og:title" content="Trillionaire Time" />
+<meta property="og:description" content="A loaf of bread costs you a few minutes. The first trillionaire earns a few million in the same breath. Anyway." />
+<meta property="og:type" content="website" />
+{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header" style="text-align:center;">
+    <p class="muted" style="letter-spacing:.08em; text-transform:uppercase; font-size:.75rem;">Trillionaire Time</p>
+    <h1>You buy milk. They buy&hellip; well.</h1>
+    <p class="muted" style="max-width:42rem; margin:0 auto;">
+      Everyday stuff costs you minutes of your one finite life. Here's what the world's
+      (projected, hypothetical, surely-any-day-now) <strong>first trillionaire</strong> rakes in
+      during those <em>exact same minutes</em>. No notes.
+    </p>
+  </header>
+
+  <section class="panel" style="margin-top:14px;">
+    <form method="get" action="{{ url_for('core.trillionaire') }}" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center;">
+      <label for="wage" style="font-weight:600;">Your wage ({{ currency }}/hour):</label>
+      <input id="wage" name="wage" type="number" step="0.5" min="0" value="{{ '%.2f'|format(hourly) }}" style="width:110px;">
+      <button class="btn btn-primary" type="submit">Recalculate my misery</button>
+    </form>
+    {% if used_default %}
+    <p class="muted" style="text-align:center; font-size:.82rem; margin:8px 0 0;">
+      Using a ballpark {{ currency }}18/hour since you haven't set yours. Pop your real number in above.
+    </p>
+    {% endif %}
+  </section>
+
+  {% for row in rows %}
+  <section class="panel" style="margin-top:14px;">
+    <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
+      <div style="font-size:2.4rem; line-height:1;">{{ row.emoji }}</div>
+      <div style="flex:1 1 240px;">
+        <h2 class="card-title" style="margin:0; text-transform:capitalize;">{{ row.name }} <span class="muted" style="font-weight:400;">· {{ currency }}{{ '%.2f'|format(row.price) }}</span></h2>
+        <p style="margin:6px 0 0;">
+          Costs <strong>you</strong>:
+          {% if row.minutes >= 1 %}{{ '%.0f'|format(row.minutes) }} minutes{% else %}under a minute{% endif %}
+          of work <span class="muted">({{ '%.1f'|format(row.pct_workday) }}% of your working day)</span>.
+        </p>
+        <p style="margin:6px 0 0;">
+          In those same minutes, the first trillionaire banks
+          <strong>{{ currency }}{{ row.earns_h }}</strong> — about
+          <strong>{{ row.homes_h }}</strong> family homes.
+        </p>
+      </div>
+    </div>
+  </section>
+  {% endfor %}
+
+  <section class="panel" style="margin-top:14px; text-align:center;">
+    <p style="margin:0 0 12px;">
+      Funny how "time is money" hits different depending on the time and the money.
+    </p>
+    {% set lead = rows[0] %}
+    {% set share_text = 'A gallon of milk costs me ' ~ ('%.0f'|format(lead.minutes)) ~ ' minutes of my life. In those same minutes the first trillionaire banks ' ~ currency ~ lead.earns_h ~ '. Time is the real currency.' %}
+    {% set share_url = 'https://thetimecost.com/trillionaire' %}
+    <div class="share-row" style="justify-content:center;">
+      <a class="btn share-btn share-social" href="https://x.com/intent/post?text={{ (share_text ~ ' — ' ~ share_url) | urlencode }}" target="_blank" rel="noopener" title="Share on X">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </a>
+      <a class="btn share-btn share-social" href="https://www.facebook.com/sharer/sharer.php?u={{ share_url | urlencode }}" target="_blank" rel="noopener" title="Share on Facebook">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      </a>
+      <a class="btn btn-primary" href="{{ url_for('core.calculator') }}">See what your stuff really costs &rarr;</a>
+    </div>
+  </section>
+</div>
+{% endblock %}
