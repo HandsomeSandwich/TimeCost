@@ -380,13 +380,12 @@ def dinaro_landing():
 
 @dinaro_bp.route("/setup", methods=["GET", "POST"])
 def dinaro_setup():
-    conn = get_connection()
-    try:
-        existing = conn.execute(text("SELECT COUNT(*) AS c FROM dinaro_parents")).mappings().first()
-        if existing and existing["c"] > 0:
-            return redirect(url_for("dinaro.dinaro_parent_login"))
-    finally:
-        conn.close()
+    # Anyone can create a new class/family here. (The old code blocked setup
+    # whenever *any* parent existed in the whole database, so only the very
+    # first account could ever sign up.) If you're already signed in, go to
+    # your dashboard — additional classes are created via "+ New Class".
+    if session.get("dinaro_parent_id"):
+        return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
     if request.method == "POST":
         family_name = (request.form.get("family_name") or "").strip()
@@ -411,10 +410,10 @@ def dinaro_setup():
             family_id = row["id"] if row else None
             if family_id is None:
                 family_id = conn.execute(text("SELECT last_insert_rowid() AS id")).mappings().first()["id"]
-            conn.execute(
+            prow = conn.execute(
                 text(
                     "INSERT INTO dinaro_parents (family_id, name, pin_hash, pin_salt) "
-                    "VALUES (:family_id, :name, :pin_hash, :pin_salt)"
+                    "VALUES (:family_id, :name, :pin_hash, :pin_salt) RETURNING id"
                 ),
                 {
                     "family_id": family_id,
@@ -422,49 +421,94 @@ def dinaro_setup():
                     "pin_hash": pin_hash,
                     "pin_salt": pin_salt,
                 },
-            )
+            ).mappings().first()
+            parent_id = prow["id"] if prow else None
+            if parent_id is None:
+                parent_id = conn.execute(text("SELECT last_insert_rowid() AS id")).mappings().first()["id"]
 
-        return redirect(url_for("dinaro.dinaro_parent_login"))
+        # Sign the new teacher straight in — no re-login, no picking from a list.
+        session["dinaro_parent_id"] = int(parent_id)
+        return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
     return render_template("dinaro_setup.html")
 
 
-@dinaro_bp.route("/parent/login", methods=["GET", "POST"])
-def dinaro_parent_login():
+def _dinaro_parents_in_family(family_code: str):
+    """Parents scoped to one class/family code (never the whole database)."""
     conn = get_connection()
     try:
-        parents = conn.execute(
-            text("SELECT id, name FROM dinaro_parents ORDER BY name ASC")
+        return conn.execute(
+            text(
+                "SELECT p.id, p.name FROM dinaro_parents p "
+                "JOIN dinaro_families f ON f.id = p.family_id "
+                "WHERE f.family_code = :code ORDER BY p.name ASC"
+            ),
+            {"code": family_code},
         ).mappings().all()
     finally:
         conn.close()
 
-    if not parents:
-        return redirect(url_for("dinaro.dinaro_setup"))
+
+@dinaro_bp.route("/parent/login", methods=["GET", "POST"])
+def dinaro_parent_login():
+    # Step out and re-enter a different code.
+    if request.args.get("reset"):
+        session.pop("dinaro_family_code", None)
+        return redirect(url_for("dinaro.dinaro_parent_login"))
+
+    family_code = session.get("dinaro_family_code")
 
     if request.method == "POST":
+        action = request.form.get("action")
+
+        if action == "find_family":
+            code = (request.form.get("family_code") or "").strip().upper()
+            conn = get_connection()
+            try:
+                fam = conn.execute(
+                    text("SELECT id FROM dinaro_families WHERE family_code = :code"),
+                    {"code": code},
+                ).mappings().first()
+            finally:
+                conn.close()
+            if fam:
+                session["dinaro_family_code"] = code
+                return redirect(url_for("dinaro.dinaro_parent_login"))
+            return render_template("dinaro_parent_login.html", error="Class code not found.")
+
+        # action == "login" — verify within this family only
+        if not family_code:
+            return redirect(url_for("dinaro.dinaro_parent_login"))
+        parents = _dinaro_parents_in_family(family_code)
         parent_id = request.form.get("parent_id")
         pin = (request.form.get("parent_pin") or "").strip()
         if not parent_id or not pin:
-            return render_template("dinaro_parent_login.html", parents=parents, error="Enter your PIN.")
+            return render_template("dinaro_parent_login.html", parents=parents, family_code=family_code, error="Enter your PIN.")
 
         conn = get_connection()
         try:
             row = conn.execute(
-                text("SELECT id, pin_hash, pin_salt FROM dinaro_parents WHERE id = :id"),
-                {"id": parent_id},
+                text(
+                    "SELECT p.id, p.pin_hash, p.pin_salt FROM dinaro_parents p "
+                    "JOIN dinaro_families f ON f.id = p.family_id "
+                    "WHERE p.id = :id AND f.family_code = :code"
+                ),
+                {"id": parent_id, "code": family_code},
             ).mappings().first()
         finally:
             conn.close()
 
         if not row or not _verify_pin(pin, row["pin_hash"], row["pin_salt"]):
-            return render_template("dinaro_parent_login.html", parents=parents, error="Wrong PIN.")
+            return render_template("dinaro_parent_login.html", parents=parents, family_code=family_code, error="Wrong PIN.")
 
         session["dinaro_parent_id"] = int(row["id"])
         session.pop("dinaro_child_id", None)
         return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
-    return render_template("dinaro_parent_login.html", parents=parents)
+    # GET
+    if not family_code:
+        return render_template("dinaro_parent_login.html")  # step 1: enter class code
+    return render_template("dinaro_parent_login.html", parents=_dinaro_parents_in_family(family_code), family_code=family_code)
 
 
 @dinaro_bp.post("/parent/logout")
@@ -1583,6 +1627,23 @@ def dinaro_parent_decline_request(request_id: int):
         notify_child(_dinaro_child_family_id(int(req_row["child_id"])), int(req_row["child_id"]),
                      "Request declined", "A parent declined your request. Check your dashboard.")
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+
+
+@dinaro_bp.get("/join/<code>")
+def dinaro_join(code):
+    """Shareable join link (and QR target): pre-fills the class code so a
+    student lands straight on name + PIN instead of typing the code."""
+    code = (code or "").strip().upper()
+    conn = get_connection()
+    try:
+        fam = conn.execute(
+            text("SELECT id FROM dinaro_families WHERE family_code = :c"), {"c": code}
+        ).mappings().first()
+    finally:
+        conn.close()
+    if fam:
+        session["dinaro_family_code"] = code
+    return redirect(url_for("dinaro.dinaro_child_login"))
 
 
 @dinaro_bp.route("/child/login", methods=["GET", "POST"])

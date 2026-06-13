@@ -4,6 +4,7 @@
 {% block head %}
   {{ super() }}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -17,6 +18,20 @@
       <div class="pill" style="margin-top: 8px; background: var(--accent-soft); color: var(--accent); font-weight: 700;">
         <i data-lucide="shield" style="width:14px; height:14px; vertical-align:middle; margin-right:4px;"></i>
         {% if family.is_classroom %}Classroom Login Code{% else %}Family Login Code{% endif %}: {{ family.family_code }}
+      </div>
+      <div style="margin-top:10px;">
+        <button type="button" class="btn btn-sm" id="qrToggle">
+          <i data-lucide="qr-code" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>
+          Join QR &amp; link
+        </button>
+        <div id="qrShare" style="display:none; margin-top:10px; padding:14px; border:2px solid var(--border); border-radius:14px; max-width:320px; background:var(--panel);">
+          <div id="qrcode" style="display:flex; justify-content:center;"></div>
+          <p class="muted" style="font-size:0.82rem; margin:10px 0 0;">
+            {% if family.is_classroom %}Students{% else %}Kids{% endif %} scan this, or open
+            <a href="{{ url_for('dinaro.dinaro_join', code=family.family_code, _external=True) }}">this link</a> —
+            then just pick a name &amp; PIN.
+          </p>
+        </div>
       </div>
     {% endif %}
   </header>
@@ -51,16 +66,64 @@
   </div>
   {% endif %}
 
+  {% set has_students = kids and kids|length > 0 %}
+  {% set has_tasks = chores and chores|length > 0 %}
+  {% set has_rewards = spendables and spendables|length > 0 %}
+  {% if not (has_students and has_tasks) %}
+  <section class="panel" style="margin-top:14px; border: 2px solid var(--accent-2, var(--accent));">
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="rocket" style="color:var(--accent-2, var(--accent));"></i>
+      Get your {% if family.is_classroom %}class{% else %}family{% endif %} started
+    </h2>
+    <p class="muted" style="margin-top:-4px;">A few quick steps and you're up and running.</p>
+    <ol class="onboard-steps">
+      <li class="{{ 'done' if has_students else '' }}">
+        <span class="step-num">{% if has_students %}&check;{% else %}1{% endif %}</span>
+        <a href="#kids">Add your first {% if family.is_classroom %}student{% else %}child{% endif %}</a>
+      </li>
+      <li class="{{ 'done' if has_tasks else '' }}">
+        <span class="step-num">{% if has_tasks %}&check;{% else %}2{% endif %}</span>
+        <a href="#chores">Add a {% if family.is_classroom %}task{% else %}chore{% endif %} they can earn dinaro for</a>
+      </li>
+      <li class="{{ 'done' if has_rewards else '' }}">
+        <span class="step-num">{% if has_rewards %}&check;{% else %}3{% endif %}</span>
+        <a href="#rewards">Add a reward to spend on</a> <span class="muted" style="font-weight:400;">(optional)</span>
+      </li>
+      <li>
+        <span class="step-num">4</span>
+        <span>Share your code <strong>{{ family.family_code }}</strong> so {% if family.is_classroom %}students{% else %}kids{% endif %} can log in</span>
+      </li>
+    </ol>
+  </section>
+  {% endif %}
+
   <section class="panel" style="margin-top:14px; border: 2px solid var(--accent);">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
-      <i data-lucide="trending-up" style="color:var(--accent);"></i> Wealth Trends (7 Days)
+      <i data-lucide="clock" style="color:var(--accent);"></i> Pending {% if family.is_classroom %}task{% else %}chore{% endif %} approvals
     </h2>
-    <div style="height: 250px; margin-top: 10px;">
-      <canvas id="trendsChart"></canvas>
-    </div>
+    {% for log in pending_logs %}
+      <div class="card" style="margin-bottom:10px;">
+        <div style="font-weight:600;">{{ log.child_name }} · {{ log.chore_title or "Task" }}</div>
+        <div class="muted">
+          Date: {{ log.work_date }} · Requested: {{ log.requested_hours }} hr (overtime {{ log.overtime_hours }} hr)
+        </div>
+        <div class="grid-2" style="margin-top:8px;">
+          <form method="post" action="{{ url_for('dinaro.dinaro_parent_approve_log', log_id=log.id) }}" class="inline">
+            <label class="sr-only" for="approveHours{{ log.id }}">Approved hours</label>
+            <input id="approveHours{{ log.id }}" type="number" name="approved_hours" step="0.25" value="{{ log.requested_hours }}">
+            <button class="btn btn-primary" type="submit">Approve</button>
+          </form>
+          <form method="post" action="{{ url_for('dinaro.dinaro_parent_deny_log', log_id=log.id) }}" class="inline">
+            <button class="btn btn-danger" type="submit">Deny</button>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <p class="muted">Nothing waiting right now.</p>
+    {% endfor %}
   </section>
 
-  {% if family.is_classroom and pending_enrollments %}
+{% if family.is_classroom and pending_enrollments %}
   <section class="panel" style="margin-top:14px; border: 2px solid #f1c40f;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="user-plus" style="color:#f1c40f;"></i> Pending Enrollments ({{ pending_enrollments|length }})
@@ -278,7 +341,7 @@
     </form>
   </section>
 
-  <section class="panel" style="margin-top:14px;">
+  <section id="kids" class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="users" style="color:var(--accent);"></i> {% if family.is_classroom %}Students{% else %}Kids{% endif %}
       {% if kids %}<span class="muted" style="font-size:0.8rem; font-weight:400;">({{ kids|length }})</span>{% endif %}
@@ -431,7 +494,7 @@
     </div>
   </section>
 
-  <section class="panel" style="margin-top:14px;">
+  <section id="chores" class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="hammer" style="color:var(--accent);"></i> {% if family.is_classroom %}Tasks & Responsibilities{% else %}Chores{% endif %}
     </h2>
@@ -533,7 +596,7 @@
     {% endif %}
   </section>
 
-  <section class="panel" style="margin-top:14px;">
+  <section id="rewards" class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="gift" style="color:var(--accent);"></i> {% if family.is_classroom %}Rewards & Privileges{% else %}Spendable Items (Rewards){% endif %}
     </h2>
@@ -657,33 +720,7 @@
   </section>
   {% endif %}
 
-  <section class="panel" style="margin-top:14px;">
-    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
-      <i data-lucide="clock" style="color:var(--accent);"></i> Pending {% if family.is_classroom %}task{% else %}chore{% endif %} approvals
-    </h2>
-    {% for log in pending_logs %}
-      <div class="card" style="margin-bottom:10px;">
-        <div style="font-weight:600;">{{ log.child_name }} · {{ log.chore_title or "Task" }}</div>
-        <div class="muted">
-          Date: {{ log.work_date }} · Requested: {{ log.requested_hours }} hr (overtime {{ log.overtime_hours }} hr)
-        </div>
-        <div class="grid-2" style="margin-top:8px;">
-          <form method="post" action="{{ url_for('dinaro.dinaro_parent_approve_log', log_id=log.id) }}" class="inline">
-            <label class="sr-only" for="approveHours{{ log.id }}">Approved hours</label>
-            <input id="approveHours{{ log.id }}" type="number" name="approved_hours" step="0.25" value="{{ log.requested_hours }}">
-            <button class="btn btn-primary" type="submit">Approve</button>
-          </form>
-          <form method="post" action="{{ url_for('dinaro.dinaro_parent_deny_log', log_id=log.id) }}" class="inline">
-            <button class="btn btn-danger" type="submit">Deny</button>
-          </form>
-        </div>
-      </div>
-    {% else %}
-      <p class="muted">Nothing waiting right now.</p>
-    {% endfor %}
-  </section>
-
-  <section class="panel" style="margin-top:14px;">
+<section class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="shopping-cart" style="color:var(--accent);"></i> Requests
     </h2>
@@ -774,6 +811,15 @@
       {% else %}
         <p class="muted">No goals yet.</p>
       {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top:14px; border: 2px solid var(--accent);">
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="trending-up" style="color:var(--accent);"></i> Wealth Trends (7 Days)
+    </h2>
+    <div style="height: 250px; margin-top: 10px;">
+      <canvas id="trendsChart"></canvas>
     </div>
   </section>
 
@@ -933,6 +979,28 @@
         }
       });
     });
+  </script>
+  <script>
+    // Join QR & link toggle — generate the QR lazily on first open.
+    (function () {
+      var toggle = document.getElementById('qrToggle');
+      var box = document.getElementById('qrShare');
+      var holder = document.getElementById('qrcode');
+      if (!toggle || !box || !holder) return;
+      var made = false;
+      var joinUrl = "{{ url_for('dinaro.dinaro_join', code=family.family_code, _external=True) }}";
+      toggle.addEventListener('click', function () {
+        var show = box.style.display === 'none';
+        box.style.display = show ? 'block' : 'none';
+        if (show && !made && typeof qrcode === 'function') {
+          var qr = qrcode(0, 'M');
+          qr.addData(joinUrl);
+          qr.make();
+          holder.innerHTML = qr.createImgTag(5, 8);
+          made = true;
+        }
+      });
+    })();
   </script>
   <script src="{{ url_for('static', filename='dinaro-push.js') }}" defer></script>
 </div>

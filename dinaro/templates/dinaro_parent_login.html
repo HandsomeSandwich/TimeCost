@@ -4,35 +4,59 @@
 {% block content %}
 <div class="page">
   <header class="page-header">
-    <h1>Parent login</h1>
-    <p class="muted">Use your parent PIN to enter.</p>
+    <h1>Parent / teacher login</h1>
+    <p class="muted">
+      {% if family_code %}Pick your name and enter your PIN.{% else %}Enter your class code to find your account.{% endif %}
+    </p>
   </header>
 
   <section class="panel">
     {% if error %}
-      <div class="callout">{{ error }}</div>
+      <div class="callout" style="background:#fde8e8; border:2px solid #f5b5b5; color:#8a1f1f; border-radius:14px; padding:10px 14px; margin-bottom:12px;">{{ error }}</div>
     {% endif %}
-    <form method="post" class="stack">
-      <div class="field">
-        <label for="parentSelect">Parent</label>
-        <select id="parentSelect" name="parent_id" required>
-          <option value="">Choose a parent</option>
-          {% for p in parents %}
-            <option value="{{ p.id }}">{{ p.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
 
-      <div class="field">
-        <label for="parentPin">PIN</label>
-        <input id="parentPin" type="password" name="parent_pin" inputmode="numeric" required>
-      </div>
+    {% if not family_code %}
+      {# Step 1: class / family code #}
+      <form method="post" class="stack">
+        <input type="hidden" name="action" value="find_family">
+        <div class="field">
+          <label for="familyCode">Class / family code</label>
+          <input id="familyCode" name="family_code" required placeholder="e.g. ABC123"
+                 autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;">
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Continue</button>
+          <a class="btn" href="{{ url_for('dinaro.dinaro_landing') }}">Back</a>
+        </div>
+      </form>
+      <p class="muted" style="margin-top:14px; font-size:0.85rem;">
+        New here? <a href="{{ url_for('dinaro.dinaro_setup') }}">Set up a class</a>.
+      </p>
+    {% else %}
+      {# Step 2: pick your name (scoped to this class) + PIN #}
+      <form method="post" class="stack">
+        <input type="hidden" name="action" value="login">
+        <div class="field">
+          <label for="parentSelect">Name</label>
+          <select id="parentSelect" name="parent_id" required>
+            <option value="">Choose your name</option>
+            {% for p in parents %}
+              <option value="{{ p.id }}">{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-      <div class="actions">
-        <button class="btn btn-primary" type="submit">Enter</button>
-        <a class="btn" href="{{ url_for('dinaro.dinaro_landing') }}">Back</a>
-      </div>
-    </form>
+        <div class="field">
+          <label for="parentPin">PIN</label>
+          <input id="parentPin" type="password" name="parent_pin" inputmode="numeric" required>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Enter</button>
+          <a class="btn" href="{{ url_for('dinaro.dinaro_parent_login', reset=1) }}">Different code</a>
+        </div>
+      </form>
+    {% endif %}
   </section>
 </div>
 {% endblock %}
