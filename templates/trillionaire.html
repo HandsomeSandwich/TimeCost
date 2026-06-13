@@ -16,173 +16,165 @@
 {% endblock %}
 
 {% block head %}
-<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <style>
-  /* ===== Caravaggio: a dark, spotlit theatre ===== */
+  /* ===== Caravaggio: a dark, spotlit stage ===== */
   .trill-stage{
     position: relative;
     margin-top: 8px;
     border-radius: 28px;
-    padding: clamp(28px, 6vw, 70px) clamp(16px, 5vw, 52px) 52px;
-    background: radial-gradient(115% 80% at 50% -8%, #3a2c1c 0%, #1d150d 48%, #0b0805 100%);
-    color: #f2e6cf;
+    padding: clamp(28px, 6vw, 64px) clamp(16px, 5vw, 56px) 48px;
+    background: radial-gradient(120% 85% at 50% -10%, #34281a 0%, #1a130c 50%, #080604 100%);
+    color: #f4ead4;
     overflow: hidden;
-    box-shadow: 0 34px 90px rgba(0,0,0,.5), inset 0 0 140px rgba(0,0,0,.55);
-    font-family: Georgia, 'Times New Roman', serif;
+    box-shadow: 0 34px 90px rgba(0,0,0,.5), inset 0 0 150px rgba(0,0,0,.6);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
   }
-  .trill-stage::before{ /* the spotlight from above */
+  .trill-stage::before{ /* spotlight from above */
     content:""; position:absolute; inset:0; pointer-events:none;
-    background: radial-gradient(42% 32% at 50% 6%, rgba(255,212,120,.26), transparent 72%);
+    background: radial-gradient(46% 36% at 50% 4%, rgba(255,210,118,.30), transparent 70%);
   }
-  .trill-stage > * { position: relative; }
+  .trill-stage > *{ position: relative; }
 
-  .trill-hero{ text-align:center; }
-  .trill-eyebrow{
-    font-family:'Caveat',cursive; font-weight:700; font-size:1.6rem; color:#ffcf5c;
-    display:inline-block; transform:rotate(-2.5deg);
+  /* ===== Hero ===== */
+  .trill-hero{ text-align:center; max-width:48rem; margin:0 auto; }
+  .trill-kicker{
+    font-family:'Caveat',cursive; font-weight:700; font-size:1.7rem; color:#ffcf5c;
+    display:inline-block; transform:rotate(-3deg);
   }
   .trill-title{
-    font-family:'Shrikhand', serif; font-weight:400;
-    font-size: clamp(2.1rem, 7vw, 3.9rem); line-height:1.02; margin:.2rem 0 0;
-    color:#fff6e6;
-    text-shadow: 3px 3px 0 #ff2d95, 6px 6px 0 #2d8cff, 9px 9px 18px rgba(0,0,0,.55);
+    font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase;
+    font-size: clamp(2.6rem, 10vw, 5.4rem); line-height:.92; letter-spacing:.005em;
+    margin:.15rem 0 0; color:#fff6e6;
+    text-shadow: 4px 4px 0 #ff2d95, 8px 8px 0 #2d8cff;
   }
-  .trill-sub{ max-width:42rem; margin:16px auto 0; color:#e3d3b3; font-size:1.02rem; }
-  .trill-hand{ font-family:'Caveat',cursive; font-weight:700; color:#ffd400; font-size:1.35rem; }
+  .trill-sub{ margin:18px auto 0; color:#e6d7b8; font-size:1.05rem; line-height:1.6; }
+  .trill-hand{ font-family:'Caveat',cursive; font-weight:700; color:#ffd400; font-size:1.4rem; }
 
-  /* ===== Engelbreit: a cheery checkerboard ribbon ===== */
-  .trill-checker{
-    height:14px; margin:22px 0;
-    background-color:#f7ecd6;
-    background-image:
-      conic-gradient(#1a120a 90deg, transparent 90deg 180deg, #1a120a 180deg 270deg, transparent 270deg);
-    background-size:16px 16px;
-    border-radius:3px;
-  }
-
-  /* ===== the wage control, framed & cozy ===== */
+  /* ===== wage control: dark glass, pop accent ===== */
   .trill-wage{
     display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center;
-    background:#f7ecd6; color:#241708; border:3px solid #1a120a; border-radius:16px;
-    padding:14px 18px; max-width:520px; margin:0 auto;
-    box-shadow: 0 14px 34px rgba(0,0,0,.45);
+    background:rgba(255,255,255,.06); border:2px solid rgba(255,255,255,.16);
+    border-radius:14px; padding:12px 16px; max-width:480px; margin:26px auto 0;
+    backdrop-filter: blur(4px);
   }
-  .trill-wage label{ font-weight:700; }
+  .trill-wage label{ font-weight:700; font-size:.92rem; color:#f4ead4; }
   .trill-wage input{
-    width:108px; padding:8px 10px; border:2px solid #1a120a; border-radius:10px;
-    background:#fff; color:#241708; font:inherit; font-weight:700;
+    width:96px; padding:8px 10px; border:2px solid rgba(255,255,255,.25); border-radius:10px;
+    background:#0d0a06; color:#fff6e6; font:inherit; font-weight:800;
   }
   .trill-btn{
-    font-family:'Shrikhand',serif; font-weight:400; cursor:pointer;
-    background:#ff2d95; color:#fff; border:3px solid #1a120a; border-radius:12px;
-    padding:9px 16px; box-shadow:3px 3px 0 #1a120a; text-decoration:none;
+    font-family:'Anton',sans-serif; font-weight:400; letter-spacing:.03em; cursor:pointer;
+    text-transform:uppercase; font-size:.92rem;
+    background:#ff2d95; color:#fff; border:none; border-radius:11px;
+    padding:11px 16px; box-shadow:0 0 0 2px #ff2d95, 4px 4px 0 rgba(0,0,0,.4);
   }
-  .trill-btn:hover{ transform:translate(-1px,-1px); box-shadow:4px 4px 0 #1a120a; }
-  .trill-note{ text-align:center; color:#d8c7a8; font-size:.85rem; margin:10px 0 0; }
+  .trill-btn:hover{ transform:translate(-1px,-1px); }
+  .trill-note{ text-align:center; color:#cbb88f; font-size:.85rem; margin:12px 0 0; }
 
-  /* ===== Warhol: a serial grid of pop-color grocery prints ===== */
-  .trill-grid{
-    display:grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
-    gap:22px; margin-top:6px;
+  /* ===== the scoreboard: your stat vs. a GIANT number ===== */
+  .trill-board{ margin-top:34px; }
+  .trill-row{
+    display:flex; align-items:center; justify-content:space-between; gap:20px;
+    padding:26px 4px; border-top:1px solid rgba(255,255,255,.13); flex-wrap:wrap;
   }
-  .trill-card{
-    background:#f9f0dc; color:#1a120a; border:3px solid #1a120a; border-radius:18px;
-    overflow:hidden; box-shadow: 0 20px 44px rgba(0,0,0,.55);
-  }
-  .trill-pop{
-    position:relative; padding:22px 12px 18px; text-align:center;
-    /* faint Ben-Day dots over the flat colour */
-    background-image: radial-gradient(rgba(0,0,0,.13) 1.6px, transparent 1.7px);
-    background-size: 11px 11px;
-  }
-  .trill-emos{ font-size:2.6rem; letter-spacing:8px; filter: drop-shadow(2px 2px 0 rgba(0,0,0,.3)); }
-  .trill-cardbody{ padding:14px 16px 18px; }
-  .trill-name{ font-family:'Shrikhand',serif; font-size:1.18rem; text-transform:capitalize; }
-  .trill-price{ font-weight:700; opacity:.7; }
-  .trill-you{ margin:9px 0 0; font-size:.94rem; }
-  .trill-pct{ opacity:.65; }
-  .trill-them{ margin:9px 0 0; font-weight:800; line-height:1.35; }
-  .trill-them b{ color:#c81d6b; }
+  .trill-row:last-child{ border-bottom:1px solid rgba(255,255,255,.13); }
 
-  /* ===== Engelbreit aphorism plaque ===== */
-  .trill-plaque{
-    text-align:center; background:#f7ecd6; color:#241708;
-    border:3px solid #1a120a; border-radius:18px; padding:18px 20px; max-width:560px;
-    margin:0 auto; box-shadow: 0 16px 36px rgba(0,0,0,.45);
-  }
-  .trill-plaque .saying{ font-family:'Caveat',cursive; font-weight:700; font-size:1.9rem; line-height:1.1; }
+  .trill-you{ flex:1 1 230px; min-width:200px; }
+  .trill-item{ font-size:1.35rem; font-weight:800; color:#fff6e6; }
+  .trill-item .emo{ margin-right:8px; }
+  .trill-price{ font-weight:700; color:#ffcf5c; }
+  .trill-cost{ margin:5px 0 0; color:#cbb88f; font-size:.98rem; }
 
-  .trill-foot{ text-align:center; margin-top:28px; }
-  .trill-share{ display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap; margin-top:14px; }
+  .trill-them{ flex:0 1 auto; display:flex; align-items:center; gap:14px; }
+  .trill-num{
+    font-family:'Anton',sans-serif; font-weight:400; line-height:.82;
+    font-size: clamp(2.8rem, 10vw, 5.6rem); color:var(--pop, #ffd400);
+    display:inline-block; text-shadow: 4px 5px 0 rgba(0,0,0,.45);
+    white-space:nowrap;
+  }
+  .trill-row:nth-child(odd)  .trill-num{ transform:rotate(-4deg); }
+  .trill-row:nth-child(even) .trill-num{ transform:rotate(3deg); }
+  .trill-numcap{
+    max-width:150px; text-transform:uppercase; letter-spacing:.05em;
+    font-size:.74rem; font-weight:800; line-height:1.35; color:#e6d7b8;
+  }
+  .trill-numcap small{ display:block; text-transform:none; letter-spacing:0; font-weight:600; opacity:.62; }
+
+  /* ===== closing punch ===== */
+  .trill-kicker-line{
+    margin-top:38px; text-align:center;
+  }
+  .trill-punch{
+    font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase;
+    font-size: clamp(1.6rem, 5.5vw, 2.7rem); line-height:1.0; color:#fff6e6;
+  }
+  .trill-punch .pop{ color:#ff2d95; }
+  .trill-aside{ font-family:'Caveat',cursive; font-weight:700; color:#ffd400; font-size:1.5rem; margin-top:8px; }
+
+  .trill-share{ display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap; margin-top:22px; }
   .trill-share a{
-    display:inline-flex; align-items:center; gap:6px;
-    border:3px solid #1a120a; border-radius:12px; padding:8px 12px; text-decoration:none;
-    background:#ffd400; color:#1a120a; box-shadow:3px 3px 0 #1a120a; font-weight:700;
+    display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:.92rem;
+    border-radius:11px; padding:10px 14px; text-decoration:none;
+    background:#ffd400; color:#1a120a; box-shadow:3px 3px 0 rgba(0,0,0,.45);
   }
   .trill-share a.x-btn{ background:#2d8cff; color:#fff; }
-  .trill-share a.go-btn{ background:#00c389; color:#06231a; font-family:'Shrikhand',serif; font-weight:400; }
-  .trill-share a:hover{ transform:translate(-1px,-1px); box-shadow:4px 4px 0 #1a120a; }
+  .trill-share a.go-btn{ background:#00c389; color:#06231a; font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:.02em; }
+  .trill-share a:hover{ transform:translate(-1px,-1px); box-shadow:4px 4px 0 rgba(0,0,0,.45); }
+
+  @media (max-width:540px){
+    .trill-row{ gap:8px; }
+    .trill-them{ width:100%; justify-content:flex-start; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-{% set pops = ['#ff2d95', '#2d8cff', '#ffd400', '#ff6a00', '#00c389', '#9b4dff'] %}
+{% set pops = ['#ff2d95', '#2d8cff', '#ffd400', '#ff6a00', '#00c389'] %}
 <div class="page">
   <section class="trill-stage">
     <div class="trill-hero">
-      <span class="trill-eyebrow">trillionaire time ✦</span>
+      <span class="trill-kicker">trillionaire time ✦</span>
       <h1 class="trill-title">You buy milk.<br>They buy the block.</h1>
       <p class="trill-sub">
-        Same can of beans, fifteen times over — that's the whole bit. Everyday stuff costs you
-        minutes of your one finite, precious life. Here's what the world's
+        Same slice of your one finite, precious life — wildly different receipts.
+        Everyday stuff costs <em>you</em> minutes. Here's what the
         <em>(projected, hypothetical, surely-any-day-now)</em> <strong>first trillionaire</strong>
-        rakes in during those exact same minutes. <span class="trill-hand">isn't that just precious.</span>
+        pockets in those exact same minutes. <span class="trill-hand">isn't that just precious.</span>
       </p>
+
+      <form class="trill-wage" method="get" action="{{ url_for('core.trillionaire') }}">
+        <label for="wage">Your wage ({{ currency }}/hr)</label>
+        <input id="wage" name="wage" type="number" step="0.5" min="0" value="{{ '%.2f'|format(hourly) }}">
+        <button class="trill-btn" type="submit">Do the math</button>
+      </form>
+      {% if used_default %}
+      <p class="trill-note">Running on a ballpark {{ currency }}18/hr, sugar — drop your real number in above.</p>
+      {% endif %}
     </div>
 
-    <div class="trill-checker"></div>
-
-    <form class="trill-wage" method="get" action="{{ url_for('core.trillionaire') }}">
-      <label for="wage">Your wage ({{ currency }}/hour)</label>
-      <input id="wage" name="wage" type="number" step="0.5" min="0" value="{{ '%.2f'|format(hourly) }}">
-      <button class="trill-btn" type="submit">Recalculate my misery</button>
-    </form>
-    {% if used_default %}
-    <p class="trill-note">Running on a ballpark {{ currency }}18/hour, sugar — pop your real number in above.</p>
-    {% endif %}
-
-    <div class="trill-checker"></div>
-
-    <div class="trill-grid">
+    <div class="trill-board">
       {% for row in rows %}
-      <article class="trill-card">
-        <div class="trill-pop" style="background:{{ pops[loop.index0 % pops|length] }};">
-          <div class="trill-emos">{{ row.emoji }}{{ row.emoji }}{{ row.emoji }}</div>
-        </div>
-        <div class="trill-cardbody">
-          <div class="trill-name">{{ row.name }} <span class="trill-price">{{ currency }}{{ '%.2f'|format(row.price) }}</span></div>
-          <p class="trill-you">
-            Costs <strong>you</strong>:
-            {% if row.minutes >= 1 %}{{ '%.0f'|format(row.minutes) }} minutes{% else %}under a minute{% endif %}
-            <span class="trill-pct">({{ '%.1f'|format(row.pct_workday) }}% of your working day)</span>
-          </p>
-          <p class="trill-them">
-            Costs <b>them</b>: nothing they'd notice — but in those same minutes they bank
-            <b>{{ currency }}{{ row.earns_h }}</b>, about <b>{{ row.homes_h }}</b> family homes.
+      <div class="trill-row" style="--pop:{{ pops[loop.index0 % pops|length] }};">
+        <div class="trill-you">
+          <div class="trill-item"><span class="emo">{{ row.emoji }}</span>{{ row.name }} <span class="trill-price">{{ currency }}{{ '%.2f'|format(row.price) }}</span></div>
+          <p class="trill-cost">
+            costs you
+            {% if row.minutes < 90 %}{{ '%.0f'|format(row.minutes) }} minutes{% else %}{{ '%.1f'|format(row.pct_workday/100) }} working days{% endif %}
           </p>
         </div>
-      </article>
+        <div class="trill-them">
+          <span class="trill-num">{{ row.homes_round }}</span>
+          <span class="trill-numcap">family homes<small>they bank in that same time</small></span>
+        </div>
+      </div>
       {% endfor %}
     </div>
 
-    <div class="trill-checker"></div>
+    <div class="trill-kicker-line">
+      <p class="trill-punch">Your rent. <span class="pop">Their twenty-four thousand front doors.</span></p>
+      <p class="trill-aside">same minutes, sugar. bless. 🍒</p>
 
-    <div class="trill-plaque">
-      <div class="saying">"Time is the real currency, sugar." 🍒</div>
-      <p style="margin:8px 0 0; font-size:.9rem;">In the few minutes it takes <em>you</em> to earn a loaf of bread, <em>they</em> earn dozens of family homes. Same minutes. Bless.</p>
-    </div>
-
-    <div class="trill-foot">
       {% set lead = rows[0] %}
       {% set share_text = 'A gallon of milk costs me ' ~ ('%.0f'|format(lead.minutes)) ~ ' minutes of my life. In those same minutes the first trillionaire banks ' ~ currency ~ lead.earns_h ~ '. Time is the real currency.' %}
       {% set share_url = 'https://thetimecost.com/trillionaire' %}

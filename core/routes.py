@@ -183,15 +183,25 @@ def trillionaire():
     for it in basket:
         your_hours = it["price"] / hourly
         earns = trill_hourly * your_hours
+        # Same loot expressed in average family homes — varies per item and lands
+        # harder than "N of the same grocery" (which is a flat ratio).
+        homes = earns / 290000.0
+        # Rounded to a clean figure and shown as digits ("24,000"), which read as a
+        # giant scoreboard number — punchier and far more compact than spelled-out words.
+        if homes < 1000:
+            homes_round = round(homes)
+        elif homes < 10000:
+            homes_round = round(homes, -2)
+        else:
+            homes_round = round(homes, -3)
         rows.append({
             **it,
             "minutes": your_hours * 60.0,
             "pct_workday": your_hours / 8.0 * 100.0,
             "earns": earns,
             "earns_h": _humanize_big(earns),
-            # Same loot expressed in average family homes — varies per item and
-            # lands harder than "N of the same grocery" (which is a flat ratio).
-            "homes_h": _humanize_big(earns / 290000.0),
+            "homes_h": _humanize_big(homes),
+            "homes_round": f"{homes_round:,.0f}",
         })
 
     return render_template(
