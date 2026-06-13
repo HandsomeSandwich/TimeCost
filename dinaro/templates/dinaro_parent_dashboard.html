@@ -53,14 +53,31 @@
 
   <section class="panel" style="margin-top:14px; border: 2px solid var(--accent);">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
-      <i data-lucide="trending-up" style="color:var(--accent);"></i> Wealth Trends (7 Days)
+      <i data-lucide="clock" style="color:var(--accent);"></i> Pending {% if family.is_classroom %}task{% else %}chore{% endif %} approvals
     </h2>
-    <div style="height: 250px; margin-top: 10px;">
-      <canvas id="trendsChart"></canvas>
-    </div>
+    {% for log in pending_logs %}
+      <div class="card" style="margin-bottom:10px;">
+        <div style="font-weight:600;">{{ log.child_name }} · {{ log.chore_title or "Task" }}</div>
+        <div class="muted">
+          Date: {{ log.work_date }} · Requested: {{ log.requested_hours }} hr (overtime {{ log.overtime_hours }} hr)
+        </div>
+        <div class="grid-2" style="margin-top:8px;">
+          <form method="post" action="{{ url_for('dinaro.dinaro_parent_approve_log', log_id=log.id) }}" class="inline">
+            <label class="sr-only" for="approveHours{{ log.id }}">Approved hours</label>
+            <input id="approveHours{{ log.id }}" type="number" name="approved_hours" step="0.25" value="{{ log.requested_hours }}">
+            <button class="btn btn-primary" type="submit">Approve</button>
+          </form>
+          <form method="post" action="{{ url_for('dinaro.dinaro_parent_deny_log', log_id=log.id) }}" class="inline">
+            <button class="btn btn-danger" type="submit">Deny</button>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <p class="muted">Nothing waiting right now.</p>
+    {% endfor %}
   </section>
 
-  {% if family.is_classroom and pending_enrollments %}
+{% if family.is_classroom and pending_enrollments %}
   <section class="panel" style="margin-top:14px; border: 2px solid #f1c40f;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="user-plus" style="color:#f1c40f;"></i> Pending Enrollments ({{ pending_enrollments|length }})
@@ -657,33 +674,7 @@
   </section>
   {% endif %}
 
-  <section class="panel" style="margin-top:14px;">
-    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
-      <i data-lucide="clock" style="color:var(--accent);"></i> Pending {% if family.is_classroom %}task{% else %}chore{% endif %} approvals
-    </h2>
-    {% for log in pending_logs %}
-      <div class="card" style="margin-bottom:10px;">
-        <div style="font-weight:600;">{{ log.child_name }} · {{ log.chore_title or "Task" }}</div>
-        <div class="muted">
-          Date: {{ log.work_date }} · Requested: {{ log.requested_hours }} hr (overtime {{ log.overtime_hours }} hr)
-        </div>
-        <div class="grid-2" style="margin-top:8px;">
-          <form method="post" action="{{ url_for('dinaro.dinaro_parent_approve_log', log_id=log.id) }}" class="inline">
-            <label class="sr-only" for="approveHours{{ log.id }}">Approved hours</label>
-            <input id="approveHours{{ log.id }}" type="number" name="approved_hours" step="0.25" value="{{ log.requested_hours }}">
-            <button class="btn btn-primary" type="submit">Approve</button>
-          </form>
-          <form method="post" action="{{ url_for('dinaro.dinaro_parent_deny_log', log_id=log.id) }}" class="inline">
-            <button class="btn btn-danger" type="submit">Deny</button>
-          </form>
-        </div>
-      </div>
-    {% else %}
-      <p class="muted">Nothing waiting right now.</p>
-    {% endfor %}
-  </section>
-
-  <section class="panel" style="margin-top:14px;">
+<section class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="shopping-cart" style="color:var(--accent);"></i> Requests
     </h2>
@@ -774,6 +765,15 @@
       {% else %}
         <p class="muted">No goals yet.</p>
       {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top:14px; border: 2px solid var(--accent);">
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="trending-up" style="color:var(--accent);"></i> Wealth Trends (7 Days)
+    </h2>
+    <div style="height: 250px; margin-top: 10px;">
+      <canvas id="trendsChart"></canvas>
     </div>
   </section>
 
