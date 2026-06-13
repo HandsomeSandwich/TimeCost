@@ -380,13 +380,12 @@ def dinaro_landing():
 
 @dinaro_bp.route("/setup", methods=["GET", "POST"])
 def dinaro_setup():
-    conn = get_connection()
-    try:
-        existing = conn.execute(text("SELECT COUNT(*) AS c FROM dinaro_parents")).mappings().first()
-        if existing and existing["c"] > 0:
-            return redirect(url_for("dinaro.dinaro_parent_login"))
-    finally:
-        conn.close()
+    # Anyone can create a new class/family here. (The old code blocked setup
+    # whenever *any* parent existed in the whole database, so only the very
+    # first account could ever sign up.) If you're already signed in, go to
+    # your dashboard — additional classes are created via "+ New Class".
+    if session.get("dinaro_parent_id"):
+        return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
     if request.method == "POST":
         family_name = (request.form.get("family_name") or "").strip()
@@ -411,10 +410,10 @@ def dinaro_setup():
             family_id = row["id"] if row else None
             if family_id is None:
                 family_id = conn.execute(text("SELECT last_insert_rowid() AS id")).mappings().first()["id"]
-            conn.execute(
+            prow = conn.execute(
                 text(
                     "INSERT INTO dinaro_parents (family_id, name, pin_hash, pin_salt) "
-                    "VALUES (:family_id, :name, :pin_hash, :pin_salt)"
+                    "VALUES (:family_id, :name, :pin_hash, :pin_salt) RETURNING id"
                 ),
                 {
                     "family_id": family_id,
@@ -422,9 +421,14 @@ def dinaro_setup():
                     "pin_hash": pin_hash,
                     "pin_salt": pin_salt,
                 },
-            )
+            ).mappings().first()
+            parent_id = prow["id"] if prow else None
+            if parent_id is None:
+                parent_id = conn.execute(text("SELECT last_insert_rowid() AS id")).mappings().first()["id"]
 
-        return redirect(url_for("dinaro.dinaro_parent_login"))
+        # Sign the new teacher straight in — no re-login, no picking from a list.
+        session["dinaro_parent_id"] = int(parent_id)
+        return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
     return render_template("dinaro_setup.html")
 
