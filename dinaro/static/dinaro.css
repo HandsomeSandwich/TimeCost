@@ -1854,3 +1854,45 @@ h1,h2,h3{
   border: 2px solid color-mix(in srgb, var(--tone, var(--accent)) 35%, transparent);
 }
 .btn.tone-btn:hover{ border-color: var(--tone, var(--accent)); }
+
+/* ============================
+   Kid-friendly number stepper (− [n] +)
+============================ */
+.stepper{
+  display: inline-flex;
+  align-items: stretch;
+  border: 2px solid var(--input-border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--input-bg);
+}
+.stepper-input{
+  width: 76px;
+  text-align: center;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 1.15rem;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.stepper-input:focus{ outline: none; }
+.stepper-input::-webkit-outer-spin-button,
+.stepper-input::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
+.stepper-btn{
+  width: 46px;
+  min-height: 46px;
+  border: none;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .12s ease, color .12s ease;
+  touch-action: manipulation;
+}
+.stepper-btn:hover{ background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.stepper-btn:active{ background: var(--accent); color: #fff; }

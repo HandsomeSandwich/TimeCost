@@ -531,8 +531,12 @@
       <div>
         <strong>Your fair-share bill:</strong> {{ "%.0f"|format(my_bill.amount_paid) }} / {{ "%.0f"|format(my_bill.amount_owed) }} paid
         {% if remaining > 0 %}
-        <form action="{{ url_for('dinaro.dinaro_child_treasury_pay') }}" method="post" style="display:flex; gap:8px; margin-top:6px; max-width:320px;">
-          <input name="amount" type="number" step="1" min="0" value="{{ remaining|round|int }}" style="flex:1;">
+        <form action="{{ url_for('dinaro.dinaro_child_treasury_pay') }}" method="post" style="display:flex; gap:8px; margin-top:6px; align-items:center; flex-wrap:wrap;">
+          <div class="stepper">
+            <button type="button" class="stepper-btn" onclick="stepAmt(this,-1)" aria-label="less">−</button>
+            <input class="stepper-input" name="amount" type="number" inputmode="numeric" step="1" min="0" value="{{ remaining|round|int }}">
+            <button type="button" class="stepper-btn" onclick="stepAmt(this,1)" aria-label="more">+</button>
+          </div>
           <button class="btn btn-primary" type="submit">Pay my share</button>
         </form>
         {% else %}
@@ -543,16 +547,24 @@
 
       <div>
         <strong>Donate extra</strong> <span class="muted" style="font-size:0.85rem;">— help the class reach the goal</span>
-        <form action="{{ url_for('dinaro.dinaro_child_treasury_donate') }}" method="post" style="display:flex; gap:8px; margin-top:6px; max-width:320px;">
-          <input name="amount" type="number" step="1" min="0" placeholder="dinaro" style="flex:1;">
+        <form action="{{ url_for('dinaro.dinaro_child_treasury_donate') }}" method="post" style="display:flex; gap:8px; margin-top:6px; align-items:center; flex-wrap:wrap;">
+          <div class="stepper">
+            <button type="button" class="stepper-btn" onclick="stepAmt(this,-1)" aria-label="less">−</button>
+            <input class="stepper-input" name="amount" type="number" inputmode="numeric" step="1" min="0" value="0">
+            <button type="button" class="stepper-btn" onclick="stepAmt(this,1)" aria-label="more">+</button>
+          </div>
           <button class="btn" type="submit">Donate</button>
         </form>
       </div>
 
       <div>
         <strong>Your {{ grade_label }}: {{ "%.0f"|format(child.standing) }}</strong>
-        <form action="{{ url_for('dinaro.dinaro_child_treasury_grade') }}" method="post" style="display:flex; gap:8px; margin-top:6px; max-width:320px;">
-          <input name="amount" type="number" step="1" min="0" placeholder="dinaro to spend" style="flex:1;">
+        <form action="{{ url_for('dinaro.dinaro_child_treasury_grade') }}" method="post" style="display:flex; gap:8px; margin-top:6px; align-items:center; flex-wrap:wrap;">
+          <div class="stepper">
+            <button type="button" class="stepper-btn" onclick="stepAmt(this,-1)" aria-label="less">−</button>
+            <input class="stepper-input" name="amount" type="number" inputmode="numeric" step="1" min="0" value="0">
+            <button type="button" class="stepper-btn" onclick="stepAmt(this,1)" aria-label="more">+</button>
+          </div>
           <button class="btn" type="submit">Boost my {{ grade_label }}</button>
         </form>
       </div>
@@ -560,11 +572,15 @@
       {% if classmates %}
       <div>
         <strong>Gift a classmate's {{ grade_label }}</strong>
-        <form action="{{ url_for('dinaro.dinaro_child_treasury_gift') }}" method="post" style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; max-width:440px;">
+        <form action="{{ url_for('dinaro.dinaro_child_treasury_gift') }}" method="post" style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; align-items:center;">
           <select name="target_id" style="flex:1 1 140px;">
             {% for m in classmates %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
           </select>
-          <input name="amount" type="number" step="1" min="0" placeholder="dinaro" style="flex:0 1 110px;">
+          <div class="stepper">
+            <button type="button" class="stepper-btn" onclick="stepAmt(this,-1)" aria-label="less">−</button>
+            <input class="stepper-input" name="amount" type="number" inputmode="numeric" step="1" min="0" value="0">
+            <button type="button" class="stepper-btn" onclick="stepAmt(this,1)" aria-label="more">+</button>
+          </div>
           <button class="btn" type="submit">Gift</button>
         </form>
       </div>
@@ -600,6 +616,17 @@
   </section>
   {% endif %}
 
+  <script>
+    // Kid-friendly +/- stepper for the Treasury amount inputs.
+    function stepAmt(btn, dir) {
+      const input = btn.parentElement.querySelector('input');
+      const step = parseFloat(input.step) || 1;
+      const min = parseFloat(input.min);
+      let v = (parseFloat(input.value) || 0) + dir * step;
+      if (!isNaN(min)) v = Math.max(min, v);
+      input.value = Math.round(v * 100) / 100;
+    }
+  </script>
   <script src="{{ url_for('static', filename='dinaro-push.js') }}" defer></script>
 </div>
 {% endblock %}
