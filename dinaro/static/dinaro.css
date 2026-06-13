@@ -1896,3 +1896,36 @@ h1,h2,h3{
 }
 .stepper-btn:hover{ background: color-mix(in srgb, var(--accent) 22%, transparent); }
 .stepper-btn:active{ background: var(--accent); color: #fff; }
+
+/* ============================
+   Onboarding checklist (new-class "get started")
+============================ */
+.onboard-steps{
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: grid;
+  gap: 10px;
+}
+.onboard-steps li{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+.onboard-steps .step-num{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+.onboard-steps li.done{ color: var(--muted); }
+.onboard-steps li.done .step-num{ background: #2e8b57; color: #fff; }
+.onboard-steps li.done a{ text-decoration: line-through; }

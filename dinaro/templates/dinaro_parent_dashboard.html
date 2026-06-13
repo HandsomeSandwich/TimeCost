@@ -51,6 +51,37 @@
   </div>
   {% endif %}
 
+  {% set has_students = kids and kids|length > 0 %}
+  {% set has_tasks = chores and chores|length > 0 %}
+  {% set has_rewards = spendables and spendables|length > 0 %}
+  {% if not (has_students and has_tasks) %}
+  <section class="panel" style="margin-top:14px; border: 2px solid var(--accent-2, var(--accent));">
+    <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="rocket" style="color:var(--accent-2, var(--accent));"></i>
+      Get your {% if family.is_classroom %}class{% else %}family{% endif %} started
+    </h2>
+    <p class="muted" style="margin-top:-4px;">A few quick steps and you're up and running.</p>
+    <ol class="onboard-steps">
+      <li class="{{ 'done' if has_students else '' }}">
+        <span class="step-num">{% if has_students %}&check;{% else %}1{% endif %}</span>
+        <a href="#kids">Add your first {% if family.is_classroom %}student{% else %}child{% endif %}</a>
+      </li>
+      <li class="{{ 'done' if has_tasks else '' }}">
+        <span class="step-num">{% if has_tasks %}&check;{% else %}2{% endif %}</span>
+        <a href="#chores">Add a {% if family.is_classroom %}task{% else %}chore{% endif %} they can earn dinaro for</a>
+      </li>
+      <li class="{{ 'done' if has_rewards else '' }}">
+        <span class="step-num">{% if has_rewards %}&check;{% else %}3{% endif %}</span>
+        <a href="#rewards">Add a reward to spend on</a> <span class="muted" style="font-weight:400;">(optional)</span>
+      </li>
+      <li>
+        <span class="step-num">4</span>
+        <span>Share your code <strong>{{ family.family_code }}</strong> so {% if family.is_classroom %}students{% else %}kids{% endif %} can log in</span>
+      </li>
+    </ol>
+  </section>
+  {% endif %}
+
   <section class="panel" style="margin-top:14px; border: 2px solid var(--accent);">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="clock" style="color:var(--accent);"></i> Pending {% if family.is_classroom %}task{% else %}chore{% endif %} approvals
@@ -295,7 +326,7 @@
     </form>
   </section>
 
-  <section class="panel" style="margin-top:14px;">
+  <section id="kids" class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="users" style="color:var(--accent);"></i> {% if family.is_classroom %}Students{% else %}Kids{% endif %}
       {% if kids %}<span class="muted" style="font-size:0.8rem; font-weight:400;">({{ kids|length }})</span>{% endif %}
@@ -448,7 +479,7 @@
     </div>
   </section>
 
-  <section class="panel" style="margin-top:14px;">
+  <section id="chores" class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="hammer" style="color:var(--accent);"></i> {% if family.is_classroom %}Tasks & Responsibilities{% else %}Chores{% endif %}
     </h2>
@@ -550,7 +581,7 @@
     {% endif %}
   </section>
 
-  <section class="panel" style="margin-top:14px;">
+  <section id="rewards" class="panel" style="margin-top:14px;">
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="gift" style="color:var(--accent);"></i> {% if family.is_classroom %}Rewards & Privileges{% else %}Spendable Items (Rewards){% endif %}
     </h2>
