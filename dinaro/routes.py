@@ -1629,6 +1629,23 @@ def dinaro_parent_decline_request(request_id: int):
     return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
 
+@dinaro_bp.get("/join/<code>")
+def dinaro_join(code):
+    """Shareable join link (and QR target): pre-fills the class code so a
+    student lands straight on name + PIN instead of typing the code."""
+    code = (code or "").strip().upper()
+    conn = get_connection()
+    try:
+        fam = conn.execute(
+            text("SELECT id FROM dinaro_families WHERE family_code = :c"), {"c": code}
+        ).mappings().first()
+    finally:
+        conn.close()
+    if fam:
+        session["dinaro_family_code"] = code
+    return redirect(url_for("dinaro.dinaro_child_login"))
+
+
 @dinaro_bp.route("/child/login", methods=["GET", "POST"])
 def dinaro_child_login():
     family_code = session.get("dinaro_family_code")

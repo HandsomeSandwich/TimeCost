@@ -4,6 +4,7 @@
 {% block head %}
   {{ super() }}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -17,6 +18,20 @@
       <div class="pill" style="margin-top: 8px; background: var(--accent-soft); color: var(--accent); font-weight: 700;">
         <i data-lucide="shield" style="width:14px; height:14px; vertical-align:middle; margin-right:4px;"></i>
         {% if family.is_classroom %}Classroom Login Code{% else %}Family Login Code{% endif %}: {{ family.family_code }}
+      </div>
+      <div style="margin-top:10px;">
+        <button type="button" class="btn btn-sm" id="qrToggle">
+          <i data-lucide="qr-code" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>
+          Join QR &amp; link
+        </button>
+        <div id="qrShare" style="display:none; margin-top:10px; padding:14px; border:2px solid var(--border); border-radius:14px; max-width:320px; background:var(--panel);">
+          <div id="qrcode" style="display:flex; justify-content:center;"></div>
+          <p class="muted" style="font-size:0.82rem; margin:10px 0 0;">
+            {% if family.is_classroom %}Students{% else %}Kids{% endif %} scan this, or open
+            <a href="{{ url_for('dinaro.dinaro_join', code=family.family_code, _external=True) }}">this link</a> —
+            then just pick a name &amp; PIN.
+          </p>
+        </div>
       </div>
     {% endif %}
   </header>
@@ -964,6 +979,28 @@
         }
       });
     });
+  </script>
+  <script>
+    // Join QR & link toggle — generate the QR lazily on first open.
+    (function () {
+      var toggle = document.getElementById('qrToggle');
+      var box = document.getElementById('qrShare');
+      var holder = document.getElementById('qrcode');
+      if (!toggle || !box || !holder) return;
+      var made = false;
+      var joinUrl = "{{ url_for('dinaro.dinaro_join', code=family.family_code, _external=True) }}";
+      toggle.addEventListener('click', function () {
+        var show = box.style.display === 'none';
+        box.style.display = show ? 'block' : 'none';
+        if (show && !made && typeof qrcode === 'function') {
+          var qr = qrcode(0, 'M');
+          qr.addData(joinUrl);
+          qr.make();
+          holder.innerHTML = qr.createImgTag(5, 8);
+          made = true;
+        }
+      });
+    })();
   </script>
   <script src="{{ url_for('static', filename='dinaro-push.js') }}" defer></script>
 </div>
