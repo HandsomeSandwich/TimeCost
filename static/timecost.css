@@ -1640,3 +1640,32 @@ h1,h2,h3{
     font-size: 0.72rem;
   }
 }
+
+/* ============================
+   "First trillionaire" headline contrast (calculator)
+============================ */
+.trill-line{
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+.trill-tag{
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+.wealth-table tbody tr.wealth-row-trill{
+  background: var(--accent-soft);
+  font-weight: 700;
+}

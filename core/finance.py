@@ -11,6 +11,8 @@ from __future__ import annotations
 # ----------------------------
 # Net worth and annual growth in USD (approximate, Feb 2026)
 BILLIONAIRES = [
+    # Projected, not real (yet) — a hypothetical $1T fortune for the headline contrast.
+    {"name": "The first trillionaire", "net_worth_usd": 1_000_000_000_000, "annual_growth_usd": 250_000_000_000, "projected": True},
     {"name": "Elon Musk",          "net_worth_usd": 400_000_000_000, "annual_growth_usd": 150_000_000_000},
     {"name": "Jeff Bezos",         "net_worth_usd": 240_000_000_000, "annual_growth_usd":  60_000_000_000},
     {"name": "Mark Zuckerberg",    "net_worth_usd": 210_000_000_000, "annual_growth_usd":  80_000_000_000},
@@ -43,10 +45,13 @@ def safe_float(val, default: float = 0.0) -> float:
 def format_wealth_time(hours: float) -> str:
     """Format a very small (or large) number of hours into a human-readable string."""
     seconds = hours * 3600
-    if seconds < 0.001:
-        return f"{seconds * 1000:.3f} milliseconds"
     if seconds < 1:
-        return f"{seconds:.2f} seconds"
+        # Sub-second reads as milliseconds (e.g. "3.8 milliseconds") rather than
+        # the anticlimactic "0.00 seconds" — matters for the trillionaire row.
+        ms = seconds * 1000
+        if ms < 0.01:
+            return f"{ms:.4f} milliseconds"
+        return f"{ms:.2f} milliseconds" if ms < 10 else f"{ms:.0f} milliseconds"
     if seconds < 60:
         return f"{seconds:.1f} seconds"
     if seconds < 3600:
@@ -71,6 +76,7 @@ def wealth_comparison(item_cost: float, currency: str, user_hourly: float = 0.0)
         can_buy_num = round(user_hours / b_hours, 1) if b_hours > 0 and user_hours > 0 else 0
         rows.append({
             "name":          b["name"],
+            "projected":     b.get("projected", False),
             "by_net_worth":  format_wealth_time(item_cost_usd / hourly_net_worth),
             "by_growth":     format_wealth_time(item_cost_usd / hourly_growth),
             "can_buy":       f"{can_buy_num:,.0f}" if can_buy_num >= 1 else f"{can_buy_num:,.1f}",
