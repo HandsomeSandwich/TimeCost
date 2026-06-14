@@ -119,6 +119,10 @@
   }
   .trill-punch .pop{ color:#ff2d95; }
   .trill-aside{ font-family:'Caveat',cursive; font-weight:700; color:#ffd400; font-size:1.5rem; margin-top:8px; }
+  .trill-credits-cta{ margin-top:18px; }
+  .trill-credits-cta a{ color:#e6d7b8; text-decoration:none; font-size:.95rem;
+    border-bottom:1px dashed rgba(230,215,184,.5); padding-bottom:2px; }
+  .trill-credits-cta a:hover{ color:#fff6e6; border-bottom-color:#fff6e6; }
 
   .trill-share{ display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap; margin-top:22px; }
   .trill-share a{
@@ -239,6 +243,9 @@
         </a>
         <a class="go-btn" href="{{ url_for('core.calculator') }}">See what your whole life costs &rarr;</a>
       </div>
+      <p class="trill-credits-cta">
+        <a href="{{ url_for('core.trillionaire_credits') }}">▶ Watch the celebration — then read the credits</a>
+      </p>
     </div>
 
     <details class="trill-fine">
