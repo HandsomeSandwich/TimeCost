@@ -92,6 +92,7 @@
   .trill-item .emo{ margin-right:8px; }
   .trill-price{ font-weight:700; color:#ffcf5c; }
   .trill-cost{ margin:5px 0 0; color:#cbb88f; font-size:.98rem; }
+  .trill-basis{ margin:3px 0 0; color:#8d7c5e; font-size:.78rem; font-style:italic; }
 
   .trill-them{ flex:0 1 auto; display:flex; align-items:center; gap:14px; }
   .trill-num{
@@ -128,6 +129,27 @@
   .trill-share a.x-btn{ background:#2d8cff; color:#fff; }
   .trill-share a.go-btn{ background:#00c389; color:#06231a; font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:.02em; }
   .trill-share a:hover{ transform:translate(-1px,-1px); box-shadow:4px 4px 0 rgba(0,0,0,.45); }
+
+  /* ===== the fine print / methodology ===== */
+  .trill-fine{
+    margin:30px auto 0; max-width:640px;
+    border:1px solid rgba(255,255,255,.14); border-radius:14px;
+    background:rgba(255,255,255,.04);
+  }
+  .trill-fine summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    font-weight:800; font-size:.92rem; color:#ffcf5c;
+    display:flex; align-items:center; gap:8px;
+  }
+  .trill-fine summary::-webkit-details-marker{ display:none; }
+  .trill-fine summary::before{ content:"›"; font-size:1.3rem; line-height:1; transition:transform .15s; }
+  .trill-fine[open] summary::before{ transform:rotate(90deg); }
+  .trill-fine-body{ padding:0 18px 18px; color:#d8c7a8; font-size:.9rem; line-height:1.6; }
+  .trill-fine-body strong{ color:#f4ead4; }
+  .trill-fine-body ul{ margin:10px 0; padding-left:18px; }
+  .trill-fine-body li{ margin:7px 0; }
+  .trill-fine-foot{ margin:12px 0 0; }
+  .trill-fine-body a{ color:#ffcf5c; }
 
   @media (max-width:540px){
     .trill-row{ gap:8px; }
@@ -188,6 +210,7 @@
             costs you
             {% if row.minutes < 90 %}{{ '%.0f'|format(row.minutes) }} minutes{% else %}{{ '%.1f'|format(row.pct_workday/100) }} working days{% endif %}
           </p>
+          {% if row.basis %}<p class="trill-basis">{{ row.basis }}</p>{% endif %}
         </div>
         <div class="trill-them">
           <span class="trill-num">{{ row.homes_round }}</span>
@@ -216,6 +239,21 @@
         <a class="go-btn" href="{{ url_for('core.calculator') }}">See what your whole life costs &rarr;</a>
       </div>
     </div>
+
+    <details class="trill-fine">
+      <summary>Where do these numbers come from?</summary>
+      <div class="trill-fine-body">
+        <p><strong>Short version:</strong> these are ballpark figures we set by hand, not a live price feed. The point is the <em>gap</em>, not a penny-accurate receipt. Everything recalculates the moment you switch region or type your own wage.</p>
+        <ul>
+          <li><strong>The trillionaire.</strong> There isn't one yet — we model a hypothetical first <strong>${{ '%.0f'|format(trillionaire_growth_usd/1e9) }} billion-a-year</strong> fortune (roughly today's fastest-growing fortunes, scaled to the first $1&nbsp;trillion). Over a {{ '{:,}'.format(working_hours_year) }}-hour working year that's about <strong>${{ '%.0f'|format(trill_per_hour_usd/1e6) }} million an hour</strong>. We only ever compare the <em>same slice of time</em> a thing costs you.</li>
+          <li><strong>Your prices.</strong> Typical recent retail prices for {{ region_flag }} {{ region_label }} — e.g. a tank of gas is figured as a full tank at recent pump prices (shown on the row). Groceries are everyday shelf prices; rent is a rough one-bed monthly average. Approximate, not an index.</li>
+          <li><strong>“Family homes.”</strong> The trillionaire's haul ÷ an average home where you are — <strong>{{ currency }}{{ '{:,.0f}'.format(home_price) }}</strong> for {{ region_label }}. It's a vivid yardstick, not a property valuation.</li>
+          <li><strong>Your wage.</strong> Defaults to a rough {{ region_label }} median of <strong>{{ currency }}{{ '%.0f'|format(default_hourly) }}/hr</strong> until you enter your own (per hour, month, or year). Monthly/annual pay is spread over a {{ '{:,}'.format(working_hours_year) }}-hour year.</li>
+          <li><strong>Currency.</strong> Converted at approximate recent exchange rates.</li>
+        </ul>
+        <p class="trill-fine-foot">Got better local numbers? <a href="{{ url_for('core.calculator') }}">Run your own wage through the calculator</a> for an exact figure.</p>
+      </div>
+    </details>
   </section>
 </div>
 {% endblock %}
