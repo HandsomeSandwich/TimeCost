@@ -345,6 +345,55 @@ def trillionaire():
     )
 
 
+# The human cost behind the celebration — real, sourced figures, presented as
+# affected POPULATIONS and PROJECTIONS (never named individuals). The satire lives
+# in the celebration; these lines are deliberately plain and respectful.
+TRILLIONAIRE_CUTS = [
+    {
+        "program": "USAID — global health, nutrition & humanitarian aid",
+        "served": "the poorest communities across 130+ countries",
+        "impact": "Up to 14 million additional deaths projected by 2030 — including over 4.5 million children under five.",
+        "source": "The Lancet, 2025",
+        "url": "https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(25)01186-9/fulltext",
+    },
+    {
+        "program": "PEPFAR — HIV treatment & prevention",
+        "served": "20.6 million people who relied on it for HIV treatment",
+        "impact": "Up to ~4 million additional AIDS-related deaths projected for 2025–2029, including roughly 300,000 children.",
+        "source": "UNAIDS, 2025",
+        "url": "https://www.unaids.org/en/impact-US-funding-cuts",
+    },
+    {
+        "program": "President's Malaria Initiative — roughly 47% cut",
+        "served": "families across malaria-endemic Africa",
+        "impact": "An estimated 15 million more malaria cases and about 107,000 additional deaths in a single year.",
+        "source": "Malaria No More / CNN, 2025",
+        "url": "https://www.cnn.com/2025/06/11/africa/malaria-us-foreign-aid-cuts-africa-intl",
+    },
+    {
+        "program": "Therapeutic food for severe malnutrition (RUTF)",
+        "served": "children with severe acute malnutrition — the US funded about half the global supply",
+        "impact": "Around 1 million children left untreated — an estimated 163,500 additional deaths each year.",
+        "source": "Nature, 2025",
+        "url": "https://www.nature.com/articles/d41586-025-00898-3",
+    },
+]
+
+
+@core_bp.get("/celebration")
+def trillionaire_credits():
+    """A satirical 80s-terminal 'celebration' of the first trillionaire, with the
+    real human cost of the funding cuts rolling underneath as respectful credits.
+    Standalone, shareable page (own URL, share buttons, link to the calculator)."""
+    return render_template("trillionaire_credits.html", cuts=TRILLIONAIRE_CUTS)
+
+
+@core_bp.get("/trillionaire/credits")
+def trillionaire_credits_legacy():
+    """Old nested path → keep any existing links working."""
+    return redirect(url_for("core.trillionaire_credits"), code=301)
+
+
 @core_bp.route("/subscribe", methods=["POST"])
 def subscribe():
     email = request.form.get("email", "").strip().lower()

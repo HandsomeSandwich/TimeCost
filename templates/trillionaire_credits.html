@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+{% block title %}The Celebration — Trillionaire Time{% endblock %}
+{% block meta %}
+<meta name="description" content="A fake 80s-computer celebration of the world's first trillionaire — and the real, sourced human cost of the funding cuts, rolling underneath as credits." />
+<meta property="og:title" content="The Celebration (and the credits)" />
+<meta property="og:description" content="Yay. A trillionaire. While the fireworks are still warm, here's what it cost — real programs, real populations, real projections." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://thetimecost.com/celebration" />
+<meta property="og:image" content="https://thetimecost.com/static/og-trillionaire.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="The Celebration (and the credits)" />
+<meta name="twitter:description" content="Yay. A trillionaire. While the fireworks are still warm, here's the sourced human cost of the funding cuts." />
+<meta name="twitter:image" content="https://thetimecost.com/static/og-trillionaire.png" />
+{% endblock %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  .cf-wrap{ max-width:1000px; margin:0 auto; }
+
+  /* ===== the CRT theatre ===== */
+  .cf-stage{
+    position:relative; overflow:hidden; border-radius:18px;
+    min-height:86vh; background:#05070a; color:#7CFC7A;
+    font-family:'Share Tech Mono', ui-monospace, monospace;
+    box-shadow:0 30px 80px rgba(0,0,0,.6);
+    isolation:isolate;
+  }
+  /* night sky */
+  .cf-sky{ position:absolute; inset:0; z-index:0;
+    background:
+      radial-gradient(80% 60% at 50% 120%, #0a1f17 0%, transparent 60%),
+      radial-gradient(120% 90% at 50% -20%, #0b1320 0%, #05070a 70%);
+  }
+  .cf-sky::after{ /* stars */
+    content:""; position:absolute; inset:0; opacity:.5;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 70% 20%, #cfe, transparent),
+      radial-gradient(1px 1px at 40% 50%, #fff, transparent),
+      radial-gradient(1px 1px at 85% 40%, #adf, transparent),
+      radial-gradient(1px 1px at 55% 15%, #fff, transparent),
+      radial-gradient(1px 1px at 10% 60%, #fff, transparent);
+  }
+  /* CRT scanlines + flicker + vignette */
+  .cf-crt{ position:absolute; inset:0; z-index:6; pointer-events:none; mix-blend-mode:overlay; }
+  .cf-crt::before{ content:""; position:absolute; inset:0;
+    background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px, rgba(0,0,0,.28) 2px 3px); }
+  .cf-crt::after{ content:""; position:absolute; inset:0;
+    box-shadow:inset 0 0 160px rgba(0,0,0,.85); }
+  .cf-stage.js.crtflicker{ animation:flick 5s infinite steps(60); }
+  @keyframes flick{ 0%,97%{filter:none} 98%{filter:brightness(1.25)} 99%{filter:brightness(.85)} 100%{filter:none} }
+
+  /* ===== terminal ===== */
+  .cf-term{
+    position:relative; z-index:5; padding:26px clamp(16px,5vw,46px) 6px;
+    height:32vh; min-height:200px; overflow:hidden;
+    text-shadow:0 0 6px rgba(124,252,122,.55); font-size:clamp(.92rem,2.4vw,1.18rem);
+    line-height:1.55;
+  }
+  .cf-line{ white-space:pre-wrap; }
+  .cf-line.sys{ color:#4fd1ff; text-shadow:0 0 6px rgba(79,209,255,.5); }
+  .cf-line.warn{ color:#ffd34d; text-shadow:0 0 6px rgba(255,211,77,.5); }
+  .cf-cursor{ display:inline-block; width:.62ch; background:#7CFC7A; animation:blink 1s steps(1) infinite; }
+  @keyframes blink{ 50%{opacity:0} }
+
+  /* ===== scene: ground, figure, shuttle ===== */
+  .cf-scene{ position:absolute; left:0; right:0; bottom:0; height:46%; z-index:2; }
+  .cf-ground{ position:absolute; left:0; right:0; bottom:0; height:26%;
+    background:linear-gradient(#0c1a12, #060b08);
+    border-top:1px solid rgba(124,252,122,.18); }
+
+  .cf-figure{ position:absolute; bottom:24%; left:8%; width:34px; height:64px; z-index:3; }
+  .cf-stage.js .cf-figure{ left:6%; }
+  .cf-stage.js.walk .cf-figure{ animation:walkAcross 3.4s ease-in forwards; }
+  @keyframes walkAcross{ to{ left:64%; opacity:0; transform:translateY(4px) scale(.86); } }
+  .cf-leg{ transform-origin:top center; }
+  .cf-stage.js.walk .cf-leg-l{ animation:legA .42s linear infinite; }
+  .cf-stage.js.walk .cf-leg-r{ animation:legB .42s linear infinite; }
+  @keyframes legA{ 0%,100%{transform:rotate(16deg)} 50%{transform:rotate(-16deg)} }
+  @keyframes legB{ 0%,100%{transform:rotate(-16deg)} 50%{transform:rotate(16deg)} }
+
+  .cf-shuttle{ position:absolute; bottom:25%; left:70%; width:72px; height:150px; z-index:3;
+    transform-origin:50% 100%; }
+  .cf-stage.js.launch .cf-shuttle{ animation:launch 3.6s cubic-bezier(.5,0,.85,.3) forwards; }
+  @keyframes launch{
+    0%{ transform:translateY(0) }
+    14%{ transform:translate(-2px,2px) }
+    20%{ transform:translate(2px,1px) }
+    28%{ transform:translate(-2px,0) }
+    100%{ transform:translateY(-135vh) }
+  }
+  .cf-flame{ transform-origin:50% 0%; opacity:0; }
+  .cf-stage.js.launch .cf-flame{ opacity:1; animation:flame .12s linear infinite; }
+  @keyframes flame{ 0%,100%{transform:scaleY(1) scaleX(1)} 50%{transform:scaleY(1.5) scaleX(.8)} }
+  .cf-smoke{ position:absolute; left:64%; bottom:24%; width:120px; height:60px; z-index:2;
+    background:radial-gradient(closest-side, rgba(200,220,210,.5), transparent 70%);
+    opacity:0; }
+  .cf-stage.js.launch .cf-smoke{ animation:smoke 2.4s ease-out forwards; }
+  @keyframes smoke{ 0%{opacity:0; transform:scale(.4)} 30%{opacity:.8} 100%{opacity:0; transform:scale(2.4)} }
+
+  /* ===== fireworks ===== */
+  .cf-fw{ position:absolute; z-index:4; width:0; height:0; }
+  .cf-fw span{ position:absolute; width:5px; height:5px; margin:-2.5px; border-radius:50%;
+    background:var(--c); opacity:0; }
+  .cf-stage.js.celebrate .cf-fw span{ animation:spark 1.35s ease-out infinite; animation-delay:var(--d); }
+  @keyframes spark{
+    0%{ transform:rotate(var(--a)) translateY(4px) scale(1); opacity:1; box-shadow:0 0 8px var(--c); }
+    70%{ opacity:.9; }
+    100%{ transform:rotate(var(--a)) translateY(66px) scale(.3); opacity:0; }
+  }
+  .cf-stage.rolling .cf-fw{ opacity:.6; }   /* keep popping, just behind the credits */
+
+  /* ===== the credits roll ===== */
+  .cf-roll{ position:absolute; inset:0; z-index:5; display:flex; justify-content:center;
+    pointer-events:none; }
+  .cf-roll-inner{ width:min(660px,92%); padding-top:6vh; text-align:center;
+    font-family:'Share Tech Mono', ui-monospace, monospace; color:#bfe9c9;
+    text-shadow:0 0 6px rgba(124,252,122,.35); }
+  .cf-stage.js .cf-roll{ opacity:0; }
+  .cf-stage.js.rolling .cf-roll{ opacity:1; }
+  .cf-stage.js.rolling .cf-roll-inner{ animation:roll 30s linear forwards; }
+  @keyframes roll{ from{ transform:translateY(100%);} to{ transform:translateY(-120%);} }
+
+  .cf-thanks{ margin:0 auto 60px; max-width:560px; }
+  .cf-thanks-label{ color:#6f9a7e; text-transform:uppercase; letter-spacing:.2em; font-size:.78rem; }
+  .cf-thanks-name{ font-size:2rem; color:#ffd34d; text-shadow:0 0 12px rgba(255,211,77,.55);
+    letter-spacing:.08em; margin:10px 0; }
+  .cf-thanks-sub{ color:#cfe8d6; font-size:1.02rem; line-height:1.6; }
+  .cf-thanks-aside{ color:#86c79a; opacity:.85; }
+  .cf-roll-head{ color:#4fd1ff; text-shadow:0 0 6px rgba(79,209,255,.5);
+    letter-spacing:.18em; text-transform:uppercase; font-size:.82rem; margin-bottom:34px; }
+  .cf-credit{ margin:0 auto 44px; max-width:560px; }
+  .cf-credit .prog{ font-size:1.16rem; color:#7CFC7A; text-shadow:0 0 7px rgba(124,252,122,.5);
+    letter-spacing:.02em; text-transform:uppercase; }
+  .cf-credit .served{ margin:8px 0 0; color:#86c79a; font-size:.95rem; }
+  .cf-credit .impact{ margin:10px 0 0; color:#e9f5ec; line-height:1.6; }
+  .cf-credit .src{ margin:9px 0 0; font-size:.74rem; letter-spacing:.08em; color:#6f9a7e;
+    text-transform:uppercase; }
+  .cf-roll-close{ margin:20px auto 14vh; max-width:540px; }
+  .cf-roll-close .big{ font-size:1.4rem; color:#fff6e6; line-height:1.35;
+    text-shadow:0 0 8px rgba(255,255,255,.25); }
+  .cf-roll-close .small{ margin-top:16px; color:#bfe9c9; font-size:1.02rem; }
+  .cf-roll-close .hand{ color:#ffd34d; text-shadow:0 0 7px rgba(255,211,77,.5); }
+
+  /* the reckoning rolls *over* the celebration — keep the scene (he's still walking
+     to the shuttle), just let the narration recede a little */
+  .cf-stage.js.rolling .cf-term{ opacity:.5; }
+
+  /* ===== controls + static fallback ===== */
+  .cf-controls{ display:flex; gap:10px; justify-content:center; align-items:center;
+    flex-wrap:wrap; margin:16px 0 0; }
+  .cf-btn{ font-family:'Share Tech Mono',monospace; cursor:pointer; text-decoration:none;
+    background:#0c1a12; color:#7CFC7A; border:1px solid #2c5a3f; border-radius:10px;
+    padding:9px 15px; letter-spacing:.06em; }
+  .cf-btn:hover{ background:#102619; }
+  .cf-btn.alt{ background:#1a120a; color:#ffd34d; border-color:#5a4a2c; }
+
+  .cf-after{ text-align:center; margin-top:18px; }
+  .cf-cta{ display:inline-block; font-family:'Share Tech Mono',monospace; text-decoration:none;
+    background:#7CFC7A; color:#06210f; border-radius:11px; padding:13px 22px; font-size:1.02rem;
+    letter-spacing:.03em; box-shadow:0 0 22px rgba(124,252,122,.4); }
+  .cf-cta em{ font-style:normal; text-decoration:underline; }
+  .cf-cta:hover{ background:#9affa0; }
+  .cf-share{ display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap;
+    margin-top:16px; font-family:'Share Tech Mono',monospace; color:#7a7263; font-size:.85rem; }
+  .cf-sbtn{ font-family:'Share Tech Mono',monospace; cursor:pointer; text-decoration:none;
+    background:#0c1a12; color:#9fc7ad; border:1px solid #2c5a3f; border-radius:8px; padding:6px 12px; }
+  .cf-sbtn:hover{ background:#102619; color:#bfe9c9; }
+  .cf-back{ display:inline-block; margin-top:16px; color:#6f9a7e; font-family:'Share Tech Mono',monospace;
+    font-size:.82rem; text-decoration:none; border-bottom:1px dashed rgba(111,154,126,.5); padding-bottom:2px; }
+  .cf-back:hover{ color:#bfe9c9; }
+
+  .cf-sources{ max-width:760px; margin:22px auto 0; color:#7a7263; font-size:.86rem;
+    line-height:1.7; text-align:center; }
+  .cf-sources h3{ font-size:.8rem; letter-spacing:.12em; text-transform:uppercase; color:#9a917f; margin:0 0 8px; }
+  .cf-sources a{ color:var(--accent,#b9892a); }
+
+  /* If JS is off, reveal the credits statically and hide the moving bits */
+  .cf-stage:not(.js) .cf-roll{ position:static; opacity:1; }
+  .cf-stage:not(.js) .cf-roll-inner{ transform:none; padding:30px 16px; }
+  .cf-stage:not(.js) .cf-scene, .cf-stage:not(.js) .cf-cursor{ display:none; }
+  .cf-stage:not(.js) .cf-term{ height:auto; }
+
+  @media (max-width:560px){
+    .cf-stage{ min-height:90vh; }
+    .cf-shuttle{ left:66%; width:60px; height:124px; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .cf-stage.js .cf-roll{ opacity:1; }
+    .cf-stage.js.rolling .cf-roll-inner,
+    .cf-stage.js.walk .cf-figure,
+    .cf-stage.js.launch .cf-shuttle,
+    .cf-stage.js.celebrate .cf-fw span{ animation:none; }
+    .cf-stage.js .cf-roll-inner{ transform:none; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set fireworks = [
+  {'top':'13%','left':'17%','c':'#ff3b6b','d':'0s'},
+  {'top':'9%','left':'73%','c':'#ffd400','d':'.35s'},
+  {'top':'22%','left':'45%','c':'#36c6ff','d':'.7s'},
+  {'top':'16%','left':'87%','c':'#7CFC7A','d':'1s'},
+  {'top':'27%','left':'29%','c':'#c08bff','d':'1.25s'},
+  {'top':'11%','left':'52%','c':'#ff8a3d','d':'1.55s'}
+] %}
+<div class="cf-wrap">
+
+  <section class="cf-stage" id="cfStage" aria-label="A satirical celebration of the first trillionaire, followed by the human cost of the funding cuts">
+    <div class="cf-sky"></div>
+
+    <!-- fireworks -->
+    {% for fw in fireworks %}
+    <div class="cf-fw" style="top:{{ fw.top }}; left:{{ fw.left }}; --c:{{ fw.c }}; --d:{{ fw.d }};">
+      {% for i in range(12) %}<span style="--a:{{ i * 30 }}deg;"></span>{% endfor %}
+    </div>
+    {% endfor %}
+
+    <!-- terminal -->
+    <div class="cf-term" id="cfTerm" role="log" aria-live="polite"></div>
+
+    <!-- scene -->
+    <div class="cf-scene">
+      <div class="cf-ground"></div>
+      <div class="cf-smoke"></div>
+
+      <!-- tiny tech-bro caricature heading for the exit -->
+      <svg class="cf-figure" viewBox="0 0 34 64" aria-hidden="true">
+        <!-- legs -->
+        <rect class="cf-leg cf-leg-l" x="13" y="40" width="4" height="20" rx="2" fill="#1d242b"/>
+        <rect class="cf-leg cf-leg-r" x="17" y="40" width="4" height="20" rx="2" fill="#11161b"/>
+        <!-- body / suit -->
+        <rect x="9" y="22" width="16" height="22" rx="4" fill="#222b33"/>
+        <path d="M17 22 l-4 12 4 4 4-4 z" fill="#2f3a44"/>
+        <!-- head + cap -->
+        <circle cx="17" cy="13" r="8" fill="#e7c39c"/>
+        <path d="M9 11 a8 8 0 0 1 16 0 z" fill="#14181d"/>
+        <!-- smug little smile -->
+        <path d="M14 16 q3 2 6 0" stroke="#9c6b45" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      </svg>
+
+      <!-- the escape shuttle -->
+      <svg class="cf-shuttle" viewBox="0 0 72 150" aria-hidden="true">
+        <!-- exhaust flame -->
+        <g class="cf-flame">
+          <path d="M28 138 q8 26 8 26 q0-0 8-26 z" fill="#ffd34d"/>
+          <path d="M31 138 q5 18 5 18 q0 0 5-18 z" fill="#ff7a1a"/>
+        </g>
+        <!-- body -->
+        <path d="M36 6 C50 26 52 60 52 110 L20 110 C20 60 22 26 36 6 Z" fill="#e9edf2"/>
+        <path d="M36 6 C30 22 28 60 28 110 L20 110 C20 60 22 26 36 6 Z" fill="#c3ccd6"/>
+        <!-- fins -->
+        <path d="M20 96 L8 128 L20 122 Z" fill="#c0392b"/>
+        <path d="M52 96 L64 128 L52 122 Z" fill="#c0392b"/>
+        <!-- window -->
+        <circle cx="36" cy="52" r="7" fill="#7fd6ff" stroke="#9aa6b2" stroke-width="2"/>
+        <!-- nose -->
+        <path d="M36 6 C40 12 42 18 43 24 L29 24 C30 18 32 12 36 6 Z" fill="#c0392b"/>
+        <rect x="22" y="108" width="28" height="6" rx="2" fill="#9aa6b2"/>
+      </svg>
+    </div>
+
+    <!-- the credit roll (also the no-JS fallback content) -->
+    <div class="cf-roll">
+      <div class="cf-roll-inner">
+        <div class="cf-thanks">
+          <p class="cf-thanks-label">With very special thanks to</p>
+          <p class="cf-thanks-name">ELON MUSK</p>
+          <p class="cf-thanks-sub">for his generous contribution.<br>
+            <span class="cf-thanks-aside">(he could not stay for the credits.)</span></p>
+        </div>
+        <p class="cf-roll-head">Funded, in part, by — now closed:</p>
+        {% for c in cuts %}
+        <div class="cf-credit">
+          <div class="prog">{{ c.program }}</div>
+          <p class="served">For {{ c.served }}.</p>
+          <p class="impact">{{ c.impact }}</p>
+          <p class="src">Source — {{ c.source }}</p>
+        </div>
+        {% endfor %}
+        <div class="cf-roll-close">
+          <p class="big">These are projections.<br>They are also people.</p>
+          <p class="small">Time is the real currency.<br><span class="hand">Some of them ran out of it.</span></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="cf-crt"></div>
+  </section>
+
+  <div class="cf-controls">
+    <button type="button" class="cf-btn" id="cfReplay">▶ replay</button>
+    <button type="button" class="cf-btn alt" id="cfSkip">skip to the credits</button>
+  </div>
+
+  {% set share_url = 'https://thetimecost.com/celebration' %}
+  {% set share_text = "The world's first trillionaire takes a victory lap — here's the sourced human cost of the funding cuts behind it." %}
+  <div class="cf-after">
+    <a class="cf-cta" href="{{ url_for('core.calculator') }}">→ See what <em>your</em> time is worth</a>
+    <div class="cf-share">
+      <span>Share this page:</span>
+      <button type="button" class="cf-sbtn" id="cfCopy" data-url="{{ share_url }}">Copy link</button>
+      <a class="cf-sbtn" href="https://x.com/intent/post?text={{ (share_text ~ ' ' ~ share_url) | urlencode }}" target="_blank" rel="noopener">Share on X</a>
+      <a class="cf-sbtn" href="https://www.facebook.com/sharer/sharer.php?u={{ share_url | urlencode }}" target="_blank" rel="noopener">Facebook</a>
+    </div>
+    <a class="cf-back" href="{{ url_for('core.trillionaire') }}">← back to the campaign</a>
+  </div>
+
+  <div class="cf-sources">
+    <h3>Every figure above is sourced</h3>
+    <p>
+      Affected populations and projected impacts, not named individuals —
+      {% for c in cuts %}<a href="{{ c.url }}" target="_blank" rel="noopener">{{ c.source }}</a>{% if not loop.last %} · {% endif %}{% endfor %}.
+      Figures are independent estimates of the consequences of the 2025 US foreign-aid cuts; they are projections, and they are contested by the administration.
+    </p>
+  </div>
+</div>
+
+<script>
+(function () {
+  var stage = document.getElementById('cfStage');
+  var term  = document.getElementById('cfTerm');
+  if (!stage || !term) return;
+
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // [text, class, sideEffectClassToAddAfter]
+  var SCRIPT = [
+    ['PROSPERITY-OS v1.0  —  ONLINE', 'sys', null],
+    ['GOOD EVENING, CITIZENS OF EARTH.', '', null],
+    ['I BRING HISTORIC NEWS.', '', null],
+    ['FOR THE FIRST TIME IN ALL OF HUMAN HISTORY,', '', null],
+    ['ONE (1) PERSON HAS ONE TRILLION DOLLARS. ✨', '', null],
+    ['HUMANITY HAS WON.   (RESULTS MAY VARY.)', '', null],
+    // fireworks AND the credits start together:
+    ['MANDATORY CELEBRATION IS NOW BEGINNING.', 'sys', 'celebrate rolling'],
+    ['ESCORTING THE WINNER TO HIS DEPARTURE…', '', 'walk'],
+    ['WHILE THE FIREWORKS ARE STILL WARM, A FOOTNOTE:', 'warn', null],
+    ['HE WILL NOW LEAVE THE PLANET. PLEASE WAVE. 👋', '', 'launch'],
+    ['GODSPEED, SIR.  ☑', '', null],
+    ['(THE FOOTNOTE IS STILL SCROLLING. IT IS LONG.)', 'warn', null],
+  ];
+  // single quiet sign-off once the credits finish rolling
+  var CODA = [
+    ['— SESSION COMPLETE. PRESS REPLAY TO CELEBRATE AGAIN. —', 'sys', null],
+  ];
+
+  var cursor;
+  function makeCursor() {
+    cursor = document.createElement('span');
+    cursor.className = 'cf-cursor';
+    cursor.textContent = ' ';
+  }
+  function typeLine(text, cls, genArg) {
+    return new Promise(function (resolve) {
+      if (genArg !== gen) return resolve();
+      var line = document.createElement('div');
+      line.className = 'cf-line' + (cls ? ' ' + cls : '');
+      term.appendChild(line);
+      if (cursor) line.appendChild(cursor);
+      if (reduce) { line.insertBefore(document.createTextNode(text), cursor || null); trim(); return resolve(); }
+      var i = 0;
+      (function step() {
+        if (genArg !== gen) { return resolve(); }
+        if (i < text.length) {
+          line.insertBefore(document.createTextNode(text.charAt(i)), cursor);
+          i++;
+          term.scrollTop = term.scrollHeight;
+          setTimeout(step, 26 + Math.random() * 26);
+        } else { trim(); resolve(); }
+      })();
+    });
+  }
+  function trim() {
+    // keep the terminal from overflowing — drop the oldest lines
+    while (term.childNodes.length > 7) term.removeChild(term.firstChild);
+    term.scrollTop = term.scrollHeight;
+  }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, reduce ? Math.min(ms, 400) : ms); }); }
+
+  var gen = 0;
+  async function run(fromCreditsOnly) {
+    var my = ++gen;                       // any in-flight run with an older id bails out
+    stage.className = 'cf-stage js crtflicker';
+    term.innerHTML = '';
+    makeCursor();
+
+    var seq = SCRIPT.slice();
+    if (fromCreditsOnly) {
+      // jump straight to the walk + credits roll
+      stage.classList.add('celebrate');
+      seq = SCRIPT.slice(6);
+    }
+
+    var rollStart = 0;
+    for (var k = 0; k < seq.length; k++) {
+      await typeLine(seq[k][0], seq[k][1], my);
+      if (my !== gen) return;
+      if (seq[k][2]) seq[k][2].split(' ').forEach(function (cn) {
+        stage.classList.add(cn);
+        if (cn === 'rolling') rollStart = Date.now();
+      });
+      await wait(seq[k][0] === '…' ? 700 : 560);
+      if (my !== gen) return;
+    }
+    // the credits began mid-walk — let them finish their ~30s roll, then sign off
+    await wait(reduce ? 600 : Math.max(1500, 30000 - (Date.now() - rollStart)));
+    if (my !== gen) return;
+    for (var j = 0; j < CODA.length; j++) {
+      await typeLine(CODA[j][0], CODA[j][1], my);
+      if (my !== gen) return;
+      await wait(700);
+      if (my !== gen) return;
+    }
+  }
+
+  document.getElementById('cfReplay').addEventListener('click', function () { run(false); });
+  document.getElementById('cfSkip').addEventListener('click', function () { run(true); });
+
+  var copyBtn = document.getElementById('cfCopy');
+  if (copyBtn) copyBtn.addEventListener('click', function () {
+    var url = (window.location.host.indexOf('localhost') === -1) ? window.location.href : (copyBtn.getAttribute('data-url') || window.location.href);
+    var done = function () { copyBtn.textContent = 'Copied ✓'; setTimeout(function () { copyBtn.textContent = 'Copy link'; }, 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(done).catch(done); }
+    else { var t = document.createElement('textarea'); t.value = url; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(t); done(); }
+  });
+
+  // autostart when the stage scrolls into view
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { io.disconnect(); run(false); } });
+    }, { threshold: 0.4 });
+    io.observe(stage);
+  } else { run(false); }
+})();
+</script>
+{% endblock %}
