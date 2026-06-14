@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block title %}Trillionaire Time — TimeCost{% endblock %}
+{% block meta %}
+<meta name="description" content="Your groceries cost you minutes of your life. Here's what the world's first trillionaire pockets in those exact same minutes." />
+<meta property="og:title" content="Trillionaire Time" />
+<meta property="og:description" content="A loaf of bread costs you a few minutes. The first trillionaire earns a few million in the same breath. Anyway." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://thetimecost.com/trillionaire" />
+<meta property="og:image" content="https://thetimecost.com/static/og-trillionaire.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Trillionaire Time" />
+<meta name="twitter:description" content="A loaf of bread costs you a few minutes. The first trillionaire earns a few million in the same breath." />
+<meta name="twitter:image" content="https://thetimecost.com/static/og-trillionaire.png" />
+{% endblock %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== Caravaggio: a dark, spotlit stage ===== */
+  .trill-stage{
+    position: relative;
+    margin-top: 8px;
+    border-radius: 28px;
+    padding: clamp(28px, 6vw, 64px) clamp(16px, 5vw, 56px) 48px;
+    background: radial-gradient(120% 85% at 50% -10%, #34281a 0%, #1a130c 50%, #080604 100%);
+    color: #f4ead4;
+    overflow: hidden;
+    box-shadow: 0 34px 90px rgba(0,0,0,.5), inset 0 0 150px rgba(0,0,0,.6);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+  }
+  .trill-stage::before{ /* spotlight from above */
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background: radial-gradient(46% 36% at 50% 4%, rgba(255,210,118,.30), transparent 70%);
+  }
+  .trill-stage > *{ position: relative; }
+
+  /* ===== Hero ===== */
+  .trill-hero{ text-align:center; max-width:48rem; margin:0 auto; }
+  .trill-kicker{
+    font-family:'Caveat',cursive; font-weight:700; font-size:1.7rem; color:#ffcf5c;
+    display:inline-block; transform:rotate(-3deg);
+  }
+  .trill-title{
+    font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase;
+    font-size: clamp(2.6rem, 10vw, 5.4rem); line-height:.92; letter-spacing:.005em;
+    margin:.15rem 0 0; color:#fff6e6;
+    text-shadow: 4px 4px 0 #ff2d95, 8px 8px 0 #2d8cff;
+  }
+  .trill-sub{ margin:18px auto 0; color:#e6d7b8; font-size:1.05rem; line-height:1.6; }
+  .trill-hand{ font-family:'Caveat',cursive; font-weight:700; color:#ffd400; font-size:1.4rem; }
+
+  /* ===== wage control: dark glass, pop accent ===== */
+  .trill-wage{
+    display:flex; gap:16px 18px; align-items:flex-end; flex-wrap:wrap; justify-content:center;
+    background:rgba(255,255,255,.06); border:2px solid rgba(255,255,255,.16);
+    border-radius:14px; padding:14px 18px; max-width:600px; margin:26px auto 0;
+    backdrop-filter: blur(4px);
+  }
+  .trill-field{ display:flex; flex-direction:column; gap:5px; text-align:left; }
+  .trill-wage label{ font-weight:700; font-size:.78rem; letter-spacing:.02em; color:#cbb88f; text-transform:uppercase; }
+  .trill-wagepair{ display:flex; gap:6px; }
+  .trill-wage input{
+    width:92px; padding:9px 10px; border:2px solid rgba(255,255,255,.25); border-radius:10px;
+    background:#0d0a06; color:#fff6e6; font:inherit; font-weight:800;
+  }
+  .trill-wage select{
+    padding:9px 10px; border:2px solid rgba(255,255,255,.25); border-radius:10px;
+    background:#0d0a06; color:#fff6e6; font:inherit; font-weight:700; cursor:pointer;
+  }
+  .trill-wage select:focus, .trill-wage input:focus{ outline:none; border-color:#ff2d95; }
+  .trill-btn{
+    font-family:'Anton',sans-serif; font-weight:400; letter-spacing:.03em; cursor:pointer;
+    text-transform:uppercase; font-size:.92rem;
+    background:#ff2d95; color:#fff; border:none; border-radius:11px;
+    padding:11px 16px; box-shadow:0 0 0 2px #ff2d95, 4px 4px 0 rgba(0,0,0,.4);
+  }
+  .trill-btn:hover{ transform:translate(-1px,-1px); }
+  .trill-note{ text-align:center; color:#cbb88f; font-size:.85rem; margin:12px 0 0; }
+
+  /* ===== the scoreboard: your stat vs. a GIANT number ===== */
+  .trill-board{ margin-top:34px; }
+  .trill-row{
+    display:flex; align-items:center; justify-content:space-between; gap:20px;
+    padding:26px 4px; border-top:1px solid rgba(255,255,255,.13); flex-wrap:wrap;
+  }
+  .trill-row:last-child{ border-bottom:1px solid rgba(255,255,255,.13); }
+
+  .trill-you{ flex:1 1 230px; min-width:200px; }
+  .trill-item{ font-size:1.35rem; font-weight:800; color:#fff6e6; }
+  .trill-item .emo{ margin-right:8px; }
+  .trill-price{ font-weight:700; color:#ffcf5c; }
+  .trill-cost{ margin:5px 0 0; color:#cbb88f; font-size:.98rem; }
+  .trill-basis{ margin:3px 0 0; color:#8d7c5e; font-size:.78rem; font-style:italic; }
+
+  .trill-them{ flex:0 1 auto; display:flex; align-items:center; gap:14px; }
+  .trill-num{
+    font-family:'Anton',sans-serif; font-weight:400; line-height:.82;
+    font-size: clamp(2.8rem, 10vw, 5.6rem); color:var(--pop, #ffd400);
+    display:inline-block; text-shadow: 4px 5px 0 rgba(0,0,0,.45);
+    white-space:nowrap;
+  }
+  .trill-row:nth-child(odd)  .trill-num{ transform:rotate(-4deg); }
+  .trill-row:nth-child(even) .trill-num{ transform:rotate(3deg); }
+  .trill-numcap{
+    max-width:150px; text-transform:uppercase; letter-spacing:.05em;
+    font-size:.74rem; font-weight:800; line-height:1.35; color:#e6d7b8;
+  }
+  .trill-numcap small{ display:block; text-transform:none; letter-spacing:0; font-weight:600; opacity:.62; }
+
+  /* ===== closing punch ===== */
+  .trill-kicker-line{
+    margin-top:38px; text-align:center;
+  }
+  .trill-punch{
+    font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase;
+    font-size: clamp(1.6rem, 5.5vw, 2.7rem); line-height:1.0; color:#fff6e6;
+  }
+  .trill-punch .pop{ color:#ff2d95; }
+  .trill-aside{ font-family:'Caveat',cursive; font-weight:700; color:#ffd400; font-size:1.5rem; margin-top:8px; }
+
+  .trill-share{ display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap; margin-top:22px; }
+  .trill-share a{
+    display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:.92rem;
+    border-radius:11px; padding:10px 14px; text-decoration:none;
+    background:#ffd400; color:#1a120a; box-shadow:3px 3px 0 rgba(0,0,0,.45);
+  }
+  .trill-share a.x-btn{ background:#2d8cff; color:#fff; }
+  .trill-share a.go-btn{ background:#00c389; color:#06231a; font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:.02em; }
+  .trill-share a:hover{ transform:translate(-1px,-1px); box-shadow:4px 4px 0 rgba(0,0,0,.45); }
+
+  /* ===== the fine print / methodology ===== */
+  .trill-fine{
+    margin:30px auto 0; max-width:640px;
+    border:1px solid rgba(255,255,255,.14); border-radius:14px;
+    background:rgba(255,255,255,.04);
+  }
+  .trill-fine summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    font-weight:800; font-size:.92rem; color:#ffcf5c;
+    display:flex; align-items:center; gap:8px;
+  }
+  .trill-fine summary::-webkit-details-marker{ display:none; }
+  .trill-fine summary::before{ content:"›"; font-size:1.3rem; line-height:1; transition:transform .15s; }
+  .trill-fine[open] summary::before{ transform:rotate(90deg); }
+  .trill-fine-body{ padding:0 18px 18px; color:#d8c7a8; font-size:.9rem; line-height:1.6; }
+  .trill-fine-body strong{ color:#f4ead4; }
+  .trill-fine-body ul{ margin:10px 0; padding-left:18px; }
+  .trill-fine-body li{ margin:7px 0; }
+  .trill-fine-foot{ margin:12px 0 0; }
+  .trill-fine-body a{ color:#ffcf5c; }
+
+  @media (max-width:540px){
+    .trill-row{ gap:8px; }
+    .trill-them{ width:100%; justify-content:flex-start; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set pops = ['#ff2d95', '#2d8cff', '#ffd400', '#ff6a00', '#00c389', '#ff3b3b'] %}
+<div class="page">
+  <section class="trill-stage">
+    <div class="trill-hero">
+      <span class="trill-kicker">trillionaire time ✦</span>
+      <h1 class="trill-title">You buy milk.<br>They buy the block.</h1>
+      <p class="trill-sub">
+        Same slice of your one finite, precious life — wildly different receipts.
+        Everyday stuff costs <em>you</em> minutes. Here's what the world's
+        <strong>brand-new first trillionaire</strong> — that's Elon Musk, who tipped past
+        $1,000,000,000,000 on June 12, 2026 — pockets in those exact same minutes.
+        <span class="trill-hand">congrats to him.</span>
+      </p>
+
+      <form class="trill-wage" method="get" action="{{ url_for('core.trillionaire') }}">
+        <span class="trill-field">
+          <label for="region">Where you are</label>
+          <select id="region" name="region" onchange="this.form.submit()">
+            {% for code, flag, label in regions %}
+            <option value="{{ code }}"{% if code == region %} selected{% endif %}>{{ flag }} {{ label }}</option>
+            {% endfor %}
+          </select>
+        </span>
+        <span class="trill-field">
+          <label for="wage">You earn ({{ currency }})</label>
+          <span class="trill-wagepair">
+            <input id="wage" name="wage" type="number" step="any" min="0"
+                   value="{{ '%.2f'|format(wage_value) if period == 'hour' else '%.0f'|format(wage_value) }}">
+            <select name="period" onchange="this.form.submit()">
+              <option value="hour"{% if period == 'hour' %} selected{% endif %}>per hour</option>
+              <option value="month"{% if period == 'month' %} selected{% endif %}>per month</option>
+              <option value="year"{% if period == 'year' %} selected{% endif %}>per year</option>
+            </select>
+          </span>
+        </span>
+        <button class="trill-btn" type="submit">Do the math</button>
+      </form>
+      <p class="trill-note">
+        {% if region_overridden %}Showing {{ region_flag }} {{ region_label }} prices.{% else %}Auto-detected {{ region_flag }} {{ region_label }} — switch it above if I guessed wrong.{% endif %}
+        {% if used_default %} Running on a ballpark wage, sugar — drop your real number in.{% endif %}
+      </p>
+    </div>
+
+    <div class="trill-board">
+      {% for row in rows %}
+      <div class="trill-row" style="--pop:{{ pops[loop.index0 % pops|length] }};">
+        <div class="trill-you">
+          <div class="trill-item"><span class="emo">{{ row.emoji }}</span>{{ row.name }} <span class="trill-price">{{ currency }}{{ '%.2f'|format(row.price) }}</span></div>
+          <p class="trill-cost">
+            costs you
+            {% if row.minutes < 90 %}{{ '%.0f'|format(row.minutes) }} minutes{% else %}{{ '%.1f'|format(row.pct_workday/100) }} working days{% endif %}
+          </p>
+          {% if row.basis %}<p class="trill-basis">{{ row.basis }}</p>{% endif %}
+        </div>
+        <div class="trill-them">
+          <span class="trill-num">{{ row.homes_round }}</span>
+          <span class="trill-numcap">family homes<small>they bank in that same time</small></span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="trill-kicker-line">
+      <p class="trill-punch">Your rent. <span class="pop">Their {{ climax.homes_round }} front doors.</span></p>
+      <p class="trill-aside">same minutes, sugar. bless. 🍒</p>
+
+      {% set lead = rows[0] %}
+      {% set share_text = (lead.name|capitalize) ~ ' costs me ' ~ ('%.0f'|format(lead.minutes)) ~ ' minutes of my life. In those same minutes Elon Musk — the first trillionaire — banks ' ~ currency ~ lead.earns_h ~ '. Time is the real currency.' %}
+      {% set share_url = 'https://thetimecost.com/trillionaire' %}
+      <div class="trill-share">
+        <a class="x-btn" href="https://x.com/intent/post?text={{ (share_text ~ ' — ' ~ share_url) | urlencode }}" target="_blank" rel="noopener" title="Share on X">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          Share the rage
+        </a>
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ share_url | urlencode }}" target="_blank" rel="noopener" title="Share on Facebook">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          Facebook
+        </a>
+        <a class="go-btn" href="{{ url_for('core.calculator') }}">See what your whole life costs &rarr;</a>
+      </div>
+    </div>
+
+    <details class="trill-fine">
+      <summary>Where do these numbers come from?</summary>
+      <div class="trill-fine-body">
+        <p><strong>Short version:</strong> these are ballpark figures we set by hand, not a live price feed. The point is the <em>gap</em>, not a penny-accurate receipt. Everything recalculates the moment you switch region or type your own wage.</p>
+        <ul>
+          <li><strong>The trillionaire.</strong> There's one now: <strong>Elon Musk</strong> crossed $1&nbsp;trillion on <strong>12 June 2026</strong>, when SpaceX's record Nasdaq debut sent his net worth to about $1.05&nbsp;trillion. We model that fortune growing roughly <strong>${{ '%.0f'|format(trillionaire_growth_usd/1e9) }} billion a year</strong> — over a {{ '{:,}'.format(working_hours_year) }}-hour working year, about <strong>${{ '%.0f'|format(trill_per_hour_usd/1e6) }} million an hour</strong>. We only ever compare the <em>same slice of time</em> a thing costs you.</li>
+          <li><strong>Your prices.</strong> Typical recent retail prices for {{ region_flag }} {{ region_label }} — e.g. a tank of gas is figured as a full tank at recent pump prices (shown on the row). Groceries are everyday shelf prices; rent is a rough one-bed monthly average. Approximate, not an index.</li>
+          <li><strong>“Family homes.”</strong> The trillionaire's haul ÷ an average home where you are — <strong>{{ currency }}{{ '{:,.0f}'.format(home_price) }}</strong> for {{ region_label }}. It's a vivid yardstick, not a property valuation.</li>
+          <li><strong>Your wage.</strong> Defaults to a rough {{ region_label }} median of <strong>{{ currency }}{{ '%.0f'|format(default_hourly) }}/hr</strong> until you enter your own (per hour, month, or year). Monthly/annual pay is spread over a {{ '{:,}'.format(working_hours_year) }}-hour year.</li>
+          <li><strong>Currency.</strong> Converted at approximate recent exchange rates.</li>
+        </ul>
+        <p class="trill-fine-foot">Got better local numbers? <a href="{{ url_for('core.calculator') }}">Run your own wage through the calculator</a> for an exact figure.</p>
+      </div>
+    </details>
+  </section>
+</div>
+{% endblock %}
