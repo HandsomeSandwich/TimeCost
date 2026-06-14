@@ -72,30 +72,64 @@
     background:linear-gradient(#0c1a12, #060b08);
     border-top:1px solid rgba(124,252,122,.18); }
 
+  /* ===== Tron skyline behind the scene — collapses when the credits roll ===== */
+  .cf-city{ position:absolute; left:0; right:0; bottom:11%; height:46%; z-index:1; pointer-events:none; }
+  .cf-bldg{ position:absolute; bottom:0; border:2px solid var(--neon); border-bottom:none;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 13px, color-mix(in srgb, var(--neon) 24%, transparent) 13px 14px),
+      repeating-linear-gradient(90deg, transparent 0 11px, color-mix(in srgb, var(--neon) 15%, transparent) 11px 12px),
+      linear-gradient(180deg, color-mix(in srgb, var(--neon) 13%, transparent), transparent 65%);
+    box-shadow:0 0 13px color-mix(in srgb, var(--neon) 55%, transparent),
+      inset 0 0 16px color-mix(in srgb, var(--neon) 22%, transparent);
+    transform-origin:bottom center; }
+  .cf-grid{ position:absolute; left:-30%; right:-30%; bottom:11%; height:130px; z-index:1;
+    background-image:
+      linear-gradient(rgba(54,214,255,.5) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(54,214,255,.5) 1px, transparent 1px);
+    background-size:46px 26px; transform:perspective(240px) rotateX(66deg); transform-origin:bottom center;
+    opacity:.55; pointer-events:none; }
+  .cf-stage.js.rolling .cf-bldg{ animation:collapse 3s cubic-bezier(.6,0,.9,.25) forwards;
+    animation-delay:var(--cd, 0s); }
+  @keyframes collapse{
+    0%{ transform:translateY(0) scaleY(1) skewX(0); opacity:1; }
+    14%{ transform:translateY(0) scaleY(1.03) skewX(2deg); filter:brightness(1.8); }   /* power surge */
+    20%{ filter:brightness(.45); }
+    100%{ transform:translateY(14px) scaleY(.02) skewX(9deg); opacity:.2; }            /* sinks + topples */
+  }
+  .cf-stage.js.rolling .cf-grid{ animation:gridfail 3.4s ease-out forwards; }
+  @keyframes gridfail{ 0%{opacity:.55} 18%{opacity:.85; filter:hue-rotate(-35deg)} 100%{opacity:.1; filter:hue-rotate(-55deg)} }
+
+  /* the light column the rocket leaves behind — the credits roll up inside it */
+  .cf-beam{ position:absolute; left:50%; bottom:25%; width:130px; transform:translateX(-50%);
+    height:0; z-index:1; opacity:0; pointer-events:none;
+    background:linear-gradient(to top, rgba(127,214,255,.4), rgba(127,214,255,.06) 60%, transparent); }
+  .cf-stage.js.launch .cf-beam{ animation:beam 3.6s ease-out forwards; }
+  @keyframes beam{ 0%{opacity:0; height:0} 14%{opacity:.7; height:34vh} 100%{opacity:.15; height:130vh} }
+
   .cf-figure{ position:absolute; bottom:24%; left:8%; width:34px; height:64px; z-index:3; }
   .cf-stage.js .cf-figure{ left:6%; }
   .cf-stage.js.walk .cf-figure{ animation:walkAcross 3.4s ease-in forwards; }
-  @keyframes walkAcross{ to{ left:64%; opacity:0; transform:translateY(4px) scale(.86); } }
+  @keyframes walkAcross{ to{ left:47%; opacity:0; transform:translateY(4px) scale(.86); } }
   .cf-leg{ transform-origin:top center; }
   .cf-stage.js.walk .cf-leg-l{ animation:legA .42s linear infinite; }
   .cf-stage.js.walk .cf-leg-r{ animation:legB .42s linear infinite; }
   @keyframes legA{ 0%,100%{transform:rotate(16deg)} 50%{transform:rotate(-16deg)} }
   @keyframes legB{ 0%,100%{transform:rotate(-16deg)} 50%{transform:rotate(16deg)} }
 
-  .cf-shuttle{ position:absolute; bottom:25%; left:70%; width:72px; height:150px; z-index:3;
-    transform-origin:50% 100%; }
+  .cf-shuttle{ position:absolute; bottom:25%; left:50%; width:72px; height:150px; z-index:3;
+    transform:translateX(-50%); transform-origin:50% 100%; }
   .cf-stage.js.launch .cf-shuttle{ animation:launch 3.6s cubic-bezier(.5,0,.85,.3) forwards; }
   @keyframes launch{
-    0%{ transform:translateY(0) }
-    14%{ transform:translate(-2px,2px) }
-    20%{ transform:translate(2px,1px) }
-    28%{ transform:translate(-2px,0) }
-    100%{ transform:translateY(-135vh) }
+    0%{ transform:translate(-50%,0) }
+    14%{ transform:translate(calc(-50% - 2px),2px) }
+    20%{ transform:translate(calc(-50% + 2px),1px) }
+    28%{ transform:translate(calc(-50% - 2px),0) }
+    100%{ transform:translate(-50%,-135vh) }
   }
   .cf-flame{ transform-origin:50% 0%; opacity:0; }
   .cf-stage.js.launch .cf-flame{ opacity:1; animation:flame .12s linear infinite; }
   @keyframes flame{ 0%,100%{transform:scaleY(1) scaleX(1)} 50%{transform:scaleY(1.5) scaleX(.8)} }
-  .cf-smoke{ position:absolute; left:64%; bottom:24%; width:120px; height:60px; z-index:2;
+  .cf-smoke{ position:absolute; left:calc(50% - 60px); bottom:24%; width:120px; height:60px; z-index:2;
     background:radial-gradient(closest-side, rgba(200,220,210,.5), transparent 70%);
     opacity:0; }
   .cf-stage.js.launch .cf-smoke{ animation:smoke 2.4s ease-out forwards; }
@@ -186,14 +220,17 @@
 
   @media (max-width:560px){
     .cf-stage{ min-height:90vh; }
-    .cf-shuttle{ left:66%; width:60px; height:124px; }
+    .cf-shuttle{ width:60px; height:124px; }
   }
   @media (prefers-reduced-motion:reduce){
     .cf-stage.js .cf-roll{ opacity:1; }
     .cf-stage.js.rolling .cf-roll-inner,
     .cf-stage.js.walk .cf-figure,
     .cf-stage.js.launch .cf-shuttle,
-    .cf-stage.js.celebrate .cf-fw span{ animation:none; }
+    .cf-stage.js.celebrate .cf-fw span,
+    .cf-stage.js.rolling .cf-bldg,
+    .cf-stage.js.rolling .cf-grid,
+    .cf-stage.js.launch .cf-beam{ animation:none; }
     .cf-stage.js .cf-roll-inner{ transform:none; }
   }
 </style>
@@ -212,6 +249,30 @@
 
   <section class="cf-stage" id="cfStage" aria-label="A satirical celebration of the first trillionaire, followed by the human cost of the funding cuts">
     <div class="cf-sky"></div>
+
+    <!-- Tron skyline (collapses when the credits roll) + grid floor -->
+    {% set city = [
+      {'l':1,'w':46,'h':150,'c':'#36d6ff','d':'.6s'},
+      {'l':8,'w':60,'h':232,'c':'#36d6ff','d':'3.2s'},
+      {'l':16,'w':40,'h':112,'c':'#36d6ff','d':'1.4s'},
+      {'l':22,'w':54,'h':190,'c':'#ff7a1a','d':'5s'},
+      {'l':30,'w':44,'h':262,'c':'#36d6ff','d':'8.5s'},
+      {'l':37,'w':58,'h':140,'c':'#36d6ff','d':'2.2s'},
+      {'l':45,'w':48,'h':206,'c':'#36d6ff','d':'10s'},
+      {'l':53,'w':40,'h':120,'c':'#ff7a1a','d':'4s'},
+      {'l':60,'w':62,'h':244,'c':'#36d6ff','d':'6.5s'},
+      {'l':69,'w':44,'h':160,'c':'#36d6ff','d':'11.5s'},
+      {'l':76,'w':56,'h':216,'c':'#36d6ff','d':'1s'},
+      {'l':85,'w':46,'h':130,'c':'#36d6ff','d':'9s'},
+      {'l':91,'w':52,'h':186,'c':'#36d6ff','d':'7.2s'}
+    ] %}
+    <div class="cf-city">
+      {% for b in city %}
+      <div class="cf-bldg" style="left:{{ b.l }}%; width:{{ b.w }}px; height:{{ b.h }}px; --neon:{{ b.c }}; --cd:{{ b.d }};"></div>
+      {% endfor %}
+    </div>
+    <div class="cf-grid"></div>
+    <div class="cf-beam"></div>
 
     <!-- fireworks -->
     {% for fw in fireworks %}
