@@ -154,38 +154,157 @@ def _humanize_big(n: float) -> str:
 # Projected first-trillionaire annual income (hypothetical $1T-er), USD.
 TRILLIONAIRE_GROWTH_USD = 250_000_000_000
 
+# Region-localised everyday baskets for the trillionaire page. Each region carries
+# its own currency symbol, USD conversion (so the $-symbol collisions between US/CA/AU
+# don't break the math), a rough median hourly wage, an average family-home price (all
+# in local currency), and a basket priced + unit-labelled the local way (gallon vs litre,
+# "gas" vs "petrol"). Prices are ballpark — this is a satirical page, not an index.
+REGIONS = {
+    "US": {
+        "label": "United States", "flag": "🇺🇸", "currency": "$",
+        "usd_rate": 1.00, "default_hourly": 23.0, "home_price": 420_000,
+        "basket": [
+            {"emoji": "🥛", "name": "a gallon of milk",     "price": 4.00},
+            {"emoji": "🥚", "name": "a dozen eggs",          "price": 3.50},
+            {"emoji": "🍞", "name": "a loaf of bread",       "price": 2.50},
+            {"emoji": "⛽", "name": "a tank of gas",          "price": 52.00},
+            {"emoji": "🛒", "name": "a weekly grocery run",  "price": 90.00},
+            {"emoji": "🏠", "name": "a month's rent",        "price": 1800.00},
+        ],
+    },
+    "UK": {
+        "label": "United Kingdom", "flag": "🇬🇧", "currency": "£",
+        "usd_rate": 1.27, "default_hourly": 15.0, "home_price": 290_000,
+        "basket": [
+            {"emoji": "🥛", "name": "4 pints of milk",       "price": 1.45},
+            {"emoji": "🥚", "name": "6 eggs",                 "price": 1.50},
+            {"emoji": "🍞", "name": "a loaf of bread",       "price": 1.40},
+            {"emoji": "⛽", "name": "a tank of petrol",       "price": 75.00},
+            {"emoji": "🛒", "name": "a weekly food shop",    "price": 75.00},
+            {"emoji": "🏠", "name": "a month's rent",        "price": 1300.00},
+        ],
+    },
+    "EU": {
+        "label": "Eurozone", "flag": "🇪🇺", "currency": "€",
+        "usd_rate": 1.08, "default_hourly": 17.0, "home_price": 320_000,
+        "basket": [
+            {"emoji": "🥛", "name": "a litre of milk",       "price": 1.10},
+            {"emoji": "🥚", "name": "10 eggs",                "price": 2.60},
+            {"emoji": "🍞", "name": "a loaf of bread",       "price": 1.60},
+            {"emoji": "⛽", "name": "a tank of petrol",       "price": 90.00},
+            {"emoji": "🛒", "name": "a weekly food shop",    "price": 80.00},
+            {"emoji": "🏠", "name": "a month's rent",        "price": 1100.00},
+        ],
+    },
+    "CA": {
+        "label": "Canada", "flag": "🇨🇦", "currency": "CA$",
+        "usd_rate": 0.73, "default_hourly": 25.0, "home_price": 700_000,
+        "basket": [
+            {"emoji": "🥛", "name": "4 L of milk",           "price": 5.50},
+            {"emoji": "🥚", "name": "a dozen eggs",          "price": 3.80},
+            {"emoji": "🍞", "name": "a loaf of bread",       "price": 3.00},
+            {"emoji": "⛽", "name": "a tank of gas",          "price": 80.00},
+            {"emoji": "🛒", "name": "a weekly grocery run",  "price": 110.00},
+            {"emoji": "🏠", "name": "a month's rent",        "price": 2000.00},
+        ],
+    },
+    "AU": {
+        "label": "Australia", "flag": "🇦🇺", "currency": "A$",
+        "usd_rate": 0.66, "default_hourly": 35.0, "home_price": 920_000,
+        "basket": [
+            {"emoji": "🥛", "name": "2 L of milk",           "price": 3.10},
+            {"emoji": "🥚", "name": "a dozen eggs",          "price": 5.50},
+            {"emoji": "🍞", "name": "a loaf of bread",       "price": 3.50},
+            {"emoji": "⛽", "name": "a tank of petrol",       "price": 95.00},
+            {"emoji": "🛒", "name": "a weekly food shop",    "price": 120.00},
+            {"emoji": "🏠", "name": "a month's rent",        "price": 2200.00},
+        ],
+    },
+    "IN": {
+        "label": "India", "flag": "🇮🇳", "currency": "₹",
+        "usd_rate": 0.012, "default_hourly": 150.0, "home_price": 8_000_000,
+        "basket": [
+            {"emoji": "🥛", "name": "a litre of milk",       "price": 60.0},
+            {"emoji": "🥚", "name": "a dozen eggs",          "price": 80.0},
+            {"emoji": "🍞", "name": "a loaf of bread",       "price": 50.0},
+            {"emoji": "⛽", "name": "a tank of petrol",       "price": 4000.0},
+            {"emoji": "🛒", "name": "a weekly grocery run",  "price": 2500.0},
+            {"emoji": "🏠", "name": "a month's rent",        "price": 20000.0},
+        ],
+    },
+}
+
+# Eurozone members (ISO territory codes) collapse to the "EU" basket.
+_EU_TERRITORIES = {
+    "DE", "FR", "ES", "IT", "NL", "IE", "PT", "AT", "BE", "FI", "GR", "SK",
+    "SI", "LU", "LV", "LT", "EE", "CY", "MT", "HR",
+}
+# When locale tells us nothing, fall back from the app's saved currency to a region.
+_CURRENCY_TO_REGION = {"$": "US", "£": "UK", "€": "EU", "₹": "IN"}
+# How many working hours one "per X" wage period spans (2080h working year).
+_PERIOD_HOURS = {"hour": 1.0, "month": WORKING_HOURS_PER_YEAR / 12.0, "year": float(WORKING_HOURS_PER_YEAR)}
+
+
+def _detect_region(override: str | None) -> str:
+    """Resolve the region: explicit override → browser locale → saved currency → US."""
+    if override:
+        code = override.strip().upper()
+        if code in REGIONS:
+            return code
+        if code == "GB":
+            return "UK"
+    try:
+        for lang, _q in request.accept_languages:
+            parts = lang.replace("_", "-").split("-")
+            if len(parts) > 1:
+                terr = parts[-1].upper()
+                if terr in REGIONS:
+                    return terr
+                if terr == "GB":
+                    return "UK"
+                if terr in _EU_TERRITORIES:
+                    return "EU"
+    except Exception:
+        pass
+    return _CURRENCY_TO_REGION.get(_currency(), "US")
+
 
 @core_bp.get("/trillionaire")
 def trillionaire():
-    """Sarcastic campaign page: your groceries vs. what the first trillionaire
-    pockets in the exact same slice of your working life."""
-    currency = _currency()
-    hourly = get_effective_hourly_rate()
+    """Sarcastic campaign page: your everyday spend vs. what the first trillionaire
+    pockets in the exact same slice of your working life — localised by region."""
+    region_arg = request.args.get("region")
+    region = _detect_region(region_arg)
+    reg = REGIONS[region]
+    currency = reg["currency"]
+    usd_rate = reg["usd_rate"]
+
+    # Wage can be entered per hour / month / year; convert to an hourly rate.
+    period = request.args.get("period", "hour")
+    if period not in _PERIOD_HOURS:
+        period = "hour"
+    divisor = _PERIOD_HOURS[period]
+
     wage_q = request.args.get("wage")
-    if wage_q:
-        hourly = safe_float(wage_q, 0.0) or hourly
     used_default = False
-    if not hourly or hourly <= 0:
-        hourly = 18.0  # ~UK median hourly, so the page works before you set a wage
+    if wage_q and safe_float(wage_q, 0.0) > 0:
+        wage_value = safe_float(wage_q, 0.0)
+        hourly = wage_value / divisor
+    else:
         used_default = True
+        hourly = reg["default_hourly"]
+        wage_value = round(reg["default_hourly"] * divisor, 2)
 
-    usd_rate = CURRENCY_TO_USD.get(currency, 1.0)
     trill_hourly = (TRILLIONAIRE_GROWTH_USD / WORKING_HOURS_PER_YEAR) / usd_rate
+    home_price = reg["home_price"]
 
-    basket = [
-        {"emoji": "🥛", "name": "a gallon of milk",   "price": 4.50},
-        {"emoji": "🥚", "name": "a dozen eggs",        "price": 2.50},
-        {"emoji": "🍞", "name": "a loaf of bread",     "price": 1.40},
-        {"emoji": "🛒", "name": "a weekly food shop",  "price": 85.00},
-        {"emoji": "🏠", "name": "a month's rent",      "price": 1300.00},
-    ]
     rows = []
-    for it in basket:
+    for it in reg["basket"]:
         your_hours = it["price"] / hourly
         earns = trill_hourly * your_hours
         # Same loot expressed in average family homes — varies per item and lands
         # harder than "N of the same grocery" (which is a flat ratio).
-        homes = earns / 290000.0
+        homes = earns / home_price
         # Rounded to a clean figure and shown as digits ("24,000"), which read as a
         # giant scoreboard number — punchier and far more compact than spelled-out words.
         if homes < 1000:
@@ -210,6 +329,14 @@ def trillionaire():
         hourly=hourly,
         used_default=used_default,
         rows=rows,
+        climax=rows[-1],
+        region=region,
+        region_flag=reg["flag"],
+        region_label=reg["label"],
+        region_overridden=bool(region_arg),
+        regions=[(code, r["flag"], r["label"]) for code, r in REGIONS.items()],
+        period=period,
+        wage_value=wage_value,
     )
 
 

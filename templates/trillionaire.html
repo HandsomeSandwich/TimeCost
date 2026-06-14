@@ -53,16 +53,23 @@
 
   /* ===== wage control: dark glass, pop accent ===== */
   .trill-wage{
-    display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center;
+    display:flex; gap:16px 18px; align-items:flex-end; flex-wrap:wrap; justify-content:center;
     background:rgba(255,255,255,.06); border:2px solid rgba(255,255,255,.16);
-    border-radius:14px; padding:12px 16px; max-width:480px; margin:26px auto 0;
+    border-radius:14px; padding:14px 18px; max-width:600px; margin:26px auto 0;
     backdrop-filter: blur(4px);
   }
-  .trill-wage label{ font-weight:700; font-size:.92rem; color:#f4ead4; }
+  .trill-field{ display:flex; flex-direction:column; gap:5px; text-align:left; }
+  .trill-wage label{ font-weight:700; font-size:.78rem; letter-spacing:.02em; color:#cbb88f; text-transform:uppercase; }
+  .trill-wagepair{ display:flex; gap:6px; }
   .trill-wage input{
-    width:96px; padding:8px 10px; border:2px solid rgba(255,255,255,.25); border-radius:10px;
+    width:92px; padding:9px 10px; border:2px solid rgba(255,255,255,.25); border-radius:10px;
     background:#0d0a06; color:#fff6e6; font:inherit; font-weight:800;
   }
+  .trill-wage select{
+    padding:9px 10px; border:2px solid rgba(255,255,255,.25); border-radius:10px;
+    background:#0d0a06; color:#fff6e6; font:inherit; font-weight:700; cursor:pointer;
+  }
+  .trill-wage select:focus, .trill-wage input:focus{ outline:none; border-color:#ff2d95; }
   .trill-btn{
     font-family:'Anton',sans-serif; font-weight:400; letter-spacing:.03em; cursor:pointer;
     text-transform:uppercase; font-size:.92rem;
@@ -130,7 +137,7 @@
 {% endblock %}
 
 {% block content %}
-{% set pops = ['#ff2d95', '#2d8cff', '#ffd400', '#ff6a00', '#00c389'] %}
+{% set pops = ['#ff2d95', '#2d8cff', '#ffd400', '#ff6a00', '#00c389', '#ff3b3b'] %}
 <div class="page">
   <section class="trill-stage">
     <div class="trill-hero">
@@ -144,13 +151,32 @@
       </p>
 
       <form class="trill-wage" method="get" action="{{ url_for('core.trillionaire') }}">
-        <label for="wage">Your wage ({{ currency }}/hr)</label>
-        <input id="wage" name="wage" type="number" step="0.5" min="0" value="{{ '%.2f'|format(hourly) }}">
+        <span class="trill-field">
+          <label for="region">Where you are</label>
+          <select id="region" name="region" onchange="this.form.submit()">
+            {% for code, flag, label in regions %}
+            <option value="{{ code }}"{% if code == region %} selected{% endif %}>{{ flag }} {{ label }}</option>
+            {% endfor %}
+          </select>
+        </span>
+        <span class="trill-field">
+          <label for="wage">You earn ({{ currency }})</label>
+          <span class="trill-wagepair">
+            <input id="wage" name="wage" type="number" step="any" min="0"
+                   value="{{ '%.2f'|format(wage_value) if period == 'hour' else '%.0f'|format(wage_value) }}">
+            <select name="period" onchange="this.form.submit()">
+              <option value="hour"{% if period == 'hour' %} selected{% endif %}>per hour</option>
+              <option value="month"{% if period == 'month' %} selected{% endif %}>per month</option>
+              <option value="year"{% if period == 'year' %} selected{% endif %}>per year</option>
+            </select>
+          </span>
+        </span>
         <button class="trill-btn" type="submit">Do the math</button>
       </form>
-      {% if used_default %}
-      <p class="trill-note">Running on a ballpark {{ currency }}18/hr, sugar — drop your real number in above.</p>
-      {% endif %}
+      <p class="trill-note">
+        {% if region_overridden %}Showing {{ region_flag }} {{ region_label }} prices.{% else %}Auto-detected {{ region_flag }} {{ region_label }} — switch it above if I guessed wrong.{% endif %}
+        {% if used_default %} Running on a ballpark wage, sugar — drop your real number in.{% endif %}
+      </p>
     </div>
 
     <div class="trill-board">
@@ -172,7 +198,7 @@
     </div>
 
     <div class="trill-kicker-line">
-      <p class="trill-punch">Your rent. <span class="pop">Their twenty-four thousand front doors.</span></p>
+      <p class="trill-punch">Your rent. <span class="pop">Their {{ climax.homes_round }} front doors.</span></p>
       <p class="trill-aside">same minutes, sugar. bless. 🍒</p>
 
       {% set lead = rows[0] %}
