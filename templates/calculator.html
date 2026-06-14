@@ -214,17 +214,17 @@
         {% endif %}
 
         {% if time_cost and time_cost.ok %}
-        {% set trill = (wealth_rows | selectattr('projected') | list | first) if wealth_rows else None %}
+        {% set trill = (wealth_rows | selectattr('is_trillionaire') | list | first) if wealth_rows else None %}
         {% if trill %}
         <p class="trill-line">
           <i data-lucide="hourglass" style="width:15px;height:15px;vertical-align:-2px;margin-right:4px;"></i>
-          The first trillionaire <span class="muted">(projected)</span> would earn this in <strong>{{ trill.by_growth }}</strong>.
+          The world's first trillionaire <span class="muted">(yes, that's Elon Musk now)</span> would earn this in <strong>{{ trill.by_growth }}</strong>.
           <a href="{{ url_for('core.trillionaire') }}" style="white-space:nowrap;">See the sarcastic breakdown &rarr;</a>
         </p>
         {% endif %}
         {% set share_url = 'https://thetimecost.com/calculate' %}
         {% if trill %}
-          {% set share_text = (item_name or 'This') ~ ' (' ~ currency ~ item_cost ~ ') costs me ' ~ time_cost.human ~ '. The first trillionaire earns it in ' ~ trill.by_growth ~ '. Time is the real currency.' %}
+          {% set share_text = (item_name or 'This') ~ ' (' ~ currency ~ item_cost ~ ') costs me ' ~ time_cost.human ~ '. Elon Musk, the first trillionaire, earns it in ' ~ trill.by_growth ~ '. Time is the real currency.' %}
         {% else %}
           {% set share_text = (item_name or 'This item') ~ ' (' ~ currency ~ item_cost ~ ') costs ' ~ time_cost.human ~ ' on a UK median wage. See how much life that purchase will cost you' %}
         {% endif %}
@@ -282,8 +282,8 @@
             </td>
           </tr>
           {% for b in wealth_rows %}
-          <tr{% if b.projected %} class="wealth-row-trill"{% endif %}>
-            <td>{{ b.name }}{% if b.projected %} <span class="trill-tag">projected</span>{% endif %}</td>
+          <tr{% if b.is_trillionaire %} class="wealth-row-trill"{% endif %}>
+            <td>{{ b.name }}{% if b.is_trillionaire %} <span class="trill-tag">first trillionaire</span>{% endif %}</td>
             <td class="wealth-time">{{ b.by_net_worth }}</td>
             <td class="wealth-time wealth-time-growth">{{ b.by_growth }}</td>
             <td class="wealth-time wealth-can-buy">{{ b.can_buy }}</td>
@@ -295,8 +295,8 @@
 
     <div id="calculatorCompBars">
       <p class="wealth-bars-title">While you buy <strong>1</strong>, they buy&hellip;</p>
-      {% set max_can_buy = (wealth_rows | rejectattr('projected') | map(attribute='can_buy_num') | list | max) %}
-      {% for b in wealth_rows | rejectattr('projected') | sort(attribute='can_buy_num', reverse=True) %}
+      {% set max_can_buy = (wealth_rows | rejectattr('is_trillionaire') | map(attribute='can_buy_num') | list | max) %}
+      {% for b in wealth_rows | rejectattr('is_trillionaire') | sort(attribute='can_buy_num', reverse=True) %}
         {% set pct = [ (b.can_buy_num / max_can_buy * 100) if max_can_buy > 0 else 0, 2] | max %}
         <div class="wealth-bar-row" style="animation-delay:{{ loop.index0 * 0.08 }}s">
           <span class="wealth-bar-name">{{ b.name.split(' ') | last }}</span>
