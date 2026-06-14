@@ -380,11 +380,18 @@ TRILLIONAIRE_CUTS = [
 ]
 
 
-@core_bp.get("/trillionaire/credits")
+@core_bp.get("/celebration")
 def trillionaire_credits():
     """A satirical 80s-terminal 'celebration' of the first trillionaire, with the
-    real human cost of the funding cuts rolling underneath as respectful credits."""
+    real human cost of the funding cuts rolling underneath as respectful credits.
+    Standalone, shareable page (own URL, share buttons, link to the calculator)."""
     return render_template("trillionaire_credits.html", cuts=TRILLIONAIRE_CUTS)
+
+
+@core_bp.get("/trillionaire/credits")
+def trillionaire_credits_legacy():
+    """Old nested path → keep any existing links working."""
+    return redirect(url_for("core.trillionaire_credits"), code=301)
 
 
 @core_bp.route("/subscribe", methods=["POST"])

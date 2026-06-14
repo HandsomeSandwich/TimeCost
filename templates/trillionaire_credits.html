@@ -5,7 +5,12 @@
 <meta property="og:title" content="The Celebration (and the credits)" />
 <meta property="og:description" content="Yay. A trillionaire. While the fireworks are still warm, here's what it cost — real programs, real populations, real projections." />
 <meta property="og:type" content="website" />
-<meta property="og:url" content="https://thetimecost.com/trillionaire/credits" />
+<meta property="og:url" content="https://thetimecost.com/celebration" />
+<meta property="og:image" content="https://thetimecost.com/static/og-trillionaire.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="The Celebration (and the credits)" />
+<meta name="twitter:description" content="Yay. A trillionaire. While the fireworks are still warm, here's the sourced human cost of the funding cuts." />
+<meta name="twitter:image" content="https://thetimecost.com/static/og-trillionaire.png" />
 {% endblock %}
 
 {% block head %}
@@ -151,6 +156,21 @@
   .cf-btn:hover{ background:#102619; }
   .cf-btn.alt{ background:#1a120a; color:#ffd34d; border-color:#5a4a2c; }
 
+  .cf-after{ text-align:center; margin-top:18px; }
+  .cf-cta{ display:inline-block; font-family:'Share Tech Mono',monospace; text-decoration:none;
+    background:#7CFC7A; color:#06210f; border-radius:11px; padding:13px 22px; font-size:1.02rem;
+    letter-spacing:.03em; box-shadow:0 0 22px rgba(124,252,122,.4); }
+  .cf-cta em{ font-style:normal; text-decoration:underline; }
+  .cf-cta:hover{ background:#9affa0; }
+  .cf-share{ display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap;
+    margin-top:16px; font-family:'Share Tech Mono',monospace; color:#7a7263; font-size:.85rem; }
+  .cf-sbtn{ font-family:'Share Tech Mono',monospace; cursor:pointer; text-decoration:none;
+    background:#0c1a12; color:#9fc7ad; border:1px solid #2c5a3f; border-radius:8px; padding:6px 12px; }
+  .cf-sbtn:hover{ background:#102619; color:#bfe9c9; }
+  .cf-back{ display:inline-block; margin-top:16px; color:#6f9a7e; font-family:'Share Tech Mono',monospace;
+    font-size:.82rem; text-decoration:none; border-bottom:1px dashed rgba(111,154,126,.5); padding-bottom:2px; }
+  .cf-back:hover{ color:#bfe9c9; }
+
   .cf-sources{ max-width:760px; margin:22px auto 0; color:#7a7263; font-size:.86rem;
     line-height:1.7; text-align:center; }
   .cf-sources h3{ font-size:.8rem; letter-spacing:.12em; text-transform:uppercase; color:#9a917f; margin:0 0 8px; }
@@ -273,7 +293,19 @@
   <div class="cf-controls">
     <button type="button" class="cf-btn" id="cfReplay">▶ replay</button>
     <button type="button" class="cf-btn alt" id="cfSkip">skip to the credits</button>
-    <a class="cf-btn" href="{{ url_for('core.trillionaire') }}">← back to the campaign</a>
+  </div>
+
+  {% set share_url = 'https://thetimecost.com/celebration' %}
+  {% set share_text = "The world's first trillionaire takes a victory lap — here's the sourced human cost of the funding cuts behind it." %}
+  <div class="cf-after">
+    <a class="cf-cta" href="{{ url_for('core.calculator') }}">→ See what <em>your</em> time is worth</a>
+    <div class="cf-share">
+      <span>Share this page:</span>
+      <button type="button" class="cf-sbtn" id="cfCopy" data-url="{{ share_url }}">Copy link</button>
+      <a class="cf-sbtn" href="https://x.com/intent/post?text={{ (share_text ~ ' ' ~ share_url) | urlencode }}" target="_blank" rel="noopener">Share on X</a>
+      <a class="cf-sbtn" href="https://www.facebook.com/sharer/sharer.php?u={{ share_url | urlencode }}" target="_blank" rel="noopener">Facebook</a>
+    </div>
+    <a class="cf-back" href="{{ url_for('core.trillionaire') }}">← back to the campaign</a>
   </div>
 
   <div class="cf-sources">
@@ -386,6 +418,14 @@
 
   document.getElementById('cfReplay').addEventListener('click', function () { run(false); });
   document.getElementById('cfSkip').addEventListener('click', function () { run(true); });
+
+  var copyBtn = document.getElementById('cfCopy');
+  if (copyBtn) copyBtn.addEventListener('click', function () {
+    var url = (window.location.host.indexOf('localhost') === -1) ? window.location.href : (copyBtn.getAttribute('data-url') || window.location.href);
+    var done = function () { copyBtn.textContent = 'Copied ✓'; setTimeout(function () { copyBtn.textContent = 'Copy link'; }, 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(done).catch(done); }
+    else { var t = document.createElement('textarea'); t.value = url; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(t); done(); }
+  });
 
   // autostart when the stage scrolls into view
   if ('IntersectionObserver' in window) {
