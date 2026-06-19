@@ -53,12 +53,12 @@ def glow_text(pos, text, font, fill, anchor="la", glow_rgb=None, blur=9):
 # --- header prompt ---
 glow_text((58, 44), "> PROSPERITY-OS v1.0  —  ONLINE", mono(22), DIMGREEN, glow_rgb=(40, 110, 60), blur=6)
 
-# --- the sarcastic headline (phosphor green, glowing) ---
-hl = mono(74, bold=True)
-glow_text((56, 120), "YAY.",            hl, GREEN, glow_rgb=(40, 160, 70), blur=11)
-glow_text((56, 206), "A TRILLIONAIRE.", hl, GREEN, glow_rgb=(40, 160, 70), blur=11)
-glow_text((56, 292), "FINALLY.",        hl, GREEN, glow_rgb=(40, 160, 70), blur=11)
-d.text((58, 384), "humanity has won.  (results may vary.)", font=mono(25), fill=DIMGREEN + (255,))
+# --- the headline (phosphor green, glowing) ---
+hl = mono(82, bold=True)
+glow_text((56, 122), "SEND ELON", hl, GREEN, glow_rgb=(40, 160, 70), blur=11)
+glow_text((56, 214), "TO MARS.",  hl, GREEN, glow_rgb=(40, 160, 70), blur=11)
+d.text((58, 320), "he reached a trillion — it's the least we can do.", font=mono(25), fill=DIMGREEN + (255,))
+d.text((58, 356), "press the button. then read who paid for the trip.", font=mono(22), fill=FAINT + (255,))
 
 
 # --- fireworks (upper-right sky) ---
