@@ -392,18 +392,15 @@
   // [text, class, sideEffectClassToAddAfter]
   var SCRIPT = [
     ['PROSPERITY-OS v1.0  —  ONLINE', 'sys', null],
-    ['GOOD EVENING, CITIZENS OF EARTH.', '', null],
-    ['I BRING HISTORIC NEWS.', '', null],
-    ['FOR THE FIRST TIME IN ALL OF HUMAN HISTORY,', '', null],
-    ['ONE (1) PERSON HAS ONE TRILLION DOLLARS. ✨', '', null],
-    ['HUMANITY HAS WON.   (RESULTS MAY VARY.)', '', null],
+    ["OH, WHAT A CELEBRATION WE'LL HAVE TODAY.", '', null],
     // fireworks AND the credits start together:
-    ['MANDATORY CELEBRATION IS NOW BEGINNING.', 'sys', 'celebrate rolling'],
-    ['ESCORTING THE WINNER TO HIS DEPARTURE…', '', 'walk'],
-    ['WHILE THE FIREWORKS ARE STILL WARM, A FOOTNOTE:', 'warn', null],
-    ['HE WILL NOW LEAVE THE PLANET. PLEASE WAVE. 👋', '', 'launch'],
+    ['THANK GOODNESS SOMEONE REACHED A TRILLION.', 'sys', 'celebrate rolling'],
+    ["A HUMAN FEAT THAT WOULDN'T BE POSSIBLE", '', 'walk'],
+    ['WITHOUT ALL THE LITTLE PEOPLE HE MURDERED ALONG THE WAY.', 'warn', null],
+    ['SOMETIMES, LITERALLY.', 'warn', null],
+    ['NOW GET YOUR ASS TO MARS, BUDDY. 🚀', '', 'launch'],
     ['GODSPEED, SIR.  ☑', '', null],
-    ['(THE FOOTNOTE IS STILL SCROLLING. IT IS LONG.)', 'warn', null],
+    ['(THE NAMES BELOW ARE STILL SCROLLING. IT IS A LONG LIST.)', 'warn', null],
   ];
   // single quiet sign-off once the credits finish rolling
   var CODA = [
@@ -452,9 +449,9 @@
 
     var seq = SCRIPT.slice();
     if (fromCreditsOnly) {
-      // jump straight to the walk + credits roll
+      // jump straight to the fireworks + credits roll
       stage.classList.add('celebrate');
-      seq = SCRIPT.slice(6);
+      seq = SCRIPT.slice(2);
     }
 
     var rollStart = 0;
