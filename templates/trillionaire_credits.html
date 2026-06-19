@@ -1,17 +1,17 @@
 {% extends "base.html" %}
-{% block title %}The Celebration — Trillionaire Time{% endblock %}
+{% block title %}Send Elon to Mars — TimeCost{% endblock %}
 {% block meta %}
-<meta name="description" content="A fake 80s-computer celebration of the world's first trillionaire — and the real, sourced human cost of the funding cuts, rolling underneath as credits." />
-<meta property="og:title" content="The Celebration (and the credits)" />
-<meta property="og:description" content="Yay. A trillionaire. While the fireworks are still warm, here's what it cost — real programs, real populations, real projections." />
+<meta name="description" content="He reached a trillion — so press the button and send him to Mars. Then watch the real, sourced human cost of the funding cuts dump out like a leaked file." />
+<meta property="og:title" content="Send Elon to Mars" />
+<meta property="og:description" content="He reached a trillion. The least we can do is send him to Mars. Press the button — then read who paid for the trip." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://thetimecost.com/celebration" />
 <meta property="og:image" content="https://thetimecost.com/static/og-celebration.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="The Celebration (and the credits)" />
-<meta name="twitter:description" content="Yay. A trillionaire. While the fireworks are still warm, here's the sourced human cost of the funding cuts." />
+<meta name="twitter:title" content="Send Elon to Mars" />
+<meta name="twitter:description" content="He reached a trillion. The least we can do is send him to Mars. Press the button — then read who paid for the trip." />
 <meta name="twitter:image" content="https://thetimecost.com/static/og-celebration.png" />
 {% endblock %}
 
@@ -173,6 +173,19 @@
   .cf-hack .hk-impact{ color:#f0e9da; }
   .cf-hack .hk-coda{ color:#ffd34d; margin-top:12px; }
 
+  /* ===== the "send him to mars" launch button ===== */
+  .cf-launchbtn{ position:absolute; left:50%; top:47%; transform:translate(-50%,-50%);
+    z-index:7; display:none; cursor:pointer; pointer-events:auto;
+    font-family:'Share Tech Mono', ui-monospace, monospace; font-size:clamp(1rem,3.6vw,1.4rem);
+    background:#7CFC7A; color:#06210f; border:none; border-radius:12px; padding:16px 28px;
+    letter-spacing:.04em; box-shadow:0 0 28px rgba(124,252,122,.6); white-space:nowrap; }
+  .cf-launchbtn.show{ display:inline-block; animation:pulse 1.4s ease-in-out infinite; }
+  .cf-launchbtn:hover{ background:#9affa0; }
+  @keyframes pulse{
+    0%,100%{ transform:translate(-50%,-50%) scale(1);    box-shadow:0 0 26px rgba(124,252,122,.5); }
+    50%    { transform:translate(-50%,-50%) scale(1.06); box-shadow:0 0 42px rgba(124,252,122,.95); }
+  }
+
   .cf-thanks{ margin:0 auto 60px; max-width:560px; }
   .cf-thanks-label{ color:#6f9a7e; text-transform:uppercase; letter-spacing:.2em; font-size:.78rem; }
   .cf-thanks-name{ font-size:2rem; color:#ffd34d; text-shadow:0 0 12px rgba(255,211,77,.55);
@@ -244,7 +257,8 @@
     .cf-stage.js.celebrate .cf-fw span,
     .cf-stage.js.rolling .cf-bldg,
     .cf-stage.js.rolling .cf-grid,
-    .cf-stage.js.launch .cf-beam{ animation:none; }
+    .cf-stage.js.launch .cf-beam,
+    .cf-launchbtn.show{ animation:none; }
     .cf-stage.js .cf-roll-inner{ transform:none; }
   }
 </style>
@@ -367,6 +381,8 @@
       </div>
     </div>
 
+    <button type="button" class="cf-launchbtn" id="cfLaunchBtn">🚀 SEND HIM TO MARS</button>
+
     <div class="cf-crt"></div>
   </section>
 
@@ -406,22 +422,25 @@
 
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // [text, class, sideEffectClassToAddAfter]
-  var SCRIPT = [
-    ['PROSPERITY-OS v1.0  —  ONLINE', 'sys', null],
-    ["OH, WHAT A CELEBRATION WE'LL HAVE TODAY.", '', null],
-    // fireworks AND the credits start together:
-    ['THANK GOODNESS SOMEONE REACHED A TRILLION.', 'sys', 'celebrate rolling'],
-    ["A HUMAN FEAT THAT WOULDN'T BE POSSIBLE", '', 'walk'],
+  // [text, class] — typed on load, THEN the launch button appears
+  var INTRO = [
+    ['PROSPERITY-OS v1.0  —  ONLINE', 'sys'],
+    ["OH, WHAT A CELEBRATION WE'LL HAVE TODAY.", ''],
+    ['THANK GOODNESS SOMEONE REACHED A TRILLION.', 'sys'],
+    ['ONE SMALL FORMALITY REMAINS, CITIZEN:', ''],
+  ];
+  // [text, class, sideEffectClassToAddAfter] — typed AFTER the button is pressed
+  var REST = [
+    ["A HUMAN FEAT THAT WOULDN'T BE POSSIBLE", '', null],
     ['WITHOUT ALL THE LITTLE PEOPLE HE MURDERED ALONG THE WAY.', 'warn', null],
     ['SOMETIMES, LITERALLY.', 'warn', null],
     ['NOW GET YOUR ASS TO MARS, BUDDY. 🚀', '', 'launch'],
     ['GODSPEED, SIR.  ☑', '', null],
     ['(THE NAMES BELOW ARE STILL SCROLLING. IT IS A LONG LIST.)', 'warn', null],
   ];
-  // single quiet sign-off once the credits finish rolling
+  // single quiet sign-off once the credits finish
   var CODA = [
-    ['— SESSION COMPLETE. PRESS REPLAY TO CELEBRATE AGAIN. —', 'sys', null],
+    ['— SESSION COMPLETE. PRESS “SEND HIM AGAIN” TO REPEAT. —', 'sys'],
   ];
 
   var cursor;
@@ -517,31 +536,61 @@
   }
 
   var gen = 0;
+  // ===== the "SEND HIM TO MARS" launch button gate =====
+  var btn = document.getElementById('cfLaunchBtn');
+  var pending = null;          // { my, resolve, fb }
+  var hasRun = false;
+  function armLaunch(my) {
+    return new Promise(function (resolve) {
+      btn.textContent = hasRun ? '🚀 SEND HIM AGAIN' : '🚀 SEND HIM TO MARS';
+      btn.classList.add('show');
+      // fallback: if nobody clicks, send him anyway (keeps it alive for passive viewers / embeds)
+      var fb = setTimeout(function () { fireLaunch(my); }, 7000);
+      pending = { my: my, resolve: resolve, fb: fb };
+    });
+  }
+  function fireLaunch(my) {
+    if (!pending || pending.my !== my || my !== gen) return;
+    clearTimeout(pending.fb);
+    btn.classList.remove('show');
+    var r = pending.resolve; pending = null;
+    r();
+  }
+  if (btn) btn.addEventListener('click', function () { if (pending) fireLaunch(pending.my); });
+
   async function run(fromCreditsOnly) {
     var my = ++gen;                       // any in-flight run with an older id bails out
     stage.className = 'cf-stage js crtflicker';
     term.innerHTML = '';
+    if (btn) btn.classList.remove('show');
     makeCursor();
 
-    var seq = SCRIPT.slice();
-    if (fromCreditsOnly) {
-      // jump straight to the fireworks + credits roll
-      stage.classList.add('celebrate');
-      seq = SCRIPT.slice(2);
+    if (!fromCreditsOnly) {
+      // type the intro, then wait for the viewer to press SEND HIM TO MARS
+      for (var a = 0; a < INTRO.length; a++) {
+        await typeLine(INTRO[a][0], INTRO[a][1], my);
+        if (my !== gen) return;
+        await wait(540);
+        if (my !== gen) return;
+      }
+      await armLaunch(my);
+      if (my !== gen) return;
     }
+    hasRun = true;
 
-    var rollStart = 0;
-    for (var k = 0; k < seq.length; k++) {
-      await typeLine(seq[k][0], seq[k][1], my);
+    // the send-off: fireworks + the cost dump + city collapse + he walks, all at once
+    stage.classList.add('celebrate', 'rolling', 'walk');
+    var rollStart = Date.now();
+    streamCredits(my);
+
+    for (var k = 0; k < REST.length; k++) {
+      await typeLine(REST[k][0], REST[k][1], my);
       if (my !== gen) return;
-      if (seq[k][2]) seq[k][2].split(' ').forEach(function (cn) {
-        stage.classList.add(cn);
-        if (cn === 'rolling') { rollStart = Date.now(); streamCredits(my); }
-      });
-      await wait(seq[k][0] === '…' ? 700 : 560);
+      if (REST[k][2]) REST[k][2].split(' ').forEach(function (cn) { stage.classList.add(cn); });
+      await wait(560);
       if (my !== gen) return;
     }
-    // the credits began mid-walk — let them finish their ~30s roll, then sign off
+    // let the cost finish dumping, then sign off
     await wait(reduce ? 600 : Math.max(1500, 30000 - (Date.now() - rollStart)));
     if (my !== gen) return;
     for (var j = 0; j < CODA.length; j++) {
@@ -563,13 +612,8 @@
     else { var t = document.createElement('textarea'); t.value = url; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(t); done(); }
   });
 
-  // autostart when the stage scrolls into view
-  if ('IntersectionObserver' in window) {
-    var io = new IntersectionObserver(function (es) {
-      es.forEach(function (e) { if (e.isIntersecting) { io.disconnect(); run(false); } });
-    }, { threshold: 0.4 });
-    io.observe(stage);
-  } else { run(false); }
+  // kick off on load — types the intro, then waits on the SEND HIM TO MARS button
+  run(false);
 })();
 </script>
 {% endblock %}
