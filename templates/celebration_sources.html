@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Sources & References — TimeCost{% endblock %}
+{% block meta %}
+<meta name="description" content="Every figure cited on the Send Elon to Mars / Trillionaire pages, with its verified source — peer-reviewed studies, UN and health agencies, and major outlets." />
+<meta property="og:title" content="Sources & References" />
+<meta property="og:description" content="The verified sources behind every figure on the trillionaire pages: The Lancet, UNAIDS, WHO, and more." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://thetimecost.com/celebration/sources" />
+{% endblock %}
+
+{% block head %}
+<style>
+  .src-wrap{ max-width:760px; margin:0 auto; padding:8px 0 40px; }
+  .src-head h1{ font-family:var(--font-head, inherit); font-size:clamp(1.6rem,5vw,2.2rem); margin:0 0 .4rem; }
+  .src-lede{ color:var(--muted,#5c6672); line-height:1.65; margin:0 0 1.1rem; }
+  .src-badges{ display:flex; gap:8px; flex-wrap:wrap; margin:0 0 1.6rem; }
+  .src-badge{ font-size:.74rem; letter-spacing:.04em; text-transform:uppercase;
+    border:1px solid var(--border,#d9d9d9); border-radius:999px; padding:4px 10px; color:var(--muted,#5c6672); }
+
+  .src-item{ border:1px solid var(--border,#e3e3e3); border-radius:14px; padding:18px 20px;
+    margin:0 0 16px; background:var(--card,#fff); }
+  .src-claim{ font-weight:700; font-size:1.06rem; line-height:1.4; margin:0 0 .4rem; }
+  .src-detail{ color:var(--muted,#5c6672); line-height:1.6; margin:0 0 .9rem; font-size:.96rem; }
+  .src-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  .src-src{ display:flex; gap:10px; align-items:flex-start; }
+  .src-kind{ flex:0 0 auto; font-size:.68rem; letter-spacing:.03em; text-transform:uppercase;
+    border:1px solid var(--border,#d9d9d9); border-radius:6px; padding:3px 7px; color:var(--muted,#5c6672);
+    margin-top:2px; white-space:nowrap; }
+  .src-meta{ line-height:1.45; }
+  .src-meta a{ font-weight:600; color:var(--accent,#b9892a); text-decoration:none; }
+  .src-meta a:hover{ text-decoration:underline; }
+  .src-pub{ color:var(--muted,#5c6672); font-size:.86rem; }
+
+  .src-note{ border-left:3px solid var(--border,#d9d9d9); padding:6px 0 6px 14px; margin:24px 0 0;
+    color:var(--muted,#5c6672); font-size:.92rem; line-height:1.6; }
+  .src-foot{ margin-top:26px; display:flex; gap:14px; flex-wrap:wrap; align-items:center;
+    font-size:.9rem; color:var(--muted,#5c6672); }
+  .src-foot a{ color:var(--accent,#b9892a); text-decoration:none; }
+  .src-foot a:hover{ text-decoration:underline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="src-wrap">
+  <div class="src-head">
+    <h1>Sources &amp; References</h1>
+    <p class="src-lede">
+      Every figure cited on the <a href="{{ url_for('core.trillionaire_credits') }}">Send Elon to Mars</a>
+      and <a href="{{ url_for('core.trillionaire') }}">trillionaire</a> pages, with its source.
+      These are <strong>verified sources only</strong> — peer-reviewed studies, UN and health agencies,
+      institutional trackers, and major outlets. The figures are independent estimates and projections of
+      the consequences of the 2025 US foreign-aid cuts; they are contested by the administration.
+    </p>
+    <div class="src-badges">
+      <span class="src-badge">Peer-reviewed</span>
+      <span class="src-badge">UN / health agencies</span>
+      <span class="src-badge">Institutional trackers</span>
+      <span class="src-badge">Major outlets</span>
+    </div>
+  </div>
+
+  {% for ref in references %}
+  <section class="src-item">
+    <p class="src-claim">{{ ref.claim }}</p>
+    <p class="src-detail">{{ ref.detail }}</p>
+    <ul class="src-list">
+      {% for s in ref.sources %}
+      <li class="src-src">
+        <span class="src-kind">{{ s.kind }}</span>
+        <span class="src-meta">
+          <a href="{{ s.url }}" target="_blank" rel="noopener noreferrer">{{ s.title }}</a><br>
+          <span class="src-pub">{{ s.pub }} · {{ s.date }}</span>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+
+  <p class="src-note">
+    <strong>Not in this list:</strong> the grocery, fuel, rent, wage and exchange-rate figures on the
+    trillionaire calculator are clearly-labelled <em>editorial ballpark estimates</em>, set by hand to
+    illustrate scale — not drawn from the sources above. They recalculate the moment you enter your own
+    region or wage.
+  </p>
+
+  <div class="src-foot">
+    <span>Reviewed {{ reviewed }}.</span>
+    <a href="{{ url_for('core.trillionaire_credits') }}">← Back to the celebration</a>
+    <a href="{{ url_for('core.calculator') }}">Open the calculator →</a>
+  </div>
+</div>
+{% endblock %}
