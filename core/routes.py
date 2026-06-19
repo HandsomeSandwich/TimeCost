@@ -93,6 +93,7 @@ def sitemap():
         ("/support",    "monthly", "0.5"),
         ("/formulas",   "monthly", "0.6"),
         ("/trillionaire", "monthly", "0.6"),
+        ("/celebration/sources", "monthly", "0.5"),
     ]
     xml_lines = ['<?xml version="1.0" encoding="UTF-8"?>',
                  '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
@@ -367,15 +368,90 @@ TRILLIONAIRE_CUTS = [
         "program": "President's Malaria Initiative — roughly 47% cut",
         "served": "families across malaria-endemic Africa",
         "impact": "An estimated 15 million more malaria cases and about 107,000 additional deaths in a single year.",
-        "source": "Malaria No More / CNN, 2025",
+        "source": "WHO, 2025",
         "url": "https://www.cnn.com/2025/06/11/africa/malaria-us-foreign-aid-cuts-africa-intl",
     },
     {
         "program": "Therapeutic food for severe malnutrition (RUTF)",
         "served": "children with severe acute malnutrition — the US funded about half the global supply",
         "impact": "Around 1 million children left untreated — an estimated 163,500 additional deaths each year.",
-        "source": "Nature, 2025",
-        "url": "https://www.nature.com/articles/d41586-025-00898-3",
+        "source": "Maternal & Child Nutrition, 2025",
+        "url": "https://onlinelibrary.wiley.com/doi/10.1111/mcn.70028",
+    },
+]
+
+
+# Full citation list for the public reference sheet (/celebration/sources). VERIFIED
+# sources only — peer-reviewed studies, UN/health agencies, institutional trackers,
+# and major outlets. Each entry: the claim as used on the pages + every source.
+REFERENCE_REVIEWED = "June 2026"
+TRILLIONAIRE_REFERENCES = [
+    {
+        "claim": "Elon Musk became the world's first trillionaire.",
+        "detail": "His net worth crossed $1 trillion on 12 June 2026, when SpaceX began "
+                  "trading on the Nasdaq (the largest IPO on record); with his Tesla stake, "
+                  "roughly $1.05 trillion.",
+        "sources": [
+            {"pub": "CNBC", "kind": "News", "date": "Jun 2026",
+             "title": "Elon Musk becomes world's first trillionaire as SpaceX begins trading on the Nasdaq",
+             "url": "https://www.cnbc.com/2026/06/12/elon-musk-trillionaire-spacex.html"},
+            {"pub": "The Washington Post", "kind": "News", "date": "Jun 2026",
+             "title": "The world has its first trillionaire after Elon Musk's SpaceX market debut",
+             "url": "https://www.washingtonpost.com/technology/2026/06/12/spacex-start-trading-historic-test-elon-musks-rocket-company/"},
+        ],
+    },
+    {
+        "claim": "USAID cuts: up to 14 million additional deaths by 2030, including over 4.5 million children under five.",
+        "detail": "A peer-reviewed forecast of mortality from defunding USAID across health, "
+                  "nutrition, water/sanitation and humanitarian programmes, covering 133 countries.",
+        "sources": [
+            {"pub": "The Lancet", "kind": "Peer-reviewed study", "date": "Jul 2025",
+             "title": "Evaluating the impact of two decades of USAID interventions and projecting the effects of defunding on mortality up to 2030",
+             "url": "https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(25)01186-9/fulltext"},
+            {"pub": "Boston University School of Public Health", "kind": "Institutional tracker", "date": "2025",
+             "title": "Tracking Anticipated Deaths from USAID Funding Cuts",
+             "url": "https://www.bu.edu/sph/news/articles/2025/tracking-anticipated-deaths-from-usaid-funding-cuts/"},
+            {"pub": "Center for Global Development", "kind": "Policy analysis", "date": "2025",
+             "title": "Update on Lives Lost from USAID Cuts",
+             "url": "https://www.cgdev.org/blog/update-lives-lost-usaid-cuts"},
+        ],
+    },
+    {
+        "claim": "PEPFAR / HIV cuts: up to ~4 million additional AIDS-related deaths (2025–2029), including ~300,000 children.",
+        "detail": "UNAIDS projection if US-supported HIV treatment and prevention permanently "
+                  "collapse. PEPFAR had supported HIV treatment for about 20.6 million people.",
+        "sources": [
+            {"pub": "UNAIDS", "kind": "UN agency", "date": "2025",
+             "title": "Impact of US funding cuts on the global HIV response",
+             "url": "https://www.unaids.org/en/impact-US-funding-cuts"},
+            {"pub": "The Lancet HIV", "kind": "Peer-reviewed study", "date": "2025",
+             "title": "Impact of an international HIV funding crisis on HIV infections and mortality in low-income and middle-income countries: a modelling study",
+             "url": "https://www.thelancet.com/journals/lanhiv/article/PIIS2352-3018(25)00074-8/fulltext"},
+        ],
+    },
+    {
+        "claim": "Malaria: ~15 million more cases and ~107,000 additional deaths in a single year.",
+        "detail": "World Health Organization estimate (Dr Tedros Adhanom Ghebreyesus) of the "
+                  "impact of US cuts to malaria programmes; the US had been the largest "
+                  "bilateral donor to malaria control.",
+        "sources": [
+            {"pub": "World Health Organization (reported by CNN)", "kind": "UN agency / News", "date": "Jun 2025",
+             "title": "US foreign aid cuts threaten decades of progress on driving down malaria",
+             "url": "https://www.cnn.com/2025/06/11/africa/malaria-us-foreign-aid-cuts-africa-intl"},
+        ],
+    },
+    {
+        "claim": "Child malnutrition: ~1 million children denied treatment for severe acute malnutrition → ~163,500 additional child deaths per year.",
+        "detail": "USAID funded about half the global supply of ready-to-use therapeutic food "
+                  "(RUTF). Combined with other donors' cuts, the projected toll roughly doubles to ~369,000/yr.",
+        "sources": [
+            {"pub": "Maternal & Child Nutrition (Wiley)", "kind": "Peer-reviewed study", "date": "2025",
+             "title": "Children at Risk: The Growing Impact of USAID Cuts on Pediatric Malnutrition and Death Rates",
+             "url": "https://onlinelibrary.wiley.com/doi/10.1111/mcn.70028"},
+            {"pub": "Nature", "kind": "Scientific journal (news)", "date": "Mar 2025",
+             "title": "The full lethal impact of massive cuts to international food aid",
+             "url": "https://www.nature.com/articles/d41586-025-00898-3"},
+        ],
     },
 ]
 
@@ -392,6 +468,17 @@ def trillionaire_credits():
 def trillionaire_credits_legacy():
     """Old nested path → keep any existing links working."""
     return redirect(url_for("core.trillionaire_credits"), code=301)
+
+
+@core_bp.get("/celebration/sources")
+def celebration_sources():
+    """Public reference sheet — every figure on the trillionaire/celebration pages
+    with its verified source(s). Shareable by link."""
+    return render_template(
+        "celebration_sources.html",
+        references=TRILLIONAIRE_REFERENCES,
+        reviewed=REFERENCE_REVIEWED,
+    )
 
 
 @core_bp.route("/subscribe", methods=["POST"])

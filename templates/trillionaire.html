@@ -259,7 +259,7 @@
           <li><strong>Your wage.</strong> Defaults to a rough {{ region_label }} median of <strong>{{ currency }}{{ '%.0f'|format(default_hourly) }}/hr</strong> until you enter your own (per hour, month, or year). Monthly/annual pay is spread over a {{ '{:,}'.format(working_hours_year) }}-hour year.</li>
           <li><strong>Currency.</strong> Converted at approximate recent exchange rates.</li>
         </ul>
-        <p class="trill-fine-foot">Got better local numbers? <a href="{{ url_for('core.calculator') }}">Run your own wage through the calculator</a> for an exact figure.</p>
+        <p class="trill-fine-foot">Got better local numbers? <a href="{{ url_for('core.calculator') }}">Run your own wage through the calculator</a> for an exact figure. &nbsp;·&nbsp; <a href="{{ url_for('core.celebration_sources') }}">See the verified sources →</a></p>
       </div>
     </details>
   </section>
