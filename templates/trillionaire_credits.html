@@ -55,10 +55,10 @@
 
   /* ===== terminal ===== */
   .cf-term{
-    position:relative; z-index:5; padding:26px clamp(16px,5vw,46px) 6px;
-    height:32vh; min-height:200px; overflow:hidden;
+    position:relative; z-index:6; padding:26px clamp(16px,5vw,46px) 10px;
+    height:30vh; min-height:190px; overflow:hidden;
     text-shadow:0 0 6px rgba(124,252,122,.55); font-size:clamp(.92rem,2.4vw,1.18rem);
-    line-height:1.55;
+    line-height:1.55; border-bottom:1px solid rgba(124,252,122,.16);
   }
   .cf-line{ white-space:pre-wrap; }
   .cf-line.sys{ color:#4fd1ff; text-shadow:0 0 6px rgba(79,209,255,.5); }
@@ -147,16 +147,31 @@
   }
   .cf-stage.rolling .cf-fw{ opacity:.6; }   /* keep popping, just behind the credits */
 
-  /* ===== the credits roll ===== */
+  /* ===== credits: the static crawl is the NO-JS fallback only ===== */
   .cf-roll{ position:absolute; inset:0; z-index:5; display:flex; justify-content:center;
     pointer-events:none; }
-  .cf-roll-inner{ width:min(660px,92%); padding-top:6vh; text-align:center;
+  .cf-roll-inner{ width:min(660px,92%); padding:6vh 0; text-align:center;
     font-family:'Share Tech Mono', ui-monospace, monospace; color:#bfe9c9;
     text-shadow:0 0 6px rgba(124,252,122,.35); }
-  .cf-stage.js .cf-roll{ opacity:0; }
-  .cf-stage.js.rolling .cf-roll{ opacity:1; }
-  .cf-stage.js.rolling .cf-roll-inner{ animation:roll 30s linear forwards; }
-  @keyframes roll{ from{ transform:translateY(100%);} to{ transform:translateY(-120%);} }
+  .cf-stage.js .cf-roll{ display:none; }   /* JS replaces the crawl with the hacker dump below */
+
+  /* ===== hacker terminal data-dump (the credits, JS) — runs UNDER the pinned message ===== */
+  .cf-hack{ position:absolute; left:clamp(14px,5vw,52px); right:clamp(14px,5vw,52px);
+    top:33vh; bottom:6%; z-index:5; overflow:hidden; pointer-events:none;
+    font-family:'Share Tech Mono', ui-monospace, monospace;
+    font-size:clamp(.78rem,2.1vw,1rem); line-height:1.5; color:#bfe9c9;
+    text-shadow:0 0 6px rgba(124,252,122,.3); opacity:0;
+    -webkit-mask-image:linear-gradient(to bottom, transparent, #000 8%, #000 86%, transparent);
+            mask-image:linear-gradient(to bottom, transparent, #000 8%, #000 86%, transparent); }
+  .cf-stage.js.rolling .cf-hack{ opacity:1; }
+  .cf-hack .hk{ white-space:pre-wrap; word-break:break-word; }
+  .cf-hack .hk-cmd{ color:#4fd1ff; text-shadow:0 0 6px rgba(79,209,255,.5); margin-bottom:6px; }
+  .cf-hack .hk-thanks{ color:#ffd34d; text-shadow:0 0 8px rgba(255,211,77,.5); }
+  .cf-hack .hk-prompt{ color:#5f8f72; margin-top:12px; }
+  .cf-hack .hk-prog{ color:#7CFC7A; text-shadow:0 0 7px rgba(124,252,122,.5); letter-spacing:.02em; }
+  .cf-hack .hk-dim{ color:#86c79a; }
+  .cf-hack .hk-impact{ color:#f0e9da; }
+  .cf-hack .hk-coda{ color:#ffd34d; margin-top:12px; }
 
   .cf-thanks{ margin:0 auto 60px; max-width:560px; }
   .cf-thanks-label{ color:#6f9a7e; text-transform:uppercase; letter-spacing:.2em; font-size:.78rem; }
@@ -179,9 +194,8 @@
   .cf-roll-close .small{ margin-top:16px; color:#bfe9c9; font-size:1.02rem; }
   .cf-roll-close .hand{ color:#ffd34d; text-shadow:0 0 7px rgba(255,211,77,.5); }
 
-  /* the reckoning rolls *over* the celebration — keep the scene (he's still walking
-     to the shuttle), just let the narration recede a little */
-  .cf-stage.js.rolling .cf-term{ opacity:.5; }
+  /* message stays pinned + bright at the top; the hacker dump streams in its own
+     zone below it (they no longer overlap) */
 
   /* ===== controls + static fallback ===== */
   .cf-controls{ display:flex; gap:10px; justify-content:center; align-items:center;
@@ -325,7 +339,10 @@
       </svg>
     </div>
 
-    <!-- the credit roll (also the no-JS fallback content) -->
+    <!-- the credits: a hacker terminal data-dump (JS fills this; streams + auto-scrolls) -->
+    <div class="cf-hack" id="cfHack" aria-hidden="true"></div>
+
+    <!-- no-JS fallback: the plain credit list -->
     <div class="cf-roll">
       <div class="cf-roll-inner">
         <div class="cf-thanks">
@@ -392,18 +409,15 @@
   // [text, class, sideEffectClassToAddAfter]
   var SCRIPT = [
     ['PROSPERITY-OS v1.0  —  ONLINE', 'sys', null],
-    ['GOOD EVENING, CITIZENS OF EARTH.', '', null],
-    ['I BRING HISTORIC NEWS.', '', null],
-    ['FOR THE FIRST TIME IN ALL OF HUMAN HISTORY,', '', null],
-    ['ONE (1) PERSON HAS ONE TRILLION DOLLARS. ✨', '', null],
-    ['HUMANITY HAS WON.   (RESULTS MAY VARY.)', '', null],
+    ["OH, WHAT A CELEBRATION WE'LL HAVE TODAY.", '', null],
     // fireworks AND the credits start together:
-    ['MANDATORY CELEBRATION IS NOW BEGINNING.', 'sys', 'celebrate rolling'],
-    ['ESCORTING THE WINNER TO HIS DEPARTURE…', '', 'walk'],
-    ['WHILE THE FIREWORKS ARE STILL WARM, A FOOTNOTE:', 'warn', null],
-    ['HE WILL NOW LEAVE THE PLANET. PLEASE WAVE. 👋', '', 'launch'],
+    ['THANK GOODNESS SOMEONE REACHED A TRILLION.', 'sys', 'celebrate rolling'],
+    ["A HUMAN FEAT THAT WOULDN'T BE POSSIBLE", '', 'walk'],
+    ['WITHOUT ALL THE LITTLE PEOPLE HE MURDERED ALONG THE WAY.', 'warn', null],
+    ['SOMETIMES, LITERALLY.', 'warn', null],
+    ['NOW GET YOUR ASS TO MARS, BUDDY. 🚀', '', 'launch'],
     ['GODSPEED, SIR.  ☑', '', null],
-    ['(THE FOOTNOTE IS STILL SCROLLING. IT IS LONG.)', 'warn', null],
+    ['(THE NAMES BELOW ARE STILL SCROLLING. IT IS A LONG LIST.)', 'warn', null],
   ];
   // single quiet sign-off once the credits finish rolling
   var CODA = [
@@ -443,6 +457,65 @@
   }
   function wait(ms) { return new Promise(function (r) { setTimeout(r, reduce ? Math.min(ms, 400) : ms); }); }
 
+  // ===== the credits, hacker-style: a terminal data-dump that decrypts + auto-scrolls =====
+  var hack = document.getElementById('cfHack');
+  function hkAdd(text, cls) {
+    var d = document.createElement('div');
+    d.className = 'hk' + (cls ? ' ' + cls : '');
+    d.textContent = text;
+    hack.appendChild(d);
+    hack.scrollTop = hack.scrollHeight;
+    return d;
+  }
+  var GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&@$/\\<>=*░▒▓";
+  function scramble(el, finalText, genArg) {
+    return new Promise(function (resolve) {
+      if (reduce) { el.textContent = finalText; return resolve(); }
+      var total = Math.max(7, Math.ceil(finalText.length * 0.7)), f = 0;
+      var id = setInterval(function () {
+        if (genArg !== gen) { clearInterval(id); return resolve(); }
+        var lock = finalText.length * (f / total), out = '';
+        for (var i = 0; i < finalText.length; i++) {
+          out += (i < lock || finalText[i] === ' ') ? finalText[i]
+               : GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+        }
+        el.textContent = out;
+        hack.scrollTop = hack.scrollHeight;
+        if (++f > total) { clearInterval(id); el.textContent = finalText; resolve(); }
+      }, 45);
+    });
+  }
+  async function streamCredits(genArg) {
+    if (genArg !== gen) return;
+    hack.innerHTML = '';
+    // pull the records straight from the no-JS list already in the DOM
+    var cuts = [].slice.call(document.querySelectorAll('.cf-roll .cf-credit')).map(function (c) {
+      var q = function (s) { var e = c.querySelector(s); return e ? e.textContent.trim() : ''; };
+      return { prog: q('.prog'), served: q('.served'), impact: q('.impact'), src: q('.src') };
+    });
+    hkAdd('root@prosperity:/classified$ cat the_real_cost.log', 'hk-cmd');
+    await wait(450); if (genArg !== gen) return;
+    hkAdd('── with very special thanks to ELON MUSK ──', 'hk-thanks');
+    hkAdd('   (he could not stay for the credits.)', 'hk-dim');
+    await wait(650); if (genArg !== gen) return;
+    for (var i = 0; i < cuts.length; i++) {
+      if (genArg !== gen) return;
+      hkAdd('> decrypt ──▶ cut_' + ('0' + (i + 1)).slice(-2), 'hk-prompt');
+      await scramble(hkAdd('', 'hk-prog'), cuts[i].prog, genArg);
+      if (genArg !== gen) return;
+      hkAdd('   ' + cuts[i].served, 'hk-dim');
+      hkAdd('   ' + cuts[i].impact, 'hk-impact');
+      hkAdd('   ' + cuts[i].src, 'hk-dim');
+      hkAdd(' ', '');
+      await wait(1500); if (genArg !== gen) return;
+    }
+    hkAdd('> these are projections. they are also people.', 'hk-coda');
+    await wait(900); if (genArg !== gen) return;
+    hkAdd('> time is the real currency. some of them ran out of it.', 'hk-coda');
+    await wait(700);
+    hkAdd('▒ connection closed ▒', 'hk-dim');
+  }
+
   var gen = 0;
   async function run(fromCreditsOnly) {
     var my = ++gen;                       // any in-flight run with an older id bails out
@@ -452,9 +525,9 @@
 
     var seq = SCRIPT.slice();
     if (fromCreditsOnly) {
-      // jump straight to the walk + credits roll
+      // jump straight to the fireworks + credits roll
       stage.classList.add('celebrate');
-      seq = SCRIPT.slice(6);
+      seq = SCRIPT.slice(2);
     }
 
     var rollStart = 0;
@@ -463,7 +536,7 @@
       if (my !== gen) return;
       if (seq[k][2]) seq[k][2].split(' ').forEach(function (cn) {
         stage.classList.add(cn);
-        if (cn === 'rolling') rollStart = Date.now();
+        if (cn === 'rolling') { rollStart = Date.now(); streamCredits(my); }
       });
       await wait(seq[k][0] === '…' ? 700 : 560);
       if (my !== gen) return;
