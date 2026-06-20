@@ -147,6 +147,26 @@
   }
   .cf-stage.rolling .cf-fw{ opacity:.6; }   /* keep popping, just behind the credits */
 
+  /* ===== extra silliness: confetti + money rain, eager rocket, cheery send-off ===== */
+  .cf-confetti{ position:absolute; inset:0; z-index:4; pointer-events:none; overflow:hidden; }
+  .cf-confetti i{ position:absolute; top:-9%; opacity:0; }
+  .cf-stage.js.celebrate .cf-confetti i{ animation:confFall var(--dur,4s) linear infinite; animation-delay:var(--cdelay,0s); }
+  @keyframes confFall{ 0%{ transform:translateY(-12vh) rotate(0deg); opacity:0; } 10%{ opacity:1; } 100%{ transform:translateY(98vh) rotate(700deg); opacity:.9; } }
+
+  /* the rocket fidgets eagerly on the pad until the real launch takes over */
+  .cf-stage.js .cf-shuttle{ animation:idleHop 1.6s ease-in-out infinite; }
+  @keyframes idleHop{ 0%,100%{ transform:translate(-50%,0) rotate(-2deg); } 50%{ transform:translate(-50%,-3px) rotate(2deg); } }
+
+  /* his cheerful little send-off speech bubble */
+  .cf-bye{ position:absolute; left:50%; bottom:44%; transform:translateX(-50%); z-index:6; opacity:0;
+    background:#fff6e6; color:#15161a; font-family:'Share Tech Mono', ui-monospace, monospace; font-weight:bold;
+    border:2px solid #15161a; border-radius:10px; padding:6px 12px; font-size:.95rem; white-space:nowrap; }
+  .cf-bye::after{ content:""; position:absolute; left:50%; bottom:-7px; transform:translateX(-50%);
+    border:6px solid transparent; border-top-color:#15161a; }
+  .cf-stage.js.launch .cf-bye{ animation:byePop 2.4s ease-out forwards; }
+  @keyframes byePop{ 0%{ opacity:0; transform:translate(-50%,8px) scale(.7); } 14%{ opacity:1; transform:translate(-50%,0) scale(1); }
+    72%{ opacity:1; transform:translate(-50%,-8px); } 100%{ opacity:0; transform:translate(-50%,-44px); } }
+
   /* ===== credits: the static crawl is the NO-JS fallback only ===== */
   .cf-roll{ position:absolute; inset:0; z-index:5; display:flex; justify-content:center;
     pointer-events:none; }
@@ -258,7 +278,10 @@
     .cf-stage.js.rolling .cf-bldg,
     .cf-stage.js.rolling .cf-grid,
     .cf-stage.js.launch .cf-beam,
-    .cf-launchbtn.show{ animation:none; }
+    .cf-launchbtn.show,
+    .cf-stage.js.celebrate .cf-confetti i,
+    .cf-stage.js .cf-shuttle,
+    .cf-stage.js.launch .cf-bye{ animation:none; }
     .cf-stage.js .cf-roll-inner{ transform:none; }
   }
 </style>
@@ -309,6 +332,12 @@
     </div>
     {% endfor %}
 
+    <!-- silliness: confetti + money rain, falls once the party starts -->
+    {% set confetti = ['💸','💵','🤑','🪙','🎉','✨','🚀'] %}
+    <div class="cf-confetti">
+      {% for i in range(20) %}<i style="left:{{ (i*4.7)|round(1) }}%; --cdelay:{{ (i%7)*0.45 }}s; --dur:{{ 3.2 + (i%5)*0.7 }}s; font-size:{{ 1.05 + (i%4)*0.22 }}rem;">{{ confetti[i % confetti|length] }}</i>{% endfor %}
+    </div>
+
     <!-- terminal -->
     <div class="cf-term" id="cfTerm" role="log" aria-live="polite"></div>
 
@@ -316,6 +345,7 @@
     <div class="cf-scene">
       <div class="cf-ground"></div>
       <div class="cf-smoke"></div>
+      <div class="cf-bye">k bye 🤙</div>
 
       <!-- tacky-billionaire caricature heading for the exit: black tee, shades, gold chain, gold coin -->
       <svg class="cf-figure" viewBox="0 0 34 64" aria-hidden="true">
@@ -456,8 +486,10 @@
   // [text, class] — typed on load, THEN the launch button appears
   var INTRO = [
     ['PROSPERITY-OS v1.0  —  ONLINE', 'sys'],
-    ["OH, WHAT A CELEBRATION WE'LL HAVE TODAY.", ''],
+    ["OH, WHAT A CELEBRATION WE'LL HAVE TODAY. 🎉", ''],
     ['THANK GOODNESS SOMEONE REACHED A TRILLION.', 'sys'],
+    ['🏆 ACHIEVEMENT UNLOCKED: ONE (1) TRILLION DOLLARS.', ''],
+    ['DEPLOYING CONFETTI CANNON 🎉  ·  MANDATORY APPLAUSE 👏👏👏', ''],
     ['ONE SMALL FORMALITY REMAINS, CITIZEN:', ''],
   ];
   // [text, class, sideEffectClassToAddAfter] — typed AFTER the button is pressed
