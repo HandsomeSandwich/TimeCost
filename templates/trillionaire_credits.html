@@ -229,6 +229,15 @@
     50%    { transform:translate(-50%,-50%) scale(1.06); box-shadow:0 0 42px rgba(124,252,122,.95); }
   }
 
+  /* ===== 3-2-1 launch countdown ===== */
+  .cf-count{ position:absolute; inset:0; z-index:8; display:flex; align-items:center; justify-content:center;
+    pointer-events:none; font-family:'Share Tech Mono', ui-monospace, monospace; font-weight:bold;
+    font-size:clamp(4rem,22vw,9rem); color:#fff6e6;
+    text-shadow:0 0 26px rgba(124,252,122,.75), 0 0 10px rgba(0,0,0,.7); opacity:0; }
+  .cf-count.show{ animation:countpop .78s ease-out; }
+  @keyframes countpop{ 0%{opacity:0; transform:scale(.4)} 18%{opacity:1; transform:scale(1.18)}
+    70%{opacity:1; transform:scale(1)} 100%{opacity:0; transform:scale(.92)} }
+
   .cf-thanks{ margin:0 auto 60px; max-width:560px; }
   .cf-thanks-label{ color:#6f9a7e; text-transform:uppercase; letter-spacing:.2em; font-size:.78rem; }
   .cf-thanks-name{ font-size:2rem; color:#ffd34d; text-shadow:0 0 12px rgba(255,211,77,.55);
@@ -492,6 +501,8 @@
     </div>
 
     <button type="button" class="cf-launchbtn" id="cfLaunchBtn">🚀 SEND HIM TO MARS</button>
+    <!-- 3-2-1 launch countdown overlay -->
+    <div class="cf-count" id="cfCount" aria-hidden="true"></div>
 
     <div class="cf-crt"></div>
   </section>
@@ -674,6 +685,23 @@
   }
   if (btn) btn.addEventListener('click', function () { if (pending) settle(pending.my, true); });
 
+  // 3-2-1 ignition countdown before the send-off
+  async function countdown(my) {
+    var el = document.getElementById('cfCount');
+    await typeLine('IGNITION SEQUENCE INITIATED.', 'sys', my);
+    if (my !== gen) return;
+    if (!el) return;
+    if (reduce) { await typeLine('3 … 2 … 1 … LIFTOFF 🚀', 'sys', my); return; }
+    var steps = ['3', '2', '1', '🚀'];
+    for (var i = 0; i < steps.length; i++) {
+      if (my !== gen) { el.classList.remove('show'); return; }
+      el.textContent = steps[i];
+      el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');  // restart pop
+      await wait(i === 3 ? 620 : 760);
+    }
+    el.classList.remove('show');
+  }
+
   async function run(fromCreditsOnly) {
     var my = ++gen;                       // any in-flight run with an older id bails out
     stage.className = 'cf-stage js crtflicker';
@@ -708,6 +736,8 @@
         stage.classList.remove('alert');
         await wait(460); if (my !== gen) return;
       }
+      await countdown(my);
+      if (my !== gen) return;
     }
     hasRun = true;
 
