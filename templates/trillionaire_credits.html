@@ -47,11 +47,30 @@
   /* CRT scanlines + flicker + vignette */
   .cf-crt{ position:absolute; inset:0; z-index:6; pointer-events:none; mix-blend-mode:overlay; }
   .cf-crt::before{ content:""; position:absolute; inset:0;
-    background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px, rgba(0,0,0,.28) 2px 3px); }
+    background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px, rgba(0,0,0,.4) 2px 3px); }
   .cf-crt::after{ content:""; position:absolute; inset:0;
-    box-shadow:inset 0 0 160px rgba(0,0,0,.85); }
+    box-shadow:inset 0 0 170px rgba(0,0,0,.9); }
   .cf-stage.js.crtflicker{ animation:flick 5s infinite steps(60); }
   @keyframes flick{ 0%,97%{filter:none} 98%{filter:brightness(1.25)} 99%{filter:brightness(.85)} 100%{filter:none} }
+
+  /* ===== dystopian: surveillance HUD, REC, compliance flicker ===== */
+  .cf-hud{ position:absolute; top:12px; right:12px; z-index:7; text-align:right; pointer-events:none;
+    font-family:'Share Tech Mono', ui-monospace, monospace; font-size:.62rem; line-height:1.5;
+    letter-spacing:.02em; color:#7fae8e; text-shadow:0 0 5px rgba(124,252,122,.3);
+    background:rgba(5,7,10,.55); border:1px solid rgba(124,252,122,.14); border-radius:8px;
+    padding:6px 9px; backdrop-filter:blur(2px); }
+  .cf-rec{ color:#ff4d4d; text-shadow:0 0 6px rgba(255,77,77,.6); }
+  .cf-stage.js .cf-rec{ animation:recblink 1.1s steps(1) infinite; }
+  @keyframes recblink{ 50%{ opacity:.2 } }
+  .cf-hud-watch{ color:#5f8f72; font-style:italic; margin-top:3px; opacity:.8; }
+  .cf-redflick{ position:absolute; inset:0; z-index:6; pointer-events:none; background:rgba(255,0,0,0); }
+  .cf-stage.js .cf-redflick{ animation:compflick 8.5s steps(1) infinite; }
+  @keyframes compflick{ 0%,95%{background:rgba(255,0,0,0)} 96%{background:rgba(255,32,32,.07)}
+    97%{background:rgba(255,0,0,0)} 98%{background:rgba(255,32,32,.05)} 100%{background:rgba(255,0,0,0)} }
+  .cf-launch-sub{ display:block; font-size:.62rem; font-weight:normal; letter-spacing:.07em;
+    text-transform:uppercase; opacity:.82; margin-top:4px; }
+
+  @media (max-width:540px){ .cf-hud-watch{ display:none; } .cf-hud{ font-size:.56rem; } }
 
   /* ===== terminal ===== */
   .cf-term{
@@ -281,7 +300,9 @@
     .cf-launchbtn.show,
     .cf-stage.js.celebrate .cf-confetti i,
     .cf-stage.js .cf-shuttle,
-    .cf-stage.js.launch .cf-bye{ animation:none; }
+    .cf-stage.js.launch .cf-bye,
+    .cf-stage.js .cf-rec,
+    .cf-stage.js .cf-redflick{ animation:none; }
     .cf-stage.js .cf-roll-inner{ transform:none; }
   }
 </style>
@@ -300,6 +321,16 @@
 
   <section class="cf-stage" id="cfStage" aria-label="A satirical celebration of the first trillionaire, followed by the human cost of the funding cuts">
     <div class="cf-sky"></div>
+
+    <!-- dystopian surveillance HUD -->
+    <div class="cf-hud" aria-hidden="true">
+      <div><span class="cf-rec">● REC</span> MINISTRY OF PROSPERITY</div>
+      <div>CITIZEN MORALE: ENFORCED 100%</div>
+      <div>DISSENT: 0.00% ✓ · DISSENTERS: [REDACTED]</div>
+      <div class="cf-hud-watch">you are being watched for your enjoyment</div>
+    </div>
+    <!-- faint, occasional compliance flicker (not a constant red tint) -->
+    <div class="cf-redflick" aria-hidden="true"></div>
 
     <!-- Tron skyline (collapses when the credits roll) + grid floor -->
     {% set city = [
@@ -485,11 +516,12 @@
 
   // [text, class] — typed on load, THEN the launch button appears
   var INTRO = [
-    ['PROSPERITY-OS v1.0  —  ONLINE', 'sys'],
+    ['PROSPERITY-OS  ·  MINISTRY OF PROSPERITY ▒ ONLINE', 'sys'],
+    ['CELEBRATION IS MANDATORY. NON-COMPLIANCE WILL BE NOTED.', 'warn'],
     ["OH, WHAT A CELEBRATION WE'LL HAVE TODAY. 🎉", ''],
     ['THANK GOODNESS SOMEONE REACHED A TRILLION.', 'sys'],
-    ['🏆 ACHIEVEMENT UNLOCKED: ONE (1) TRILLION DOLLARS.', ''],
-    ['DEPLOYING CONFETTI CANNON 🎉  ·  MANDATORY APPLAUSE 👏👏👏', ''],
+    ["POVERTY HAS BEEN RENAMED 'PRE-WEALTH.' PLEASE REJOICE.", ''],
+    ['🏆 ACHIEVEMENT UNLOCKED: ONE (1) TRILLION  ·  APPLAUSE: COMPULSORY 👏', ''],
     ['ONE SMALL FORMALITY REMAINS, CITIZEN:', ''],
   ];
   // [text, class, sideEffectClassToAddAfter] — typed AFTER the button is pressed
@@ -503,7 +535,7 @@
   ];
   // single quiet sign-off once the credits finish
   var CODA = [
-    ['— SESSION COMPLETE. PRESS “SEND HIM AGAIN” TO REPEAT. —', 'sys'],
+    ['— SESSION LOGGED. YOUR COMPLIANCE IS ON FILE. PRESS "SEND HIM AGAIN." —', 'sys'],
   ];
 
   var cursor;
@@ -605,7 +637,7 @@
   var hasRun = false;
   function armLaunch(my) {
     return new Promise(function (resolve) {
-      btn.textContent = hasRun ? '🚀 SEND HIM AGAIN' : '🚀 SEND HIM TO MARS';
+      btn.innerHTML = (hasRun ? '🚀 SEND HIM AGAIN' : '🚀 SEND HIM TO MARS') + '<span class="cf-launch-sub">participation is mandatory</span>';
       btn.classList.add('show');
       // fallback: if nobody clicks, send him anyway (keeps it alive for passive viewers / embeds)
       var fb = setTimeout(function () { fireLaunch(my); }, 7000);
