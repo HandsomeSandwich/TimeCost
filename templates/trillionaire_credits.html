@@ -413,43 +413,50 @@
         <path d="M18 26 q4 2.2 8 0" stroke="#b5704a" stroke-width="1.4" fill="none" stroke-linecap="round"/>
       </svg>
 
-      <!-- the gaudy chrome Starship: stainless body, gold nose + fins, X and $ decals -->
+      <!-- the Jeff Koons balloon-dog rocket: mirror-chrome inflated segments, gold knot/ears/legs, candy reflections -->
       <svg class="cf-shuttle" viewBox="0 0 72 150" aria-hidden="true">
         <defs>
-          <linearGradient id="cfChrome" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#8b949e"/><stop offset=".22" stop-color="#eef2f6"/>
-            <stop offset=".5" stop-color="#bcc4cd"/><stop offset=".78" stop-color="#eef2f6"/>
-            <stop offset="1" stop-color="#7d868f"/>
-          </linearGradient>
-          <linearGradient id="cfGold" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#a9760a"/><stop offset=".4" stop-color="#ffe79a"/>
-            <stop offset=".6" stop-color="#ffcf3f"/><stop offset="1" stop-color="#9c6c08"/>
-          </linearGradient>
+          <radialGradient id="cfChrome" cx="38%" cy="32%" r="75%">
+            <stop offset="0" stop-color="#ffffff"/><stop offset=".35" stop-color="#dfe6ec"/>
+            <stop offset=".7" stop-color="#aab2bb"/><stop offset="1" stop-color="#6f777f"/>
+          </radialGradient>
+          <radialGradient id="cfGold" cx="38%" cy="30%" r="80%">
+            <stop offset="0" stop-color="#fff3c4"/><stop offset=".45" stop-color="#ffcf3f"/>
+            <stop offset="1" stop-color="#9c6c08"/>
+          </radialGradient>
         </defs>
         <!-- exhaust flame -->
         <g class="cf-flame">
-          <path d="M28 138 q8 26 8 26 q0-0 8-26 z" fill="#ffd34d"/>
-          <path d="M31 138 q5 18 5 18 q0 0 5-18 z" fill="#ff7a1a"/>
+          <path d="M28 140 q8 24 8 24 q0-0 8-24 z" fill="#ffd34d"/>
+          <path d="M31 140 q5 17 5 17 q0 0 5-17 z" fill="#ff7a1a"/>
         </g>
-        <!-- gold fins -->
-        <path d="M20 96 L8 128 L20 122 Z" fill="url(#cfGold)" stroke="#7a5500" stroke-width="1"/>
-        <path d="M52 96 L64 128 L52 122 Z" fill="url(#cfGold)" stroke="#7a5500" stroke-width="1"/>
-        <!-- chrome body -->
-        <path d="M36 6 C50 26 52 60 52 110 L20 110 C20 60 22 26 36 6 Z" fill="url(#cfChrome)"/>
-        <path d="M36 6 C30 22 28 60 28 110 L20 110 C20 60 22 26 36 6 Z" fill="#000" opacity=".10"/>
-        <!-- gold nose cone -->
-        <path d="M36 6 C40 12 42 18 43 24 L29 24 C30 18 32 12 36 6 Z" fill="url(#cfGold)" stroke="#7a5500" stroke-width="1"/>
-        <!-- gold trim rings -->
-        <rect x="26" y="40" width="20" height="2.4" rx="1.2" fill="url(#cfGold)"/>
-        <rect x="21" y="94" width="30" height="2.6" rx="1.3" fill="url(#cfGold)"/>
-        <!-- window -->
-        <circle cx="36" cy="52" r="6.5" fill="#7fd6ff" stroke="#caa13a" stroke-width="2"/>
-        <!-- 𝕏 + $ decals -->
-        <text x="36" y="80" font-size="20" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#15161a">X</text>
-        <text x="36" y="106" font-size="13" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#15161a">$</text>
-        <!-- base + cheeky vanity plate -->
-        <rect x="22" y="110" width="28" height="6" rx="2" fill="url(#cfGold)"/>
-        <text x="36" y="124" font-size="5" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#caa13a">OCCUPY MARS</text>
+        <!-- gold balloon 'legs' (fins) -->
+        <ellipse cx="16" cy="120" rx="9" ry="6" fill="url(#cfGold)" stroke="#7a5500" stroke-width="1.4" transform="rotate(-24 16 120)"/>
+        <ellipse cx="56" cy="120" rx="9" ry="6" fill="url(#cfGold)" stroke="#7a5500" stroke-width="1.4" transform="rotate(24 56 120)"/>
+        <!-- lower balloon segment (big bulb) -->
+        <ellipse cx="36" cy="98" rx="24" ry="30" fill="url(#cfChrome)" stroke="#5c646c" stroke-width="1.4"/>
+        <!-- gold balloon knot at the waist -->
+        <ellipse cx="36" cy="66" rx="11" ry="6" fill="url(#cfGold)" stroke="#7a5500" stroke-width="1.4"/>
+        <!-- upper balloon segment -->
+        <ellipse cx="36" cy="46" rx="18" ry="23" fill="url(#cfChrome)" stroke="#5c646c" stroke-width="1.4"/>
+        <!-- gold balloon-dog 'ears' by the nose -->
+        <ellipse cx="27" cy="18" rx="5.5" ry="9" fill="url(#cfGold)" stroke="#7a5500" stroke-width="1.3" transform="rotate(-22 27 18)"/>
+        <ellipse cx="45" cy="18" rx="5.5" ry="9" fill="url(#cfGold)" stroke="#7a5500" stroke-width="1.3" transform="rotate(22 45 18)"/>
+        <!-- gold nose tip -->
+        <ellipse cx="36" cy="22" rx="8" ry="12" fill="url(#cfGold)" stroke="#7a5500" stroke-width="1.4"/>
+        <!-- candy reflections (Koons mirror) -->
+        <ellipse cx="46" cy="104" rx="7" ry="14" fill="#ff6ad5" opacity=".22"/>
+        <ellipse cx="28" cy="92" rx="5" ry="12" fill="#5ec8ff" opacity=".22"/>
+        <!-- big glossy specular highlights -->
+        <ellipse cx="27" cy="86" rx="6.5" ry="15" fill="#ffffff" opacity=".85"/>
+        <ellipse cx="30" cy="39" rx="4.5" ry="9" fill="#ffffff" opacity=".85"/>
+        <circle cx="46" cy="40" r="2.4" fill="#ffffff" opacity=".7"/>
+        <!-- window port -->
+        <circle cx="40" cy="50" r="5.5" fill="#7fd6ff" stroke="#caa13a" stroke-width="1.8"/>
+        <circle cx="38.2" cy="48.2" r="1.6" fill="#ffffff" opacity=".8"/>
+        <!-- tiny gold $ medallion (Elon's touch) -->
+        <circle cx="36" cy="104" r="6.5" fill="url(#cfGold)" stroke="#7a5500" stroke-width="1.2"/>
+        <text x="36" y="107.5" font-size="9" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#7a5500">$</text>
       </svg>
     </div>
 

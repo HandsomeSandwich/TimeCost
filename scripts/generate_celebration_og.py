@@ -83,26 +83,45 @@ burst(770, 230, CYAN, r=22)
 burst(1110, 95, GREEN, r=20)
 
 
-# --- the escape rocket, lifting off ---
+# --- the escape rocket as a Jeff Koons balloon-dog (chrome + gold, glossy) ---
+def soft_ellipse(bbox, rgba):
+    """A translucent ellipse, alpha-composited (for gloss + candy reflections)."""
+    lay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    ImageDraw.Draw(lay).ellipse(bbox, fill=rgba)
+    img.alpha_composite(lay)
+
 def rocket(cx, top):
+    CHROME, CEDGE, GEDGE = (205, 213, 221), (108, 116, 124), (150, 108, 20)
+
+    def gloss(bbox, fill, edge):
+        d.ellipse(bbox, fill=fill, outline=edge, width=3)
+        x0, y0, x1, y1 = bbox; w, h = x1 - x0, y1 - y0
+        soft_ellipse([x0 + w * 0.16, y0 + h * 0.10, x0 + w * 0.50, y0 + h * 0.44], (255, 255, 255, 150))
+
     # exhaust flame
-    fl = [(cx - 14, top + 168), (cx, top + 230), (cx + 14, top + 168)]
-    d.polygon(fl, fill=GOLD)
-    d.polygon([(cx - 8, top + 168), (cx, top + 206), (cx + 8, top + 168)], fill=(255, 122, 26))
-    # body
-    d.polygon([(cx, top), (cx + 26, top + 56), (cx + 26, top + 168),
-               (cx - 26, top + 168), (cx - 26, top + 56)], fill=CREAM)
-    d.polygon([(cx, top), (cx - 12, top + 48), (cx - 26, top + 56), (cx - 26, top + 168),
-               (cx - 8, top + 168)], fill=(196, 204, 214))
-    # nose + fins
-    d.polygon([(cx, top), (cx + 12, top + 40), (cx - 12, top + 40)], fill=(192, 57, 43))
-    d.polygon([(cx - 26, top + 132), (cx - 46, top + 184), (cx - 26, top + 172)], fill=(192, 57, 43))
-    d.polygon([(cx + 26, top + 132), (cx + 46, top + 184), (cx + 26, top + 172)], fill=(192, 57, 43))
-    # window
-    d.ellipse([cx - 11, top + 66, cx + 11, top + 88], fill=(127, 214, 255), outline=(154, 166, 178), width=3)
-    # motion streaks
-    for off in (-30, 0, 30):
-        d.line([(cx + off, top + 250), (cx + off, top + 300)], fill=(120, 150, 130, 255), width=2)
+    d.polygon([(cx - 16, top + 210), (cx, top + 286), (cx + 16, top + 210)], fill=GOLD)
+    d.polygon([(cx - 9, top + 210), (cx, top + 262), (cx + 9, top + 210)], fill=(255, 122, 26))
+    # gold balloon 'legs' (fins)
+    gloss([cx - 58, top + 182, cx - 22, top + 214], GOLD, GEDGE)
+    gloss([cx + 22, top + 182, cx + 58, top + 214], GOLD, GEDGE)
+    # lower chrome balloon segment
+    gloss([cx - 46, top + 92, cx + 46, top + 208], CHROME, CEDGE)
+    soft_ellipse([cx + 8, top + 110, cx + 32, top + 176], (255, 106, 213, 70))   # candy pink
+    soft_ellipse([cx - 30, top + 118, cx - 10, top + 170], (94, 200, 255, 60))   # candy cyan
+    # gold balloon knot (waist)
+    gloss([cx - 22, top + 74, cx + 22, top + 98], GOLD, GEDGE)
+    # upper chrome balloon segment
+    gloss([cx - 36, top + 8, cx + 36, top + 96], CHROME, CEDGE)
+    # gold balloon-dog ears + nose
+    gloss([cx - 34, top - 22, cx - 12, top + 18], GOLD, GEDGE)
+    gloss([cx + 12, top - 22, cx + 34, top + 18], GOLD, GEDGE)
+    gloss([cx - 16, top - 18, cx + 16, top + 30], GOLD, GEDGE)
+    # window port
+    d.ellipse([cx - 3, top + 34, cx + 19, top + 56], fill=(127, 214, 255), outline=(202, 161, 58), width=3)
+    soft_ellipse([cx + 1, top + 37, cx + 8, top + 44], (255, 255, 255, 200))
+    # $ medallion
+    d.ellipse([cx - 13, top + 130, cx + 13, top + 156], fill=GOLD, outline=GEDGE, width=2)
+    d.text((cx, top + 143), "$", font=mono(20, bold=True), fill=(122, 92, 0), anchor="mm")
 
 
 rocket(1010, 150)
