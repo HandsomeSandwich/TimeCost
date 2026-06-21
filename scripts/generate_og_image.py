@@ -174,7 +174,7 @@ for i, (name, time_str, pct) in enumerate(bars):
         # Time label after bar
         draw.text((bar_x + fill_w + 10, y + 1), time_str, fill=WHITE, font=font_bar_lbl)
     else:
-        # "You" bar — tiny gold sliver
+        # "You" bar - tiny gold sliver
         draw.rounded_rectangle(
             [bar_x, y, bar_x + 4, y + bar_h],
             radius=2,

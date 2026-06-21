@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Trillionaire Time — TimeCost{% endblock %}
+{% block title %}Trillionaire Time - TimeCost{% endblock %}
 {% block meta %}
 <meta name="description" content="Your groceries cost you minutes of your life. Here's what the world's first trillionaire pockets in those exact same minutes." />
 <meta property="og:title" content="Trillionaire Time" />
@@ -170,10 +170,10 @@
       <span class="trill-kicker">trillionaire time ✦</span>
       <h1 class="trill-title">You buy milk.<br>They buy the block.</h1>
       <p class="trill-sub">
-        Same slice of your one finite, precious life — wildly different receipts.
+        Same slice of your one finite, precious life - wildly different receipts.
         Everyday stuff costs <em>you</em> minutes. Here's what the world's
-        <strong>brand-new first trillionaire</strong> — that's Elon Musk, who tipped past
-        $1,000,000,000,000 on June 12, 2026 — pockets in those exact same minutes.
+        <strong>brand-new first trillionaire</strong> - that's Elon Musk, who tipped past
+        $1,000,000,000,000 on June 12, 2026 - pockets in those exact same minutes.
         <span class="trill-hand">congrats to him.</span>
       </p>
 
@@ -201,8 +201,8 @@
         <button class="trill-btn" type="submit">Do the math</button>
       </form>
       <p class="trill-note">
-        {% if region_overridden %}Showing {{ region_flag }} {{ region_label }} prices.{% else %}Auto-detected {{ region_flag }} {{ region_label }} — switch it above if I guessed wrong.{% endif %}
-        {% if used_default %} Running on a ballpark wage, sugar — drop your real number in.{% endif %}
+        {% if region_overridden %}Showing {{ region_flag }} {{ region_label }} prices.{% else %}Auto-detected {{ region_flag }} {{ region_label }} - switch it above if I guessed wrong.{% endif %}
+        {% if used_default %} Running on a ballpark wage, sugar - drop your real number in.{% endif %}
       </p>
     </div>
 
@@ -230,10 +230,10 @@
       <p class="trill-aside">same minutes, sugar. bless. 🍒</p>
 
       {% set lead = rows[0] %}
-      {% set share_text = (lead.name|capitalize) ~ ' costs me ' ~ ('%.0f'|format(lead.minutes)) ~ ' minutes of my life. In those same minutes Elon Musk — the first trillionaire — banks ' ~ currency ~ lead.earns_h ~ '. Time is the real currency.' %}
+      {% set share_text = (lead.name|capitalize) ~ ' costs me ' ~ ('%.0f'|format(lead.minutes)) ~ ' minutes of my life. In those same minutes Elon Musk - the first trillionaire - banks ' ~ currency ~ lead.earns_h ~ '. Time is the real currency.' %}
       {% set share_url = 'https://thetimecost.com/trillionaire' %}
       <div class="trill-share">
-        <a class="x-btn" href="https://x.com/intent/post?text={{ (share_text ~ ' — ' ~ share_url) | urlencode }}" target="_blank" rel="noopener" title="Share on X">
+        <a class="x-btn" href="https://x.com/intent/post?text={{ (share_text ~ ' - ' ~ share_url) | urlencode }}" target="_blank" rel="noopener" title="Share on X">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
           Share the rage
         </a>
@@ -244,7 +244,7 @@
         <a class="go-btn" href="{{ url_for('core.calculator') }}">See what your whole life costs &rarr;</a>
       </div>
       <p class="trill-credits-cta">
-        <a href="{{ url_for('core.trillionaire_credits') }}">▶ Watch the celebration — then read the credits</a>
+        <a href="{{ url_for('core.trillionaire_credits') }}">▶ Watch the celebration - then read the credits</a>
       </p>
     </div>
 
@@ -253,9 +253,9 @@
       <div class="trill-fine-body">
         <p><strong>Short version:</strong> these are ballpark figures we set by hand, not a live price feed. The point is the <em>gap</em>, not a penny-accurate receipt. Everything recalculates the moment you switch region or type your own wage.</p>
         <ul>
-          <li><strong>The trillionaire.</strong> There's one now: <strong>Elon Musk</strong> crossed $1&nbsp;trillion on <strong>12 June 2026</strong>, when SpaceX's record Nasdaq debut sent his net worth to about $1.05&nbsp;trillion. We model that fortune growing roughly <strong>${{ '%.0f'|format(trillionaire_growth_usd/1e9) }} billion a year</strong> — over a {{ '{:,}'.format(working_hours_year) }}-hour working year, about <strong>${{ '%.0f'|format(trill_per_hour_usd/1e6) }} million an hour</strong>. We only ever compare the <em>same slice of time</em> a thing costs you.</li>
-          <li><strong>Your prices.</strong> Typical recent retail prices for {{ region_flag }} {{ region_label }} — e.g. a tank of gas is figured as a full tank at recent pump prices (shown on the row). Groceries are everyday shelf prices; rent is a rough one-bed monthly average. Approximate, not an index.</li>
-          <li><strong>“Family homes.”</strong> The trillionaire's haul ÷ an average home where you are — <strong>{{ currency }}{{ '{:,.0f}'.format(home_price) }}</strong> for {{ region_label }}. It's a vivid yardstick, not a property valuation.</li>
+          <li><strong>The trillionaire.</strong> There's one now: <strong>Elon Musk</strong> crossed $1&nbsp;trillion on <strong>12 June 2026</strong>, when SpaceX's record Nasdaq debut sent his net worth to about $1.05&nbsp;trillion. We model that fortune growing roughly <strong>${{ '%.0f'|format(trillionaire_growth_usd/1e9) }} billion a year</strong> - over a {{ '{:,}'.format(working_hours_year) }}-hour working year, about <strong>${{ '%.0f'|format(trill_per_hour_usd/1e6) }} million an hour</strong>. We only ever compare the <em>same slice of time</em> a thing costs you.</li>
+          <li><strong>Your prices.</strong> Typical recent retail prices for {{ region_flag }} {{ region_label }} - e.g. a tank of gas is figured as a full tank at recent pump prices (shown on the row). Groceries are everyday shelf prices; rent is a rough one-bed monthly average. Approximate, not an index.</li>
+          <li><strong>“Family homes.”</strong> The trillionaire's haul ÷ an average home where you are - <strong>{{ currency }}{{ '{:,.0f}'.format(home_price) }}</strong> for {{ region_label }}. It's a vivid yardstick, not a property valuation.</li>
           <li><strong>Your wage.</strong> Defaults to a rough {{ region_label }} median of <strong>{{ currency }}{{ '%.0f'|format(default_hourly) }}/hr</strong> until you enter your own (per hour, month, or year). Monthly/annual pay is spread over a {{ '{:,}'.format(working_hours_year) }}-hour year.</li>
           <li><strong>Currency.</strong> Converted at approximate recent exchange rates.</li>
         </ul>

@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const rate    = hourlyRate();
     const usdRate = CURRENCY_TO_USD[USER_CURRENCY] || 1.0;
     const totalUsd = totalCost * usdRate;
-    const userTime = rate > 0 ? fmtWealthTime(totalCost / rate) : '—';
+    const userTime = rate > 0 ? fmtWealthTime(totalCost / rate) : '-';
 
     const sub = document.getElementById('staplesCompSubtitle');
     if (sub) sub.textContent =
@@ -107,7 +107,7 @@ document.addEventListener("DOMContentLoaded", function () {
     BILLIONAIRES.forEach(b => {
       const netTime    = fmtWealthTime(totalUsd / b.hourly_net_worth);
       const growthTime = fmtWealthTime(totalUsd / b.hourly_growth);
-      const canBuy     = rate > 0 ? fmtCount(b.hourly_net_worth / (rate * usdRate)) : '—';
+      const canBuy     = rate > 0 ? fmtCount(b.hourly_net_worth / (rate * usdRate)) : '-';
       html += `<tr>
         <td>${b.name}</td>
         <td class="wealth-time">${netTime}</td>
@@ -145,7 +145,7 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>`;
     });
 
-    // "You" row at the bottom — essentially invisible bar, the point is the contrast
+    // "You" row at the bottom - essentially invisible bar, the point is the contrast
     barsHtml += `
       <div class="wealth-bar-row wealth-bar-you">
         <span class="wealth-bar-name">You</span>

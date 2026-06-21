@@ -18,16 +18,16 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(32))
 # ----------------------------
 # Blueprints
 # ----------------------------
-# Core TimeCost pages (calculator, personal, expenses, budget, …) — no prefix,
+# Core TimeCost pages (calculator, personal, expenses, budget, …) - no prefix,
 # so every URL is identical to before the blueprint split.
 from core.routes import core_bp
 app.register_blueprint(core_bp)
 
-# Dinaro — family / classroom economy
+# Dinaro - family / classroom economy
 from dinaro import dinaro_bp
 app.register_blueprint(dinaro_bp, url_prefix="/dinaro")
 
-# Couples — making invisible work visible
+# Couples - making invisible work visible
 from couples import couples_bp
 app.register_blueprint(couples_bp, url_prefix="/couples")
 
