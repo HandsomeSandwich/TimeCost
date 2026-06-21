@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Send Elon to Mars — TimeCost{% endblock %}
+{% block title %}Send Elon to Mars - TimeCost{% endblock %}
 {% block meta %}
-<meta name="description" content="He reached a trillion — so press the button and send him to Mars. Then watch the real, sourced human cost of the funding cuts dump out like a leaked file." />
+<meta name="description" content="He reached a trillion - so press the button and send him to Mars. Then watch the real, sourced human cost of the funding cuts dump out like a leaked file." />
 <meta property="og:title" content="Send Elon to Mars" />
-<meta property="og:description" content="He reached a trillion. The least we can do is send him to Mars. Press the button — then read who paid for the trip." />
+<meta property="og:description" content="He reached a trillion. The least we can do is send him to Mars. Press the button - then read who paid for the trip." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://thetimecost.com/celebration" />
 <meta property="og:image" content="https://thetimecost.com/static/og-celebration.png" />
@@ -11,7 +11,7 @@
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Send Elon to Mars" />
-<meta name="twitter:description" content="He reached a trillion. The least we can do is send him to Mars. Press the button — then read who paid for the trip." />
+<meta name="twitter:description" content="He reached a trillion. The least we can do is send him to Mars. Press the button - then read who paid for the trip." />
 <meta name="twitter:image" content="https://thetimecost.com/static/og-celebration.png" />
 {% endblock %}
 
@@ -94,7 +94,7 @@
     background:linear-gradient(#0c1a12, #060b08);
     border-top:1px solid rgba(124,252,122,.18); }
 
-  /* ===== Tron skyline behind the scene — collapses when the credits roll ===== */
+  /* ===== Tron skyline behind the scene - collapses when the credits roll ===== */
   .cf-city{ position:absolute; left:0; right:0; bottom:11%; height:46%; z-index:1; pointer-events:none; }
   .cf-bldg{ position:absolute; bottom:0; border:2px solid var(--neon); border-bottom:none;
     background:
@@ -121,7 +121,7 @@
   .cf-stage.js.rolling .cf-grid{ animation:gridfail 3.4s ease-out forwards; }
   @keyframes gridfail{ 0%{opacity:.55} 18%{opacity:.85; filter:hue-rotate(-35deg)} 100%{opacity:.1; filter:hue-rotate(-55deg)} }
 
-  /* the light column the rocket leaves behind — the credits roll up inside it */
+  /* the light column the rocket leaves behind - the credits roll up inside it */
   .cf-beam{ position:absolute; left:50%; bottom:25%; width:130px; transform:translateX(-50%);
     height:0; z-index:1; opacity:0; pointer-events:none;
     background:linear-gradient(to top, rgba(127,214,255,.4), rgba(127,214,255,.06) 60%, transparent); }
@@ -198,7 +198,7 @@
     text-shadow:0 0 6px rgba(124,252,122,.35); }
   .cf-stage.js .cf-roll{ display:none; }   /* JS replaces the crawl with the hacker dump below */
 
-  /* ===== hacker terminal data-dump (the credits, JS) — runs UNDER the pinned message ===== */
+  /* ===== hacker terminal data-dump (the credits, JS) - runs UNDER the pinned message ===== */
   .cf-hack{ position:absolute; left:clamp(14px,5vw,52px); right:clamp(14px,5vw,52px);
     top:33vh; bottom:6%; z-index:5; overflow:hidden; pointer-events:none;
     font-family:'Share Tech Mono', ui-monospace, monospace;
@@ -484,13 +484,13 @@
           <p class="cf-thanks-sub">for his generous contribution.<br>
             <span class="cf-thanks-aside">(he could not stay for the credits.)</span></p>
         </div>
-        <p class="cf-roll-head">Funded, in part, by — now closed:</p>
+        <p class="cf-roll-head">Funded, in part, by - now closed:</p>
         {% for c in cuts %}
         <div class="cf-credit">
           <div class="prog">{{ c.program }}</div>
           <p class="served">For {{ c.served }}.</p>
           <p class="impact">{{ c.impact }}</p>
-          <p class="src">Source — {{ c.source }}</p>
+          <p class="src">Source - {{ c.source }}</p>
         </div>
         {% endfor %}
         <div class="cf-roll-close">
@@ -513,7 +513,7 @@
   </div>
 
   {% set share_url = 'https://thetimecost.com/celebration' %}
-  {% set share_text = "The world's first trillionaire takes a victory lap — here's the sourced human cost of the funding cuts behind it." %}
+  {% set share_text = "The world's first trillionaire takes a victory lap - here's the sourced human cost of the funding cuts behind it." %}
   <div class="cf-after">
     <a class="cf-cta" href="{{ url_for('core.calculator') }}">→ See what <em>your</em> time is worth</a>
     <div class="cf-share">
@@ -528,7 +528,7 @@
   <div class="cf-sources">
     <h3>Every figure above is sourced</h3>
     <p>
-      Affected populations and projected impacts, not named individuals —
+      Affected populations and projected impacts, not named individuals -
       {% for c in cuts %}<a href="{{ c.url }}" target="_blank" rel="noopener">{{ c.source }}</a>{% if not loop.last %} · {% endif %}{% endfor %}.
       Figures are independent estimates of the consequences of the 2025 US foreign-aid cuts; they are projections, and they are contested by the administration.
     </p>
@@ -546,7 +546,7 @@
 
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // [text, class] — typed on load, THEN the launch button appears
+  // [text, class] - typed on load, THEN the launch button appears
   var INTRO = [
     ['PROSPERITY-OS  ·  MINISTRY OF PROSPERITY ▒ ONLINE', 'sys'],
     ['CELEBRATION IS MANDATORY. NON-COMPLIANCE WILL BE NOTED.', 'warn'],
@@ -556,7 +556,7 @@
     ['🏆 ACHIEVEMENT UNLOCKED: ONE (1) TRILLION  ·  APPLAUSE: COMPULSORY 👏', ''],
     ['ONE SMALL FORMALITY REMAINS, CITIZEN:', ''],
   ];
-  // [text, class, sideEffectClassToAddAfter] — typed AFTER the button is pressed
+  // [text, class, sideEffectClassToAddAfter] - typed AFTER the button is pressed
   var REST = [
     ["A HUMAN FEAT THAT WOULDN'T BE POSSIBLE", '', null],
     ['WITHOUT ALL THE LITTLE PEOPLE HE MURDERED ALONG THE WAY.', 'warn', null],
@@ -567,7 +567,7 @@
   ];
   // single quiet sign-off once the credits finish
   var CODA = [
-    ['— SESSION LOGGED. YOUR COMPLIANCE IS ON FILE. PRESS "SEND HIM AGAIN." —', 'sys'],
+    ['- SESSION LOGGED. YOUR COMPLIANCE IS ON FILE. PRESS "SEND HIM AGAIN." -', 'sys'],
   ];
 
   var cursor;
@@ -597,7 +597,7 @@
     });
   }
   function trim() {
-    // keep the terminal from overflowing — drop the oldest lines
+    // keep the terminal from overflowing - drop the oldest lines
     while (term.childNodes.length > 7) term.removeChild(term.firstChild);
     term.scrollTop = term.scrollHeight;
   }
@@ -722,7 +722,7 @@
       var compliant = await armLaunch(my);
       if (my !== gen) return;
       if (!compliant) {
-        // they refused the mandatory button — the Ministry notices
+        // they refused the mandatory button - the Ministry notices
         if (dis) dis.textContent = 'DISSENT: ⚠ DETECTED · LOGGING…';
         if (!reduce) stage.classList.add('alert');
         await typeLine('⚠ DISSENT DETECTED. CITIZEN DID NOT COMPLY.', 'warn', my);
@@ -775,7 +775,7 @@
     else { var t = document.createElement('textarea'); t.value = url; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(t); done(); }
   });
 
-  // kick off on load — types the intro, then waits on the SEND HIM TO MARS button
+  // kick off on load - types the intro, then waits on the SEND HIM TO MARS button
   run(false);
 })();
 </script>

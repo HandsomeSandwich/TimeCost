@@ -1,6 +1,6 @@
 """Salted PIN hashing/verification shared by Personal profiles and Dinaro.
 
-These are generic auth utilities, not Dinaro-specific — keep them here so
+These are generic auth utilities, not Dinaro-specific - keep them here so
 modules don't have to import each other's private helpers.
 """
 from __future__ import annotations

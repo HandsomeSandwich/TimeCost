@@ -1,7 +1,7 @@
 """Generate the OG share image for /celebration (1200x630).
 
 The page's aesthetic: a green-phosphor 80s CRT terminal cheerfully celebrating the
-first trillionaire (fireworks, an escape rocket) — with the real, sourced human
+first trillionaire (fireworks, an escape rocket) - with the real, sourced human
 cost rolling underneath as credits. The image mirrors that: gaudy phosphor
 celebration up top, the somber credit line along the bottom.
 
@@ -51,13 +51,13 @@ def glow_text(pos, text, font, fill, anchor="la", glow_rgb=None, blur=9):
 
 
 # --- header prompt ---
-glow_text((58, 44), "> PROSPERITY-OS v1.0  —  ONLINE", mono(22), DIMGREEN, glow_rgb=(40, 110, 60), blur=6)
+glow_text((58, 44), "> PROSPERITY-OS v1.0  -  ONLINE", mono(22), DIMGREEN, glow_rgb=(40, 110, 60), blur=6)
 
 # --- the headline (phosphor green, glowing) ---
 hl = mono(82, bold=True)
 glow_text((56, 122), "SEND ELON", hl, GREEN, glow_rgb=(40, 160, 70), blur=11)
 glow_text((56, 214), "TO MARS.",  hl, GREEN, glow_rgb=(40, 160, 70), blur=11)
-d.text((58, 320), "he reached a trillion — it's the least we can do.", font=mono(25), fill=DIMGREEN + (255,))
+d.text((58, 320), "he reached a trillion - it's the least we can do.", font=mono(25), fill=DIMGREEN + (255,))
 d.text((58, 356), "press the button. then read who paid for the trip.", font=mono(22), fill=FAINT + (255,))
 
 

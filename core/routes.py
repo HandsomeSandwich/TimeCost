@@ -1,8 +1,8 @@
 """TimeCost core feature routes.
 
-All the original single-process TimeCost pages — calculator, personal,
+All the original single-process TimeCost pages - calculator, personal,
 timebank, expenses, budget, goals, staples, freelance, household, the
-content/SEO pages, and the UI toggles — live here on the `core` blueprint.
+content/SEO pages, and the UI toggles - live here on the `core` blueprint.
 
 The blueprint is registered with no URL prefix, so every path is identical to
 before; only the Flask endpoint names gain a `core.` prefix (so templates use
@@ -159,7 +159,7 @@ TRILLIONAIRE_GROWTH_USD = 250_000_000_000
 # its own currency symbol, USD conversion (so the $-symbol collisions between US/CA/AU
 # don't break the math), a rough median hourly wage, an average family-home price (all
 # in local currency), and a basket priced + unit-labelled the local way (gallon vs litre,
-# "gas" vs "petrol"). Prices are ballpark — this is a satirical page, not an index.
+# "gas" vs "petrol"). Prices are ballpark - this is a satirical page, not an index.
 REGIONS = {
     "US": {
         "label": "United States", "flag": "🇺🇸", "currency": "$",
@@ -273,7 +273,7 @@ def _detect_region(override: str | None) -> str:
 @core_bp.get("/trillionaire")
 def trillionaire():
     """Sarcastic campaign page: your everyday spend vs. what the first trillionaire
-    pockets in the exact same slice of your working life — localised by region."""
+    pockets in the exact same slice of your working life - localised by region."""
     region_arg = request.args.get("region")
     region = _detect_region(region_arg)
     reg = REGIONS[region]
@@ -303,11 +303,11 @@ def trillionaire():
     for it in reg["basket"]:
         your_hours = it["price"] / hourly
         earns = trill_hourly * your_hours
-        # Same loot expressed in average family homes — varies per item and lands
+        # Same loot expressed in average family homes - varies per item and lands
         # harder than "N of the same grocery" (which is a flat ratio).
         homes = earns / home_price
         # Rounded to a clean figure and shown as digits ("24,000"), which read as a
-        # giant scoreboard number — punchier and far more compact than spelled-out words.
+        # giant scoreboard number - punchier and far more compact than spelled-out words.
         if homes < 1000:
             homes_round = round(homes)
         elif homes < 10000:
@@ -346,26 +346,26 @@ def trillionaire():
     )
 
 
-# The human cost behind the celebration — real, sourced figures, presented as
+# The human cost behind the celebration - real, sourced figures, presented as
 # affected POPULATIONS and PROJECTIONS (never named individuals). The satire lives
 # in the celebration; these lines are deliberately plain and respectful.
 TRILLIONAIRE_CUTS = [
     {
-        "program": "USAID — global health, nutrition & humanitarian aid",
+        "program": "USAID - global health, nutrition & humanitarian aid",
         "served": "the poorest communities across 130+ countries",
-        "impact": "Up to 14 million additional deaths projected by 2030 — including over 4.5 million children under five.",
+        "impact": "Up to 14 million additional deaths projected by 2030 - including over 4.5 million children under five.",
         "source": "The Lancet, 2025",
         "url": "https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(25)01186-9/fulltext",
     },
     {
-        "program": "PEPFAR — HIV treatment & prevention",
+        "program": "PEPFAR - HIV treatment & prevention",
         "served": "20.6 million people who relied on it for HIV treatment",
         "impact": "Up to ~4 million additional AIDS-related deaths projected for 2025–2029, including roughly 300,000 children.",
         "source": "UNAIDS, 2025",
         "url": "https://www.unaids.org/en/impact-US-funding-cuts",
     },
     {
-        "program": "President's Malaria Initiative — roughly 47% cut",
+        "program": "President's Malaria Initiative - roughly 47% cut",
         "served": "families across malaria-endemic Africa",
         "impact": "An estimated 15 million more malaria cases and about 107,000 additional deaths in a single year.",
         "source": "WHO, 2025",
@@ -373,8 +373,8 @@ TRILLIONAIRE_CUTS = [
     },
     {
         "program": "Therapeutic food for severe malnutrition (RUTF)",
-        "served": "children with severe acute malnutrition — the US funded about half the global supply",
-        "impact": "Around 1 million children left untreated — an estimated 163,500 additional deaths each year.",
+        "served": "children with severe acute malnutrition - the US funded about half the global supply",
+        "impact": "Around 1 million children left untreated - an estimated 163,500 additional deaths each year.",
         "source": "Maternal & Child Nutrition, 2025",
         "url": "https://onlinelibrary.wiley.com/doi/10.1111/mcn.70028",
     },
@@ -382,7 +382,7 @@ TRILLIONAIRE_CUTS = [
 
 
 # Full citation list for the public reference sheet (/celebration/sources). VERIFIED
-# sources only — peer-reviewed studies, UN/health agencies, institutional trackers,
+# sources only - peer-reviewed studies, UN/health agencies, institutional trackers,
 # and major outlets. Each entry: the claim as used on the pages + every source.
 REFERENCE_REVIEWED = "June 2026"
 TRILLIONAIRE_REFERENCES = [
@@ -472,7 +472,7 @@ def trillionaire_credits_legacy():
 
 @core_bp.get("/celebration/sources")
 def celebration_sources():
-    """Public reference sheet — every figure on the trillionaire/celebration pages
+    """Public reference sheet - every figure on the trillionaire/celebration pages
     with its verified source(s). Shareable by link."""
     return render_template(
         "celebration_sources.html",
@@ -497,7 +497,7 @@ def subscribe():
                 {"email": email, "source": source, "now": datetime.utcnow().isoformat()},
             )
     except Exception:
-        pass  # Duplicate email — silently succeed
+        pass  # Duplicate email - silently succeed
     if source == "support":
         return redirect(url_for("core.support") + "?subscribed=1")
     if source == "dinaro_multichild":

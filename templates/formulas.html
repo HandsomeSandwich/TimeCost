@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}How It Works — TimeCost{% endblock %}
+{% block title %}How It Works - TimeCost{% endblock %}
 
 {% block meta %}
-<meta name="description" content="Every formula behind TimeCost — how we convert money into time, calculate budgets, compare wealth, and more." />
-<meta property="og:title" content="How It Works — TimeCost" />
-<meta property="og:description" content="Every formula behind TimeCost — how we convert money into time, calculate budgets, compare wealth, and more." />
+<meta name="description" content="Every formula behind TimeCost - how we convert money into time, calculate budgets, compare wealth, and more." />
+<meta property="og:title" content="How It Works - TimeCost" />
+<meta property="og:description" content="Every formula behind TimeCost - how we convert money into time, calculate budgets, compare wealth, and more." />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://thetimecost.com/static/og-image.png" />
 <meta property="og:url" content="https://thetimecost.com/formulas" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="How It Works — TimeCost" />
-<meta name="twitter:description" content="Every formula behind TimeCost — how we convert money into time, calculate budgets, compare wealth, and more." />
+<meta name="twitter:title" content="How It Works - TimeCost" />
+<meta name="twitter:description" content="Every formula behind TimeCost - how we convert money into time, calculate budgets, compare wealth, and more." />
 <meta name="twitter:image" content="https://thetimecost.com/static/og-image.png" />
 {% endblock %}
 
@@ -22,7 +22,7 @@
     <h1 class="ref-title">How it works</h1>
     <p class="ref-sub">
       Every number in TimeCost comes from a formula you can check.
-      No black boxes — just arithmetic and a clock.
+      No black boxes - just arithmetic and a clock.
     </p>
   </header>
 
@@ -48,7 +48,7 @@
 
     <div class="ref-card">
       <h3 class="ref-card-title">Workday equivalent</h3>
-      <p class="ref-desc">Puts the result in context — how many 8-hour days is that?</p>
+      <p class="ref-desc">Puts the result in context - how many 8-hour days is that?</p>
       <div class="ref-formula">
         workdays = total hours &divide; 8
       </div>
@@ -119,7 +119,7 @@
 
     <div class="ref-card">
       <h3 class="ref-card-title">Discretionary income</h3>
-      <p class="ref-desc">What you actually have left after expenses — and what each free hour is worth.</p>
+      <p class="ref-desc">What you actually have left after expenses - and what each free hour is worth.</p>
       <div class="ref-formula">
         monthly hours = weekly hours &times; 4.33<br>
         discretionary = monthly income &minus; monthly expenses<br>
@@ -149,7 +149,7 @@
 
     <div class="ref-card">
       <h3 class="ref-card-title">Effective hourly rate</h3>
-      <p class="ref-desc">Your blended rate across all clients — what you actually earned per hour worked.</p>
+      <p class="ref-desc">Your blended rate across all clients - what you actually earned per hour worked.</p>
       <div class="ref-formula">
         total earned = &sum;(hours &times; rate) for each job<br>
         total hours = &sum; hours for each job<br>
@@ -197,7 +197,7 @@
     <div class="ref-card">
       <h3 class="ref-card-title">Parent tax</h3>
       <p class="ref-desc">
-        A daily percentage deduction simulating bills or subscriptions — teaching that money has upkeep.
+        A daily percentage deduction simulating bills or subscriptions - teaching that money has upkeep.
       </p>
       <div class="ref-formula">
         tax = balance &times; (tax rate &divide; 100)
@@ -265,7 +265,7 @@
 
   <p class="ref-footer muted">
     All calculations are deterministic and happen server-side.
-    No AI, no rounding tricks, no hidden fees — just division and multiplication.
+    No AI, no rounding tricks, no hidden fees - just division and multiplication.
     <br>
     <a href="{{ url_for('core.calculator') }}" style="color:var(--accent);">Back to the calculator &rarr;</a>
   </p>

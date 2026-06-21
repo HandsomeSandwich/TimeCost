@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Our Household — TimeCost{% endblock %}
+{% block title %}Our Household - TimeCost{% endblock %}
 
 {% block head %}
   {{ super() }}
@@ -119,7 +119,7 @@
         <div class="bal-head">
           <span style="font-weight:600; font-size:0.9rem;">{{ cat.name }}</span>
           {% if tot <= 0 %}
-            <span class="bal-status">—</span>
+            <span class="bal-status">-</span>
           {% elif diff <= 10 %}
             <span class="bal-status balanced">⚖ balanced</span>
           {% elif a_share > b_share %}

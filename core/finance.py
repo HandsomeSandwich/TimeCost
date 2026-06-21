@@ -1,6 +1,6 @@
 """Core "time as currency" domain math.
 
-Pure functions only — no Flask session, request, or DB access. This keeps the
+Pure functions only - no Flask session, request, or DB access. This keeps the
 calculations reusable across the TimeCost calculator, Couples, and Dinaro.
 """
 from __future__ import annotations
@@ -48,7 +48,7 @@ def format_wealth_time(hours: float) -> str:
     seconds = hours * 3600
     if seconds < 1:
         # Sub-second reads as milliseconds (e.g. "3.8 milliseconds") rather than
-        # the anticlimactic "0.00 seconds" — matters for the trillionaire row.
+        # the anticlimactic "0.00 seconds" - matters for the trillionaire row.
         ms = seconds * 1000
         if ms < 0.01:
             return f"{ms:.4f} milliseconds"

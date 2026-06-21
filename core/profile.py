@@ -1,7 +1,7 @@
 """Session- and DB-bound finance/profile helpers.
 
 These read Flask `session` and the database, so they belong to the request
-context — but they don't depend on any blueprint or the Flask app object, so
+context - but they don't depend on any blueprint or the Flask app object, so
 both app.py (context processor) and core.routes can import them freely without
 creating a circular import.
 """
