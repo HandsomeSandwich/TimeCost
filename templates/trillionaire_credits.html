@@ -67,6 +67,9 @@
   .cf-stage.js .cf-redflick{ animation:compflick 8.5s steps(1) infinite; }
   @keyframes compflick{ 0%,95%{background:rgba(255,0,0,0)} 96%{background:rgba(255,32,32,.07)}
     97%{background:rgba(255,0,0,0)} 98%{background:rgba(255,32,32,.05)} 100%{background:rgba(255,0,0,0)} }
+  /* DISSENT alert: a hard red strobe over the whole stage */
+  .cf-stage.js.alert .cf-redflick{ animation:alertflash .3s steps(1) 4; }
+  @keyframes alertflash{ 0%{background:rgba(255,28,28,.30)} 50%{background:rgba(255,0,0,0)} 100%{background:rgba(255,28,28,.24)} }
   .cf-launch-sub{ display:block; font-size:.62rem; font-weight:normal; letter-spacing:.07em;
     text-transform:uppercase; opacity:.82; margin-top:4px; }
 
@@ -327,7 +330,7 @@
     <div class="cf-hud" aria-hidden="true">
       <div><span class="cf-rec">● REC</span> MINISTRY OF PROSPERITY</div>
       <div>CITIZEN MORALE: ENFORCED 100%</div>
-      <div>DISSENT: 0.00% ✓ · DISSENTERS: [REDACTED]</div>
+      <div id="cfDissent">DISSENT: 0.00% ✓ · DISSENTERS: [REDACTED]</div>
       <div class="cf-hud-watch">you are being watched for your enjoyment</div>
     </div>
     <!-- faint, occasional compliance flicker (not a constant red tint) -->
@@ -657,25 +660,27 @@
     return new Promise(function (resolve) {
       btn.innerHTML = (hasRun ? '🚀 SEND HIM AGAIN' : '🚀 SEND HIM TO MARS') + '<span class="cf-launch-sub">participation is mandatory</span>';
       btn.classList.add('show');
-      // fallback: if nobody clicks, send him anyway (keeps it alive for passive viewers / embeds)
-      var fb = setTimeout(function () { fireLaunch(my); }, 7000);
+      // no click within 7s = DISSENT. We launch anyway (resolve with compliant=false).
+      var fb = setTimeout(function () { settle(my, false); }, 7000);
       pending = { my: my, resolve: resolve, fb: fb };
     });
   }
-  function fireLaunch(my) {
+  function settle(my, compliant) {
     if (!pending || pending.my !== my || my !== gen) return;
     clearTimeout(pending.fb);
     btn.classList.remove('show');
     var r = pending.resolve; pending = null;
-    r();
+    r(compliant);
   }
-  if (btn) btn.addEventListener('click', function () { if (pending) fireLaunch(pending.my); });
+  if (btn) btn.addEventListener('click', function () { if (pending) settle(pending.my, true); });
 
   async function run(fromCreditsOnly) {
     var my = ++gen;                       // any in-flight run with an older id bails out
     stage.className = 'cf-stage js crtflicker';
     term.innerHTML = '';
     if (btn) btn.classList.remove('show');
+    var dis = document.getElementById('cfDissent');
+    if (dis) dis.textContent = 'DISSENT: 0.00% ✓ · DISSENTERS: [REDACTED]';
     makeCursor();
 
     if (!fromCreditsOnly) {
@@ -686,8 +691,23 @@
         await wait(540);
         if (my !== gen) return;
       }
-      await armLaunch(my);
+      var compliant = await armLaunch(my);
       if (my !== gen) return;
+      if (!compliant) {
+        // they refused the mandatory button — the Ministry notices
+        if (dis) dis.textContent = 'DISSENT: ⚠ DETECTED · LOGGING…';
+        if (!reduce) stage.classList.add('alert');
+        await typeLine('⚠ DISSENT DETECTED. CITIZEN DID NOT COMPLY.', 'warn', my);
+        if (my !== gen) return;
+        await wait(520); if (my !== gen) return;
+        await typeLine('NON-COMPLIANCE LOGGED TO YOUR PERMANENT FILE.', 'warn', my);
+        if (my !== gen) return;
+        await wait(460); if (my !== gen) return;
+        await typeLine('PARTICIPATION WILL PROCEED ON YOUR BEHALF. ENJOY. 🙂', 'sys', my);
+        if (my !== gen) return;
+        stage.classList.remove('alert');
+        await wait(460); if (my !== gen) return;
+      }
     }
     hasRun = true;
 
