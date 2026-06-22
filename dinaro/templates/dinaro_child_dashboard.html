@@ -606,10 +606,26 @@
         {% endif %}
       </div>
       {% elif treasury.status == 'closed' %}
-      {% set winner = (treasury_options|sort(attribute='votes')|last) if treasury_options else None %}
+      {% set total_votes = (treasury_options | sum(attribute='votes')) or 0 %}
+      {% set lead = (treasury_options | map(attribute='votes') | max) if treasury_options else 0 %}
+      {% set winner = (treasury_options | sort(attribute='votes') | last) if treasury_options else None %}
       <div>
         <strong>Class vote — closed</strong>
-        {% if winner %}<p style="margin-top:4px;">🏆 The class chose: <strong>{{ winner.label }}</strong>.</p>{% endif %}
+        {% if winner and lead > 0 %}<p style="margin-top:4px;">🏆 The class chose: <strong>{{ winner.label }}</strong>.</p>{% endif %}
+        <div style="display:grid; gap:7px; margin-top:8px; max-width:380px;">
+          {% for o in treasury_options %}
+          {% set win = o.votes == lead and lead > 0 %}
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+              <span>{{ '🏆 ' if win else '' }}{{ o.label }}</span>
+              <span class="muted">{{ o.votes }} vote{{ '' if o.votes == 1 else 's' }}</span>
+            </div>
+            <div style="height:8px; background:var(--accent-soft); border-radius:999px; overflow:hidden; margin-top:3px;">
+              <div style="height:100%; width:{{ ((o.votes / total_votes * 100) if total_votes else 0)|round|int }}%; background:{{ 'var(--accent-2)' if win else 'var(--accent)' }};"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
       </div>
       {% endif %}
     </div>

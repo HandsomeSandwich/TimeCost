@@ -828,18 +828,26 @@
     <h2 class="card-title" style="display: flex; align-items: center; gap: 8px;">
       <i data-lucide="landmark" style="color:var(--accent-2, var(--accent));"></i>
       {{ treasury.title if treasury else "The Treasury" }}
+      {% if treasury %}
+      {% set badge = {'collecting': ['Collecting', 'var(--accent-soft)', 'var(--text)'], 'voting': ['Voting open', 'var(--accent-2)', '#fff'], 'closed': ['Closed', '#e0e0e0', '#555']}[treasury.status] %}
+      <span style="margin-left:auto; font-size:0.68rem; letter-spacing:.04em; text-transform:uppercase; font-weight:700; background:{{ badge[1] }}; color:{{ badge[2] }}; border-radius:999px; padding:3px 10px;">{{ badge[0] }}</span>
+      {% endif %}
     </h2>
     <p class="muted" style="margin-top:-4px;">
       A class pot funded by everyone's fair share. Teaches tax, public goods &amp; voting.
     </p>
 
     {% if treasury %}
-    <div style="margin:10px 0; font-weight:600;">
-      {{ "%.0f"|format(treasury.raised) }} / {{ "%.0f"|format(treasury.goal) }} dinaro raised
-      <span class="muted" style="font-weight:400;">
-        · bills paid {{ treasury_bill_stats.paid }}/{{ treasury_bill_stats.total }}
-        {% if treasury.match_num %} · match {{ treasury.match_num }}:{{ treasury.match_den }}{% endif %}
-      </span>
+    {% set pct = ((treasury.raised / treasury.goal * 100) if treasury.goal else 0)|round|int %}
+    <div style="margin:10px 0;">
+      <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; font-weight:600;">
+        <span>{{ "%.0f"|format(treasury.raised) }} / {{ "%.0f"|format(treasury.goal) }} dinaro raised
+          <span class="muted" style="font-weight:400;">({{ pct }}%)</span></span>
+        <span class="muted" style="font-weight:400;">bills paid {{ treasury_bill_stats.paid }}/{{ treasury_bill_stats.total }}{% if treasury.match_num %} · match {{ treasury.match_num }}:{{ treasury.match_den }}{% endif %}</span>
+      </div>
+      <div style="height:12px; background:var(--accent-soft); border-radius:999px; overflow:hidden; margin-top:5px;">
+        <div style="height:100%; width:{{ pct }}%; max-width:100%; background:var(--accent-2);"></div>
+      </div>
     </div>
     {% endif %}
 
@@ -924,20 +932,35 @@
       <form action="{{ url_for('dinaro.dinaro_parent_treasury_open_vote') }}" method="post">
         <button class="btn btn-primary" type="submit">Open voting</button>
       </form>
-    {% elif treasury.status == 'voting' %}
-      <p style="margin:4px 0;"><strong>Voting is open.</strong> Students {% if treasury.penalty_no_vote %}who paid their share {% endif %}can vote.</p>
-      <ul style="list-style:none; padding:0; margin:6px 0; display:grid; gap:4px;">
-        {% for o in treasury_options %}<li>{{ o.label }} — <strong>{{ o.votes }}</strong> vote{{ '' if o.votes == 1 else 's' }}</li>{% endfor %}
-      </ul>
+    {% else %}
+      {% set total_votes = (treasury_options | sum(attribute='votes')) or 0 %}
+      {% set lead = (treasury_options | map(attribute='votes') | max) if treasury_options else 0 %}
+      {% set closed = treasury.status == 'closed' %}
+      {% if closed %}
+        {% set winner = (treasury_options | sort(attribute='votes') | last) if treasury_options else None %}
+        {% if winner and lead > 0 %}<p style="margin:4px 0;">🏆 The class chose: <strong>{{ winner.label }}</strong> ({{ winner.votes }} vote{{ '' if winner.votes == 1 else 's' }}).</p>{% endif %}
+      {% else %}
+        <p style="margin:4px 0;"><strong>Voting is open.</strong> Students {% if treasury.penalty_no_vote %}who paid their share {% endif %}can vote. {{ total_votes }} vote{{ '' if total_votes == 1 else 's' }} so far.</p>
+      {% endif %}
+      <div style="display:grid; gap:8px; margin:8px 0; max-width:480px;">
+        {% for o in treasury_options %}
+        {% set win = closed and o.votes == lead and lead > 0 %}
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+            <span>{{ '🏆 ' if win else '' }}{{ o.label }}</span>
+            <span class="muted">{{ o.votes }} vote{{ '' if o.votes == 1 else 's' }}{% if total_votes %} · {{ (o.votes / total_votes * 100)|round|int }}%{% endif %}</span>
+          </div>
+          <div style="height:9px; background:var(--accent-soft); border-radius:999px; overflow:hidden; margin-top:3px;">
+            <div style="height:100%; width:{{ ((o.votes / total_votes * 100) if total_votes else 0)|round|int }}%; background:{{ 'var(--accent-2)' if win else 'var(--accent)' }};"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% if not closed %}
       <form action="{{ url_for('dinaro.dinaro_parent_treasury_close_vote') }}" method="post">
         <button class="btn btn-primary" type="submit">Close voting &amp; declare winner</button>
       </form>
-    {% else %}
-      {% set winner = (treasury_options|sort(attribute='votes')|last) if treasury_options else None %}
-      {% if winner %}<p style="margin:4px 0;">🏆 The class chose: <strong>{{ winner.label }}</strong> ({{ winner.votes }} vote{{ '' if winner.votes == 1 else 's' }}).</p>{% endif %}
-      <ul style="list-style:none; padding:0; margin:6px 0; display:grid; gap:4px;">
-        {% for o in treasury_options %}<li>{{ o.label }} — {{ o.votes }} vote{{ '' if o.votes == 1 else 's' }}</li>{% endfor %}
-      </ul>
+      {% endif %}
     {% endif %}
     {% endif %}
   </section>
