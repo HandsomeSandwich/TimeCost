@@ -93,7 +93,8 @@ def sitemap():
         ("/support",    "monthly", "0.5"),
         ("/formulas",   "monthly", "0.6"),
         ("/trillionaire", "monthly", "0.6"),
-        ("/celebration/sources", "monthly", "0.5"),
+        ("/SendElonToSpace", "monthly", "0.6"),
+        ("/SendElonToSpace/sources", "monthly", "0.5"),
     ]
     xml_lines = ['<?xml version="1.0" encoding="UTF-8"?>',
                  '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
@@ -459,7 +460,7 @@ TRILLIONAIRE_REFERENCES = [
 ]
 
 
-@core_bp.get("/celebration")
+@core_bp.get("/SendElonToSpace")
 def trillionaire_credits():
     """A satirical 80s-terminal 'celebration' of the first trillionaire, with the
     real human cost of the funding cuts rolling underneath as respectful credits.
@@ -467,13 +468,14 @@ def trillionaire_credits():
     return render_template("trillionaire_credits.html", cuts=TRILLIONAIRE_CUTS)
 
 
+@core_bp.get("/celebration")
 @core_bp.get("/trillionaire/credits")
 def trillionaire_credits_legacy():
-    """Old nested path → keep any existing links working."""
+    """Old paths → keep any existing links/shares working."""
     return redirect(url_for("core.trillionaire_credits"), code=301)
 
 
-@core_bp.get("/celebration/sources")
+@core_bp.get("/SendElonToSpace/sources")
 def celebration_sources():
     """Public reference sheet - every figure on the trillionaire/celebration pages
     with its verified source(s). Shareable by link."""
@@ -482,6 +484,12 @@ def celebration_sources():
         references=TRILLIONAIRE_REFERENCES,
         reviewed=REFERENCE_REVIEWED,
     )
+
+
+@core_bp.get("/celebration/sources")
+def celebration_sources_legacy():
+    """Old sources path → redirect to the renamed page."""
+    return redirect(url_for("core.celebration_sources"), code=301)
 
 
 @core_bp.route("/subscribe", methods=["POST"])

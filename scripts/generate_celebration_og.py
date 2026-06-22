@@ -136,7 +136,7 @@ glow_text((58, 538), "USAID · PEPFAR · MALARIA · CHILD NUTRITION",
           mono(23, bold=True), GREEN, glow_rgb=(40, 130, 60), blur=6)
 d.text((58, 572), "sourced, projected deaths from the funding cuts",
        font=mono(20), fill=FAINT + (255,))
-d.text((1142, 576), "thetimecost.com/celebration", font=mono(23), fill=AMBER + (255,), anchor="ra")
+d.text((1142, 576), "thetimecost.com/SendElonToSpace", font=mono(22), fill=AMBER + (255,), anchor="ra")
 
 
 # --- CRT scanlines + vignette over the whole thing ---
