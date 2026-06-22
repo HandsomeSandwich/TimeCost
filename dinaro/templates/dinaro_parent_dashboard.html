@@ -836,6 +836,16 @@
     <p class="muted" style="margin-top:-4px;">
       A class pot funded by everyone's fair share. Teaches tax, public goods &amp; voting.
     </p>
+    <details style="margin:6px 0 10px; font-size:0.9rem;">
+      <summary style="cursor:pointer; color:var(--accent-2, var(--accent)); font-weight:600;">How it works (quick guide)</summary>
+      <ol style="margin:8px 0 0; padding-left:18px; display:grid; gap:5px; color:var(--muted, #5c6672);">
+        <li><strong>Set the rules</strong> below - goal + a fair-share rule (flat or % of balance), optional teacher match &amp; late interest.</li>
+        <li><strong>Issue bills</strong> so every student owes their share; they pay from their own dinaro (and can donate extra).</li>
+        <li><strong>The pot fills</strong> from payments + donations + your match, toward the goal.</li>
+        <li><strong>Add vote options</strong> (what the pot funds) and <strong>open voting</strong> - turn on "no vote unless paid" so contributing matters.</li>
+        <li><strong>Close voting</strong> to lock in the class's choice. <a href="{{ url_for('dinaro.dinaro_classroom') }}" target="_blank" rel="noopener">Full guide &rarr;</a></li>
+      </ol>
+    </details>
 
     {% if treasury %}
     {% set pct = ((treasury.raised / treasury.goal * 100) if treasury.goal else 0)|round|int %}
