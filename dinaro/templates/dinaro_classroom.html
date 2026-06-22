@@ -1,6 +1,21 @@
 {% extends "dinaro_base.html" %}
 {% block title %}Dinaro for Classrooms{% endblock %}
 
+{% block head %}
+<style>
+  .tre-steps{ list-style:none; counter-reset:tre; padding:0; margin:10px 0 0; display:grid; gap:14px; }
+  .tre-steps li{ display:flex; gap:12px; align-items:flex-start; }
+  .tre-steps li::before{ counter-increment:tre; content:counter(tre); flex:0 0 auto;
+    width:28px; height:28px; border-radius:50%; background:var(--accent-2, var(--accent)); color:#fff;
+    font-weight:700; display:flex; align-items:center; justify-content:center; font-size:0.9rem; }
+  .tre-steps strong{ display:block; }
+  .tre-steps .muted{ font-size:0.9rem; }
+  .tre-teaches{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .tre-tag{ font-size:0.78rem; font-weight:600; background:var(--accent-soft); color:var(--text);
+    border-radius:999px; padding:4px 12px; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page">
   <header class="page-header">
@@ -25,18 +40,34 @@
     </div>
   </section>
 
-  <div class="grid-2">
-    <section class="panel toned tone-2">
-      <h2 class="card-title" style="display:flex; align-items:center; gap:10px;">
-        <span class="icon-chip"><i data-lucide="landmark"></i></span> The Treasury
-      </h2>
-      <p class="muted">
-        A shared class fund with a goal and a teacher match. Students are billed their
-        fair share (taxes), and they <strong>vote</strong> on how the fund is spent -
-        a hands-on lesson in taxation, public goods, and collective choice.
-      </p>
-    </section>
+  <section class="panel toned tone-2" style="margin-bottom:16px;">
+    <h2 class="card-title" style="display:flex; align-items:center; gap:10px;">
+      <span class="icon-chip"><i data-lucide="landmark"></i></span> How the Treasury works
+    </h2>
+    <p class="muted" style="margin-top:-2px;">
+      The Treasury is a shared class pot. It runs a full mini-economy in five steps -
+      a hands-on way to teach where public money comes from and who decides how it's spent.
+    </p>
+    <ol class="tre-steps">
+      <li><div><strong>Set the rules</strong><span class="muted">Pick a goal and a fair-share rule - a flat amount or a % of each student's balance (that's the "tax"). Optionally add a teacher match (you top up what the class raises) and late interest.</span></div></li>
+      <li><div><strong>Students pay their share</strong><span class="muted">Each student gets a bill and pays it from their own dinaro. They can also donate extra to help the class hit the goal.</span></div></li>
+      <li><div><strong>The pot fills up</strong><span class="muted">Payments + donations + your match grow the fund toward its goal - a shared resource no one owns alone.</span></div></li>
+      <li><div><strong>The class votes</strong><span class="muted">Add a few options (what the pot should fund), open voting, and students choose. Flip on "no vote unless paid" so contributing actually matters.</span></div></li>
+      <li><div><strong>Decide &amp; spend</strong><span class="muted">Close voting - the winning option is what the class fund pays for. The result bars show how the class chose.</span></div></li>
+    </ol>
+    <div class="tre-teaches">
+      <span class="muted" style="align-self:center; font-size:0.82rem;">Teaches:</span>
+      <span class="tre-tag">Taxes &amp; fair share</span>
+      <span class="tre-tag">Public goods</span>
+      <span class="tre-tag">Voting &amp; collective choice</span>
+      <span class="tre-tag">The free-rider problem</span>
+    </div>
+    <div class="actions" style="margin-top:14px;">
+      <a class="btn btn-primary" href="{{ url_for('dinaro.dinaro_setup', classroom=1) }}">Set up your classroom &rarr;</a>
+    </div>
+  </section>
 
+  <div class="grid-2">
     <section class="panel toned tone-3">
       <h2 class="card-title" style="display:flex; align-items:center; gap:10px;">
         <span class="icon-chip"><i data-lucide="bar-chart-3"></i></span> Class analytics
@@ -47,20 +78,20 @@
         interest, and tax-rate settings.
       </p>
     </section>
-  </div>
 
-  <section class="panel toned tone-2" style="margin-top:16px;">
-    <h2 class="card-title" style="display:flex; align-items:center; gap:10px;">
-      <span class="icon-chip"><i data-lucide="users"></i></span> How students join
-    </h2>
-    <p class="muted">
-      Share your class code (or QR). Students log in with the code and a PIN, earn dinaro
-      for tasks you set, and only ever see their own balance.
-    </p>
-    <div class="actions">
-      <a class="btn" href="{{ url_for('dinaro.dinaro_child_login') }}">Student login</a>
-    </div>
-  </section>
+    <section class="panel toned tone-1">
+      <h2 class="card-title" style="display:flex; align-items:center; gap:10px;">
+        <span class="icon-chip"><i data-lucide="users"></i></span> How students join
+      </h2>
+      <p class="muted">
+        Share your class code (or QR). Students log in with the code and a PIN, earn dinaro
+        for tasks you set, and only ever see their own balance.
+      </p>
+      <div class="actions">
+        <a class="btn" href="{{ url_for('dinaro.dinaro_child_login') }}">Student login</a>
+      </div>
+    </section>
+  </div>
 
   <div style="margin-top:16px;">
     <span class="muted">Running it at home instead? <a href="{{ url_for('dinaro.dinaro_landing') }}">Family mode &rarr;</a></span>
