@@ -702,7 +702,7 @@
     el.classList.remove('show');
   }
 
-  async function run(fromCreditsOnly) {
+  async function run(fromCreditsOnly, skipGate) {
     var my = ++gen;                       // any in-flight run with an older id bails out
     stage.className = 'cf-stage js crtflicker';
     term.innerHTML = '';
@@ -719,22 +719,25 @@
         await wait(540);
         if (my !== gen) return;
       }
-      var compliant = await armLaunch(my);
-      if (my !== gen) return;
-      if (!compliant) {
-        // they refused the mandatory button - the Ministry notices
-        if (dis) dis.textContent = 'DISSENT: ⚠ DETECTED · LOGGING…';
-        if (!reduce) stage.classList.add('alert');
-        await typeLine('⚠ DISSENT DETECTED. CITIZEN DID NOT COMPLY.', 'warn', my);
+      if (!skipGate) {
+        // first run only: wait for the viewer to press SEND HIM TO MARS
+        var compliant = await armLaunch(my);
         if (my !== gen) return;
-        await wait(520); if (my !== gen) return;
-        await typeLine('NON-COMPLIANCE LOGGED TO YOUR PERMANENT FILE.', 'warn', my);
-        if (my !== gen) return;
-        await wait(460); if (my !== gen) return;
-        await typeLine('PARTICIPATION WILL PROCEED ON YOUR BEHALF. ENJOY. 🙂', 'sys', my);
-        if (my !== gen) return;
-        stage.classList.remove('alert');
-        await wait(460); if (my !== gen) return;
+        if (!compliant) {
+          // they refused the mandatory button - the Ministry notices
+          if (dis) dis.textContent = 'DISSENT: ⚠ DETECTED · LOGGING…';
+          if (!reduce) stage.classList.add('alert');
+          await typeLine('⚠ DISSENT DETECTED. CITIZEN DID NOT COMPLY.', 'warn', my);
+          if (my !== gen) return;
+          await wait(520); if (my !== gen) return;
+          await typeLine('NON-COMPLIANCE LOGGED TO YOUR PERMANENT FILE.', 'warn', my);
+          if (my !== gen) return;
+          await wait(460); if (my !== gen) return;
+          await typeLine('PARTICIPATION WILL PROCEED ON YOUR BEHALF. ENJOY. 🙂', 'sys', my);
+          if (my !== gen) return;
+          stage.classList.remove('alert');
+          await wait(460); if (my !== gen) return;
+        }
       }
       await countdown(my);
       if (my !== gen) return;
@@ -764,7 +767,7 @@
     }
   }
 
-  document.getElementById('cfReplay').addEventListener('click', function () { run(false); });
+  document.getElementById('cfReplay').addEventListener('click', function () { run(false, true); });
   document.getElementById('cfSkip').addEventListener('click', function () { run(true); });
 
   var copyBtn = document.getElementById('cfCopy');

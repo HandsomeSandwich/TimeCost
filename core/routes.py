@@ -417,9 +417,11 @@ TRILLIONAIRE_REFERENCES = [
         ],
     },
     {
-        "claim": "PEPFAR / HIV cuts: up to ~4 million additional AIDS-related deaths (2025–2029), including ~300,000 children.",
-        "detail": "UNAIDS projection if US-supported HIV treatment and prevention permanently "
-                  "collapse. PEPFAR had supported HIV treatment for about 20.6 million people.",
+        "claim": "PEPFAR / HIV cuts: up to ~4 million additional AIDS-related deaths (2025-2029), including ~300,000 children.",
+        "detail": "The ~4 million / ~300,000-children figure is the UNAIDS projection if US-supported "
+                  "HIV programmes permanently collapse (PEPFAR had supported HIV treatment for about "
+                  "20.6 million people). A separate Lancet HIV modelling study estimates a different, "
+                  "wider range - roughly 0.8 to 2.9 million additional HIV deaths by 2030 (up to ~120,000 children).",
         "sources": [
             {"pub": "UNAIDS", "kind": "UN agency", "date": "2025",
              "title": "Impact of US funding cuts on the global HIV response",
@@ -431,9 +433,10 @@ TRILLIONAIRE_REFERENCES = [
     },
     {
         "claim": "Malaria: ~15 million more cases and ~107,000 additional deaths in a single year.",
-        "detail": "World Health Organization estimate (Dr Tedros Adhanom Ghebreyesus) of the "
-                  "impact of US cuts to malaria programmes; the US had been the largest "
-                  "bilateral donor to malaria control.",
+        "detail": "Impact of US cuts to malaria programmes, flagged by the WHO (Dr Tedros Adhanom "
+                  "Ghebreyesus); the US had been the largest bilateral donor to malaria control. "
+                  "The ~107,000 figure sits within the projected range of ~71,000-166,000 additional "
+                  "deaths per year.",
         "sources": [
             {"pub": "World Health Organization (reported by CNN)", "kind": "UN agency / News", "date": "Jun 2025",
              "title": "US foreign aid cuts threaten decades of progress on driving down malaria",
