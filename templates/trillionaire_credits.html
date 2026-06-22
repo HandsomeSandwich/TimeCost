@@ -5,7 +5,7 @@
 <meta property="og:title" content="Send Elon to Mars" />
 <meta property="og:description" content="He reached a trillion. The least we can do is send him to Mars. Press the button - then read who paid for the trip." />
 <meta property="og:type" content="website" />
-<meta property="og:url" content="https://thetimecost.com/celebration" />
+<meta property="og:url" content="https://thetimecost.com/SendElonToSpace" />
 <meta property="og:image" content="https://thetimecost.com/static/og-celebration.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
@@ -513,7 +513,7 @@
     <button type="button" class="cf-btn" id="cfMute">🔊 sound on</button>
   </div>
 
-  {% set share_url = 'https://thetimecost.com/celebration' %}
+  {% set share_url = 'https://thetimecost.com/SendElonToSpace' %}
   {% set share_text = "The world's first trillionaire takes a victory lap - here's the sourced human cost of the funding cuts behind it." %}
   <div class="cf-after">
     <a class="cf-cta" href="{{ url_for('core.calculator') }}">→ See what <em>your</em> time is worth</a>
@@ -618,7 +618,7 @@
   }
   function audioParty() {                   // the manufactured celebration erupts
     if (!AC || muted) return;
-    audioCheers(); audioHumStart();
+    audioCheers(); audioHumStart(); audioClockStart();
     setTimeout(audioZap, 500); setTimeout(audioZap, 1400);
   }
   function audioToll() {                    // one soft, low remembrance bell - the only real sound
@@ -633,6 +633,26 @@
       o.connect(g); g.connect(master); o.start(); o.stop(aNow() + 2.8);
     }
   }
+  // a ticking clock with no visible source - panned randomly so you can't place it
+  var clock = null, tock = false;
+  function audioTickOnce() {
+    if (!AC || muted) return;
+    var s = AC.createBufferSource(); s.buffer = aNoise(0.03);
+    var f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = tock ? 2200 : 2700; f.Q.value = 7;
+    tock = !tock;
+    var g = AC.createGain();
+    g.gain.setValueAtTime(0.0001, aNow());
+    g.gain.linearRampToValueAtTime(0.08, aNow() + 0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, aNow() + 0.03);
+    s.connect(f); f.connect(g);
+    if (AC.createStereoPanner) {                 // roam it around the field each tick
+      var p = AC.createStereoPanner(); p.pan.value = (Math.random() * 2 - 1) * 0.85;
+      g.connect(p); p.connect(master);
+    } else { g.connect(master); }
+    s.start(); s.stop(aNow() + 0.05);
+  }
+  function audioClockStart() { if (!AC || clock) return; clock = setInterval(audioTickOnce, 1000); }
+  function audioClockStop() { if (clock) { clearInterval(clock); clock = null; } }
   function audioMute(m) {
     muted = m;
     if (master && AC) master.gain.setTargetAtTime(m ? 0 : 0.9, AC.currentTime, 0.04);
@@ -783,6 +803,7 @@
   // 3-2-1 ignition countdown before the send-off
   async function countdown(my) {
     var el = document.getElementById('cfCount');
+    audioClockStart();                       // the unplaceable ticking begins
     await typeLine('IGNITION SEQUENCE INITIATED.', 'sys', my);
     if (my !== gen) return;
     if (!el) return;
@@ -800,6 +821,7 @@
 
   async function run(fromCreditsOnly, skipGate) {
     var my = ++gen;                       // any in-flight run with an older id bails out
+    audioClockStop();                     // reset the ticking on a fresh run
     stage.className = 'cf-stage js crtflicker';
     term.innerHTML = '';
     if (btn) btn.classList.remove('show');
