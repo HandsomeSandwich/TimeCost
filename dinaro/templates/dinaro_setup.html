@@ -4,8 +4,8 @@
 {% block content %}
 <div class="page">
   <header class="page-header">
-    <h1>Dinaro Setup</h1>
-    <p class="muted">Create the family space and the first parent PIN.</p>
+    <h1>{% if prefill_classroom %}Classroom Setup{% else %}Dinaro Setup{% endif %}</h1>
+    <p class="muted">{% if prefill_classroom %}Create your class space and your teacher PIN.{% else %}Create the family space and the first parent PIN.{% endif %}</p>
   </header>
 
   <section class="panel">
@@ -30,7 +30,7 @@
 
       <div class="field" style="margin-bottom: 20px;">
         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-          <input type="checkbox" name="is_classroom">
+          <input type="checkbox" name="is_classroom"{% if prefill_classroom %} checked{% endif %}>
           <span>Enable Classroom Mode (Student/Teacher terminology)</span>
         </label>
       </div>

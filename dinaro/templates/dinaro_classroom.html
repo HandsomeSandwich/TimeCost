@@ -1,0 +1,69 @@
+{% extends "dinaro_base.html" %}
+{% block title %}Dinaro for Classrooms{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-header">
+    <h1>Dinaro for Classrooms</h1>
+    <p class="muted">
+      Run a tiny classroom economy. Students earn dinaro for tasks, save and spend it,
+      and vote on how to use a shared class fund - real economics, zero real money.
+    </p>
+  </header>
+
+  <section class="panel toned tone-1" style="margin-bottom:16px;">
+    <h2 class="card-title" style="display:flex; align-items:center; gap:10px;">
+      <span class="icon-chip"><i data-lucide="graduation-cap"></i></span> Start a class
+    </h2>
+    <div class="card">
+      <div style="font-weight:600;">Classroom mode</div>
+      <div class="muted">Teacher/student wording, a class join code, and the Treasury - set up in a minute.</div>
+      <div class="actions" style="margin-top:10px;">
+        <a class="btn btn-primary" href="{{ url_for('dinaro.dinaro_setup', classroom=1) }}">Set up your classroom &rarr;</a>
+        <a class="btn" href="{{ url_for('dinaro.dinaro_parent_login') }}">Teacher login</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid-2">
+    <section class="panel toned tone-2">
+      <h2 class="card-title" style="display:flex; align-items:center; gap:10px;">
+        <span class="icon-chip"><i data-lucide="landmark"></i></span> The Treasury
+      </h2>
+      <p class="muted">
+        A shared class fund with a goal and a teacher match. Students are billed their
+        fair share (taxes), and they <strong>vote</strong> on how the fund is spent -
+        a hands-on lesson in taxation, public goods, and collective choice.
+      </p>
+    </section>
+
+    <section class="panel toned tone-3">
+      <h2 class="card-title" style="display:flex; align-items:center; gap:10px;">
+        <span class="icon-chip"><i data-lucide="bar-chart-3"></i></span> Class analytics
+      </h2>
+      <p class="muted">
+        A teacher dashboard with a leaderboard, average balance, tasks completed today,
+        and completion rate - see the whole class at a glance. Optional grade mode,
+        interest, and tax-rate settings.
+      </p>
+    </section>
+  </div>
+
+  <section class="panel toned tone-2" style="margin-top:16px;">
+    <h2 class="card-title" style="display:flex; align-items:center; gap:10px;">
+      <span class="icon-chip"><i data-lucide="users"></i></span> How students join
+    </h2>
+    <p class="muted">
+      Share your class code (or QR). Students log in with the code and a PIN, earn dinaro
+      for tasks you set, and only ever see their own balance.
+    </p>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('dinaro.dinaro_child_login') }}">Student login</a>
+    </div>
+  </section>
+
+  <div style="margin-top:16px;">
+    <span class="muted">Running it at home instead? <a href="{{ url_for('dinaro.dinaro_landing') }}">Family mode &rarr;</a></span>
+  </div>
+</div>
+{% endblock %}

@@ -430,7 +430,16 @@ def dinaro_setup():
         session["dinaro_parent_id"] = int(parent_id)
         return redirect(url_for("dinaro.dinaro_parent_dashboard"))
 
-    return render_template("dinaro_setup.html")
+    return render_template("dinaro_setup.html", prefill_classroom=bool(request.args.get("classroom")))
+
+
+@dinaro_bp.get("/classroom")
+def dinaro_classroom():
+    """Dedicated teacher/classroom entry point: explains Classroom Mode + the
+    Treasury, and one-click sets up a classroom (setup with classroom pre-enabled)."""
+    if session.get("dinaro_parent_id"):
+        return redirect(url_for("dinaro.dinaro_parent_dashboard"))
+    return render_template("dinaro_classroom.html")
 
 
 def _dinaro_parents_in_family(family_code: str):
